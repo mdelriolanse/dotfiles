@@ -14,8 +14,8 @@ rtp:prepend(lazypath)
 require('lazy').setup({
   require 'plugins.blink',
   require 'plugins.conform',
-  require 'plugins.debug',
   require 'plugins.git-signs',
+  require 'plugins.lua-rocks',
   require 'plugins.guess-indent',
   require 'plugins.kanagawa-theme',
   require 'plugins.neo-tree',
@@ -26,6 +26,7 @@ require('lazy').setup({
   require 'plugins.treesitter',
   require 'plugins.which-key',
   require 'plugins.lazy-dev',
+  require 'plugins.neorg',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {

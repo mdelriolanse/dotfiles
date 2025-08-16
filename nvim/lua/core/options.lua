@@ -44,12 +44,17 @@ vim.keymap.set('t', '<Esc>', '<C-\\><C-n><C-w>h', { silent = true })
 local opts = { noremap = true, silent = true }
 
 local function quickfix()
-  vim.lsp.buf.code_action {
-    filter = function(a)
-      return a.isPreferred
-    end,
-    apply = true,
-  }
+	vim.lsp.buf.code_action {
+		filter = function(a)
+			return a.isPreferred
+		end,
+		apply = true,
+	}
 end
 
 vim.keymap.set('n', 'yf', quickfix, opts)
+
+vim.o.conceallevel = 3
+
+vim.api.nvim_set_hl(0, 'NorgMarkupBold', { bold = true })
+vim.api.nvim_set_hl(0, 'NorgMarkupItalic', { italic = true })
