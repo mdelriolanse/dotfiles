@@ -12,6 +12,7 @@ local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
 require('lazy').setup({
+  require 'plugins.luasnip',
   require 'plugins.blink',
   require 'plugins.conform',
   require 'plugins.git-signs',
@@ -19,7 +20,7 @@ require('lazy').setup({
   require 'plugins.guess-indent',
   require 'plugins.kanagawa-theme',
   require 'plugins.neo-tree',
-  require 'plugins.null-ls',
+  -- require 'plugins.null-ls',
   require 'plugins.nvim-lspconfig',
   require 'plugins.telescope',
   require 'plugins.todo-comments',
@@ -27,6 +28,8 @@ require('lazy').setup({
   require 'plugins.which-key',
   require 'plugins.lazy-dev',
   require 'plugins.neorg',
+  require 'plugins.lsp',
+  require 'plugins.cmp-config',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
