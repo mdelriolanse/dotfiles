@@ -28,6 +28,7 @@ require('lazy').setup({
   require 'plugins.which-key',
   require 'plugins.lazy-dev',
   require 'plugins.neorg',
+  require 'plugins.claudecode',
   require 'plugins.lsp',
   require 'plugins.cmp-config',
 }, {
