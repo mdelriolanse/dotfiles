@@ -13,6 +13,8 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+vim.keymap.set('t', '<C-Space>', '<C-\\><C-n>', { desc = 'Master escape from terminal mode' })
+vim.keymap.set('i', '<C-Space>', '<Esc>', { desc = 'Master escape from insert mode' })
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -29,6 +31,18 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 vim.keymap.set('n', '<C-q>', '<C-w><C-q>', { desc = 'Close window' })
+
+-- Insert mode: escape and switch windows
+vim.keymap.set('i', '<C-h>', '<Esc><C-w>h', { desc = 'Escape and move focus left' })
+vim.keymap.set('i', '<C-j>', '<Esc><C-w>j', { desc = 'Escape and move focus down' })
+vim.keymap.set('i', '<C-k>', '<Esc><C-w>k', { desc = 'Escape and move focus up' })
+vim.keymap.set('i', '<C-l>', '<Esc><C-w>l', { desc = 'Escape and move focus right' })
+
+-- Terminal mode: escape and switch windows
+vim.keymap.set('t', '<C-h>', '<C-\\><C-n><C-w>h', { desc = 'Escape terminal and move focus left' })
+vim.keymap.set('t', '<C-j>', '<C-\\><C-n><C-w>j', { desc = 'Escape terminal and move focus down' })
+vim.keymap.set('t', '<C-k>', '<C-\\><C-n><C-w>k', { desc = 'Escape terminal and move focus up' })
+vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w>l', { desc = 'Escape terminal and move focus right' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
