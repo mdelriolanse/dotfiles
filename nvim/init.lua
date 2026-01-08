@@ -31,6 +31,7 @@ require('lazy').setup({
   require 'plugins.claudecode',
   require 'plugins.lsp',
   require 'plugins.cmp-config',
+  require 'plugins.barbecue',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {

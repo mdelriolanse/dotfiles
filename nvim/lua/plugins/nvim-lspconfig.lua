@@ -28,6 +28,12 @@ return {
           map('grt', require('telescope.builtin').lsp_type_definitions, 'Type Definition')
 
           local client = vim.lsp.get_client_by_id(event.data.client_id)
+
+          -- Attach nvim-navic for winbar breadcrumbs
+          if client and client.server_capabilities.documentSymbolProvider then
+            require('nvim-navic').attach(client, event.buf)
+          end
+
           local function supports(method)
             return client
               and (vim.fn.has 'nvim-0.11' == 1 and client:supports_method(method, event.buf) or client.supports_method(method, { bufnr = event.buf }))
