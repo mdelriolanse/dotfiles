@@ -12,7 +12,7 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 --
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 vim.keymap.set('t', '<C-Space>', '<C-\\><C-n>', { desc = 'Master escape from terminal mode' })
 vim.keymap.set('i', '<C-Space>', '<Esc>', { desc = 'Master escape from insert mode' })
 
@@ -50,9 +50,24 @@ vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w>l', { desc = 'Escape terminal and 
 -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
 -- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
 
+-- Window zoom toggle (fullscreen current window)
+local zoom_tab = nil
+local function toggle_zoom()
+  if zoom_tab and vim.api.nvim_tabpage_is_valid(zoom_tab) then
+    -- We're zoomed - close the zoom tab to restore
+    vim.cmd('tabclose')
+    zoom_tab = nil
+  else
+    -- Zoom in - create new tab with current buffer
+    vim.cmd('tab split')
+    zoom_tab = vim.api.nvim_get_current_tabpage()
+  end
+end
+
+vim.keymap.set('n', '<C-w>m', toggle_zoom, { desc = 'Toggle window zoom (maximize)' })
+
 require 'core.snippets'
 vim.keymap.set('n', '<A-t>', function()
-	TermToggle(60)
 	TermToggle(60)
 end, { noremap = true, silent = true })
 vim.keymap.set('t', '<A-t>', '<C-\\><C-n><cmd>lua TermToggle(60)<CR>', { noremap = true, silent = true })
