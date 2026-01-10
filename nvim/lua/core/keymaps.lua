@@ -1,5 +1,4 @@
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ','
+-- Note: mapleader is set in init.lua before lazy.nvim setup
 
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
@@ -76,37 +75,6 @@ vim.keymap.set('n', '<leader>td', function()
 	vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, { silent = true, noremap = true })
 
--- nvim-dap-python keymaps
-vim.keymap.set('n', '<leader>dc', function()
-	require('dap').continue()
-end)
-vim.keymap.set('n', '<leader>ds', function()
-	require('dap').step_over()
-end)
-vim.keymap.set('n', '<leader>di', function()
-	require('dap').step_into()
-end)
-vim.keymap.set('n', '<leader>do', function()
-	require('dap').step_out()
-end)
-vim.keymap.set('n', '<leader>b', function()
-	require('dap').toggle_breakpoint()
-end)
-vim.keymap.set('n', '<leader>B', function()
-	require('dap').set_breakpoint()
-end)
+-- Copy selected text to Windows clipboard with Ctrl+C
+vim.keymap.set({ 'v', 'x' }, '<C-c>', '"+y', { desc = 'Copy selection to Windows clipboard' })
 
-vim.keymap.set('n', '<leader>R', function()
-	local dap = require 'dap'
-	dap.run {
-		type = 'python',
-		request = 'launch',
-		name = 'Launch file', -- must exist to avoid nil error
-		program = '${file}',
-		console = 'integratedTerminal',
-		cwd = vim.fn.expand '~/apps/tensor-atelier/src',
-	}
-end, { desc = 'Debug Python File' })
-
--- neorg
-vim.keymap.set('n', '<leader>d', '<cmd>Neorg workspace dev<CR>')

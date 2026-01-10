@@ -1,3 +1,7 @@
+-- Set leader keys BEFORE lazy.nvim setup so plugin keymaps work correctly
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ','
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
@@ -27,11 +31,11 @@ require('lazy').setup({
   require 'plugins.treesitter',
   require 'plugins.which-key',
   require 'plugins.lazy-dev',
-  require 'plugins.neorg',
   require 'plugins.claudecode',
   require 'plugins.lsp',
   require 'plugins.cmp-config',
   require 'plugins.barbecue',
+  require 'plugins.dap',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {

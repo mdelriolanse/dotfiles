@@ -26,6 +26,9 @@ return {
           map('gO', require('telescope.builtin').lsp_document_symbols, 'Document Symbols')
           map('gW', require('telescope.builtin').lsp_dynamic_workspace_symbols, 'Workspace Symbols')
           map('grt', require('telescope.builtin').lsp_type_definitions, 'Type Definition')
+          map('K', function()
+            vim.lsp.buf.hover({ border = 'rounded' })
+          end, 'Hover Documentation')
 
           local client = vim.lsp.get_client_by_id(event.data.client_id)
 
@@ -68,6 +71,14 @@ return {
             end, 'Toggle Inlay Hints')
           end
         end,
+      })
+
+      -- LSP hover and signature help with borders
+      vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
+        border = 'rounded',
+      })
+      vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(vim.lsp.handlers.signature_help, {
+        border = 'rounded',
       })
 
       -- Diagnostics

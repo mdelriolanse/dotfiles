@@ -27,6 +27,11 @@ return {
           PmenuSbar = { bg = theme.ui.bg_m1 },
           PmenuThumb = { bg = theme.ui.bg_p2 },
 
+          -- LSP hover and floating windows (match Pmenu style)
+          NormalFloat = { fg = theme.ui.shade0, bg = theme.ui.bg_p1 },
+          FloatBorder = { fg = palette.fujiWhite, bg = theme.ui.bg_p1 },
+          FloatTitle = { fg = theme.ui.fg, bg = theme.ui.bg_p1, bold = true },
+
           -- nvim-cmp highlights
           CmpItemAbbr = { fg = theme.ui.fg },
           CmpItemAbbrDeprecated = { fg = theme.syn.comment, strikethrough = true },
