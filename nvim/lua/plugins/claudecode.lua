@@ -1,8 +1,20 @@
 return {
   'coder/claudecode.nvim',
   dependencies = { 'folke/snacks.nvim' },
-  config = true,
   event = 'VeryLazy',
+  opts = {
+    -- Set EDITOR to use nvim-remote-editor for Ctrl+G functionality
+    env = {
+      EDITOR = vim.fn.expand('~/.local/bin/nvim-remote-editor'),
+      VISUAL = vim.fn.expand('~/.local/bin/nvim-remote-editor'),
+    },
+  },
+  config = function(_, opts)
+    -- Load external editor module
+    require('core.external-editor')
+    -- Setup claudecode with opts
+    require('claudecode').setup(opts)
+  end,
   cmd = {
     'ClaudeCode',
     'ClaudeCodeFocus',
