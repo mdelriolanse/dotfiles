@@ -36,6 +36,14 @@ require('lazy').setup({
   require 'plugins.cmp-config',
   require 'plugins.barbecue',
   require 'plugins.dap',
+  require 'plugins.render-markdown',
+  require 'plugins.indent-blankline',
+  require 'plugins.rainbow-delimiters',
+  require 'plugins.smear-cursor',
+  require 'plugins.tiny-glimmer',
+  require 'plugins.flash',
+  require 'plugins.fidget',
+  require 'plugins.swenv',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {

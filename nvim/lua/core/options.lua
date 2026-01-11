@@ -75,3 +75,11 @@ vim.o.conceallevel = 3
 
 vim.api.nvim_set_hl(0, 'NorgMarkupBold', { bold = true })
 vim.api.nvim_set_hl(0, 'NorgMarkupItalic', { italic = true })
+
+-- Ensure Neovim uses the correct Node.js from nvm
+if vim.fn.executable('nvm') == 1 then
+  vim.env.PATH = vim.fn.expand('~/.nvm/versions/node/v18.20.8/bin') .. ':' .. vim.env.PATH
+else
+  -- Fallback: add common Node.js paths
+  vim.env.PATH = vim.fn.expand('~/.local/bin') .. ':' .. vim.env.PATH
+end

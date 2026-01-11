@@ -27,7 +27,7 @@ return {
           map('gW', require('telescope.builtin').lsp_dynamic_workspace_symbols, 'Workspace Symbols')
           map('grt', require('telescope.builtin').lsp_type_definitions, 'Type Definition')
           map('K', function()
-            vim.lsp.buf.hover({ border = 'rounded' })
+            vim.lsp.buf.hover { border = 'rounded' }
           end, 'Hover Documentation')
 
           local client = vim.lsp.get_client_by_id(event.data.client_id)
@@ -141,6 +141,115 @@ return {
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
+          -- Custom handler for pyright to detect venv
+          pyright = function()
+            -- Helper function to log to a debug file
+            local function log_debug(msg)
+              local log_file = vim.fn.stdpath('state') .. '/pyright-venv-debug.log'
+              local timestamp = os.date('%Y-%m-%d %H:%M:%S')
+              local log_line = string.format('[%s] %s\n', timestamp, msg)
+              local file = io.open(log_file, 'a')
+              if file then
+                file:write(log_line)
+                file:close()
+              else
+                -- Fallback: try to create directory if it doesn't exist
+                vim.fn.mkdir(vim.fn.stdpath('state'), 'p')
+                file = io.open(log_file, 'a')
+                if file then
+                  file:write(log_line)
+                  file:close()
+                end
+              end
+            end
+
+            log_debug('=== Pyright handler called ===')
+            
+            local server = servers.pyright or {}
+            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+
+            log_debug('Setting up on_new_config callback')
+
+            -- Helper function to check if a file exists in a directory
+            local function dir_has_file(dir, filename)
+              local filepath = dir .. '/' .. filename
+              return vim.fn.filereadable(filepath) == 1
+            end
+
+            -- Detect venv and set pythonPath in on_new_config
+            server.on_new_config = function(new_config, root_dir)
+              local ok, err = pcall(function()
+                log_debug('=== Pyright venv detection started ===')
+                log_debug('Root directory: ' .. tostring(root_dir))
+              
+              if dir_has_file(root_dir, 'poetry.lock') then
+                log_debug('Found poetry.lock, using poetry')
+                vim.notify_once 'Running `pyright` with `poetry`'
+                new_config.cmd = { 'poetry', 'run', 'pyright-langserver', '--stdio' }
+              elseif dir_has_file(root_dir, 'Pipfile') then
+                log_debug('Found Pipfile, using pipenv')
+                vim.notify_once 'Running `pyright` with `pipenv`'
+                new_config.cmd = { 'pipenv', 'run', 'pyright-langserver', '--stdio' }
+              else
+                log_debug('No poetry.lock or Pipfile found, checking for venv directories')
+                -- Auto-detect venv in project root (check common venv directory names)
+                local venv_names = { '.venv', 'venv', 'env', '.env' }
+                local venv_found = false
+                
+                for _, venv_name in ipairs(venv_names) do
+                  local venv_path = root_dir .. '/' .. venv_name
+                  local python_path = venv_path .. '/bin/python'
+                  
+                  log_debug('Checking venv: ' .. venv_name)
+                  log_debug('  venv_path: ' .. venv_path)
+                  log_debug('  python_path: ' .. python_path)
+                  
+                  local is_dir = vim.fn.isdirectory(venv_path)
+                  local is_executable = vim.fn.executable(python_path)
+                  
+                  log_debug('  isdirectory(' .. venv_path .. '): ' .. tostring(is_dir))
+                  log_debug('  executable(' .. python_path .. '): ' .. tostring(is_executable))
+                  
+                  if is_dir == 1 and is_executable == 1 then
+                    log_debug('  ✓ Venv found and python executable exists!')
+                    new_config.settings = new_config.settings or {}
+                    new_config.settings.python = new_config.settings.python or {}
+                    -- Use both pythonPath (older) and defaultInterpreterPath (newer) for compatibility
+                    new_config.settings.python.pythonPath = python_path
+                    new_config.settings.python.defaultInterpreterPath = python_path
+                    new_config.settings.python.venvPath = root_dir
+                    new_config.settings.python.venv = venv_name
+                    log_debug('  Set pythonPath to: ' .. python_path)
+                    log_debug('  Set venvPath to: ' .. root_dir)
+                    log_debug('  Set venv to: ' .. venv_name)
+                    vim.notify('Pyright: Using venv at ' .. venv_path .. ' (pythonPath: ' .. python_path .. ')', vim.log.levels.INFO)
+                    venv_found = true
+                    break
+                  else
+                    log_debug('  ✗ Venv check failed')
+                  end
+                end
+                
+                if not venv_found then
+                  log_debug('No venv found in any of the checked directories')
+                end
+              end
+              
+              log_debug('=== Pyright venv detection finished ===\n')
+              end) -- end pcall
+              
+              if not ok then
+                log_debug('ERROR in on_new_config: ' .. tostring(err))
+                vim.notify('Pyright venv detection error: ' .. tostring(err), vim.log.levels.ERROR)
+              end
+            end
+
+            log_debug('Calling lspconfig.pyright.setup()')
+            require('lspconfig').pyright.setup(server)
+            log_debug('Pyright setup complete\n')
+          end,
+          -- Disable pylsp since we use pyright for Python
+          pylsp = function() end,
         },
       }
     end,
