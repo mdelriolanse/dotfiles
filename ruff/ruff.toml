@@ -1,0 +1,8 @@
+# Ruff configuration
+# https://docs.astral.sh/ruff/configuration/
+
+# Ignore E501 (line too long) globally
+lint.ignore = ["E501"]
+
+# Set a more reasonable line length (optional, for other rules)
+line-length = 120

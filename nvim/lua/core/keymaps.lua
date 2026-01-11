@@ -78,3 +78,7 @@ end, { silent = true, noremap = true })
 -- Copy selected text to Windows clipboard with Ctrl+C
 vim.keymap.set({ 'v', 'x' }, '<C-c>', '"+y', { desc = 'Copy selection to Windows clipboard' })
 
+-- Python virtual environment switcher
+vim.keymap.set('n', '<leader>pv', '<cmd>SwenvPick<CR>', { desc = '[P]ick Python [V]env' })
+vim.keymap.set('n', '<leader>pV', '<cmd>SwenvCurrent<CR>', { desc = 'Show current Python [V]env' })
+
