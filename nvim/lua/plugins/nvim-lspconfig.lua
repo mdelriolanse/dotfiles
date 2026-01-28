@@ -126,11 +126,29 @@ return {
             },
           },
         },
+        -- Hardware development LSPs
+        rust_hdl = {
+          filetypes = { 'vhdl', 'verilog', 'systemverilog' },
+        },
+        verible = {
+          filetypes = { 'verilog', 'systemverilog' },
+        },
       }
 
       -- Install servers & tools
-      local ensure_installed = vim.tbl_keys(servers)
+      -- Filter out hardware LSPs that may not be available in Mason
+      local mason_servers = {}
+      for server_name, _ in pairs(servers) do
+        if server_name ~= 'rust_hdl' and server_name ~= 'verible' then
+          table.insert(mason_servers, server_name)
+        end
+      end
+      local ensure_installed = mason_servers
       vim.list_extend(ensure_installed, { 'stylua', 'clangd', 'pyright' })
+      -- Note: rust_hdl, verible, and vsg need manual installation:
+      -- rust_hdl: Install via cargo: cargo install rust_hdl
+      -- verible: Download from https://github.com/chipsalliance/verible/releases or install via package manager
+      -- vsg: Install via pip: pip install vsg
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
       -- Setup servers
