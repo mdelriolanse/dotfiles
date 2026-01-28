@@ -18,6 +18,7 @@ rtp:prepend(lazypath)
 require('lazy').setup({
   require 'plugins.luasnip',
   require 'plugins.blink',
+  require 'plugins.csvview',
   require 'plugins.conform',
   require 'plugins.git-signs',
   require 'plugins.lua-rocks',
