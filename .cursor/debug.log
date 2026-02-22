@@ -1,0 +1,4 @@
+{"hypothesisId": "A", "runId": "run1", "location": "mini-animate.lua", "message": "config function called", "timestamp": 1768156859000, "sessionId": "debug-session", "data": {"event": "VeryLazy triggered"}}
+{"hypothesisId": "B", "runId": "run1", "location": "mini-animate.lua", "message": "require mini.animate result", "timestamp": 1768156859000, "sessionId": "debug-session", "data": {"ok": true, "type": "table"}}
+{"hypothesisId": "C", "runId": "run1", "location": "mini-animate.lua", "message": "setup() result", "timestamp": 1768156859000, "sessionId": "debug-session", "data": {"ok": true}}
+{"hypothesisId": "C", "runId": "run1", "location": "mini-animate.lua", "message": "environment check", "timestamp": 1768156859000, "sessionId": "debug-session", "data": {"term": "xterm-256color", "nvim_version": "0.11.2", "termguicolors": true}}
