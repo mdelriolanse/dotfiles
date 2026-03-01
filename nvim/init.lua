@@ -44,6 +44,7 @@ require('lazy').setup({
   require 'plugins.tiny-glimmer',
   require 'plugins.flash',
   require 'plugins.fidget',
+  require 'plugins.lualine',
   require 'plugins.swenv',
 }, {
   ui = {
