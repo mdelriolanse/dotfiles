@@ -48,6 +48,8 @@ vim.o.cursorline = true
 vim.o.scrolloff = 10
 vim.o.confirm = true
 
+vim.o.cmdheight = 0
+
 vim.opt.cursorline = false
 
 vim.keymap.set('n', '<Tab>', ':bnext<CR>', opts)
