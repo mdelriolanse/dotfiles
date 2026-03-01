@@ -46,6 +46,7 @@ require('lazy').setup({
   require 'plugins.fidget',
   require 'plugins.lualine',
   require 'plugins.swenv',
+  require 'plugins.oil',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
