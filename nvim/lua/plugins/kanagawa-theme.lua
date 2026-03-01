@@ -68,7 +68,7 @@ return {
           CmpItemKindTypeParameter = { fg = palette.dragonGreen2 },
         }
       end,
-      theme = 'dragon', -- Load "wave" theme
+      theme = 'dragon', -- Load "dragon" theme
       background = { -- map the value of 'background' option to a theme
         dark = 'dragon',
         light = 'lotus',
