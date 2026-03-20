@@ -48,6 +48,7 @@ require('lazy').setup({
   require 'plugins.swenv',
   require 'plugins.oil',
   require 'plugins.ssh-remote',
+  require 'plugins.neogit',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
