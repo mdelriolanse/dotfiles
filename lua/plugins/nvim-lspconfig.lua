@@ -103,8 +103,22 @@ return {
       -- Servers
       local servers = {
         clangd = {
-          cmd = { 'clangd', '--background-index', '--clang-tidy' },
+          cmd = {
+            'clangd',
+            '--background-index',
+            '--clang-tidy',
+            '--header-insertion=iwyu',
+            '--completion-style=detailed',
+            '--function-arg-placeholders',
+            '--fallback-style=llvm',
+            '--offset-encoding=utf-16',
+          },
           filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'cuda', 'proto' },
+          init_options = {
+            usePlaceholders = true,
+            completeUnimported = true,
+            clangdFileStatus = true,
+          },
         },
         pyright = {
           filetypes = { 'python' },
@@ -144,7 +158,9 @@ return {
         end
       end
       local ensure_installed = mason_servers
-      vim.list_extend(ensure_installed, { 'stylua', 'clangd', 'pyright' })
+      -- clang-format intentionally NOT in Mason: Mason installs it via a pip venv,
+      -- which fails without python3-venv. Install via apt instead: `sudo apt install clang-format`.
+      vim.list_extend(ensure_installed, { 'stylua', 'clangd', 'pyright', 'codelldb' })
       -- Note: rust_hdl, verible, and vsg need manual installation:
       -- rust_hdl: Install via cargo: cargo install rust_hdl
       -- verible: Download from https://github.com/chipsalliance/verible/releases or install via package manager
