@@ -23,7 +23,7 @@ require('lazy').setup({
   require 'plugins.git-signs',
   require 'plugins.lua-rocks',
   require 'plugins.guess-indent',
-  require 'plugins.kanagawa-theme',
+  require 'plugins.catppuccin',
   require 'plugins.neo-tree',
   -- require 'plugins.null-ls',
   require 'plugins.nvim-lspconfig',
@@ -72,4 +72,5 @@ require 'core.options'
 require 'core.snippets'
 require 'core.keymaps'
 require 'core.autocmds'
+require 'core.c-cpp'
 require 'colors'
