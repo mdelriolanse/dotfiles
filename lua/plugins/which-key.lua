@@ -65,6 +65,7 @@ return {
 				{ '<leader>d', group = '[D]ebug' },
 				{ '<leader>s', group = '[S]earch' },
 				{ '<leader>t', group = '[T]oggle' },
+				{ '<leader>o', desc = '[O]utline (toggle popup)' },
 				{ '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
 				{ '<leader>r', group = '[R]emote' },
 			},

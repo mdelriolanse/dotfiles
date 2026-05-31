@@ -36,6 +36,7 @@ require('lazy').setup({
   require 'plugins.lsp',
   require 'plugins.cmp-config',
   require 'plugins.barbecue',
+  require 'plugins.aerial',
   require 'plugins.dap',
   require 'plugins.render-markdown',
   require 'plugins.indent-blankline',
