@@ -71,32 +71,119 @@ local function close_if_open(win_ref)
   return false
 end
 
--- Smart hover: prefer LSP (project symbols, clangd for C/C++), fall back to
--- man pages for C/shell, :help for vim/lua, man pages otherwise.
--- Pressing the keybind again closes the float.
-local function smart_hover()
-  if close_if_open(hover_win) then hover_win = nil; return end
-  local prev = vim.api.nvim_list_wins()
-  local prev_set = {}
-  for _, w in ipairs(prev) do prev_set[w] = true end
-  local function capture_new_float()
-    vim.schedule(function()
-      for _, w in ipairs(vim.api.nvim_list_wins()) do
-        if not prev_set[w] and vim.api.nvim_win_get_config(w).relative ~= '' then
-          hover_win = w
-          return
+-- Find an LSP-hover-style floating window. LSP hover floats have filetype
+-- 'markdown' (or 'lsp-hover') in a floating window. Scanning each call sidesteps
+-- the async race where vim.lsp.buf.hover() creates the float after we return.
+local function find_hover_float()
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_is_valid(w) then
+      local cfg = vim.api.nvim_win_get_config(w)
+      if cfg.relative ~= '' then
+        local ft = vim.bo[vim.api.nvim_win_get_buf(w)].filetype
+        if ft == 'markdown' or ft == 'lsp-hover' or ft == 'lsp-floating-preview' then
+          return w
         end
       end
-    end)
-  end
-  for _, c in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
-    if c:supports_method('textDocument/hover') then
-      vim.lsp.buf.hover({ border = 'rounded' })
-      capture_new_float()
-      return
     end
   end
+end
+
+-- Pull the RETURN VALUE and ERRORS sections from a man page so a hover tells
+-- us not just the return *type* but which value signals an error and which
+-- errno values to expect. Tries syscall (2) then libc (3) then any section.
+-- Returns markdown lines, or nil if the word has no man page.
+local MAN_SECTIONS = { ['RETURN VALUE'] = true, ['ERRORS'] = true }
+local function man_return_sections(word)
+  if not word:match('^[%w_]+$') then return nil end
+  local cmd = string.format(
+    'for s in 2 3 ""; do o=$(MANWIDTH=80 man $s %s 2>/dev/null | col -bx); '
+      .. '[ -n "$o" ] && { printf %%s "$o"; break; }; done',
+    word
+  )
+  local raw = vim.fn.systemlist({ 'sh', '-c', cmd })
+  if vim.v.shell_error ~= 0 or vim.tbl_isempty(raw) then return nil end
+  local out, capturing = {}, false
+  for _, l in ipairs(raw) do
+    if l:match('^[A-Z][A-Z ]+$') then
+      capturing = MAN_SECTIONS[l] == true
+      if capturing then
+        if #out > 0 then table.insert(out, '') end
+        table.insert(out, '**' .. l .. '**')
+      end
+    elseif capturing then
+      table.insert(out, (l:gsub('^%s+', '')))
+    end
+  end
+  return #out > 0 and out or nil
+end
+
+-- Smart hover: prefer LSP (project symbols, clangd for C/C++) and, for words
+-- with a man page, append the RETURN VALUE + ERRORS sections beneath the
+-- signature. Falls back to a man-only float, then :help / :Man.
+-- Pressing the keybind again (from main buffer OR from inside the float) closes it.
+local function smart_hover()
+  local existing = find_hover_float()
+  if existing then
+    pcall(vim.api.nvim_win_close, existing, true)
+    return
+  end
+
   local word = vim.fn.expand('<cword>')
+  local man = word ~= '' and man_return_sections(word) or nil
+
+  local function append_man(lines)
+    if not man then return lines end
+    if #lines > 0 then
+      table.insert(lines, '')
+      table.insert(lines, '---')
+      table.insert(lines, '')
+    end
+    return vim.list_extend(lines, man)
+  end
+
+  local hover_client
+  for _, c in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
+    if c:supports_method('textDocument/hover') then
+      hover_client = c
+      break
+    end
+  end
+
+  if hover_client then
+    local params = vim.lsp.util.make_position_params(0, hover_client.offset_encoding)
+    vim.lsp.buf_request_all(0, 'textDocument/hover', params, function(results)
+      local lines = {}
+      for _, r in pairs(results or {}) do
+        local result = r.result or r
+        if result and result.contents then
+          vim.list_extend(lines, vim.lsp.util.convert_input_to_markdown_lines(result.contents))
+        end
+      end
+      lines = append_man(lines)
+      if vim.tbl_isempty(lines) then
+        vim.notify('No hover docs for ' .. word, vim.log.levels.INFO)
+        return
+      end
+      vim.lsp.util.open_floating_preview(lines, 'markdown', {
+        border = 'rounded',
+        focusable = true,
+        wrap = true,
+        max_width = 80,
+      })
+    end)
+    return
+  end
+
+  if man then
+    vim.lsp.util.open_floating_preview(man, 'markdown', {
+      border = 'rounded',
+      focusable = true,
+      wrap = true,
+      max_width = 80,
+    })
+    return
+  end
+
   if word == '' then
     vim.notify('No word under cursor', vim.log.levels.INFO)
     return
@@ -108,7 +195,7 @@ local function smart_hover()
     vim.notify(err or ('No docs for ' .. word), vim.log.levels.INFO)
   end
 end
-vim.keymap.set('n', '<C-k>', smart_hover, { desc = 'Hover docs (LSP → man/help), toggle' })
+vim.keymap.set('n', '<A-k>', smart_hover, { desc = 'Hover docs (LSP → man/help), toggle' })
 
 local function toggle_line_diagnostics()
   if close_if_open(diag_win) then diag_win = nil; return end
