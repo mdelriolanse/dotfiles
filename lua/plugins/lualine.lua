@@ -1,10 +1,15 @@
 return {
   'nvim-lualine/lualine.nvim',
-  dependencies = { 'nvim-tree/nvim-web-devicons' },
+  dependencies = { 'nvim-tree/nvim-web-devicons', 'catppuccin/nvim' },
   event = 'VeryLazy',
-  opts = {
+  opts = function()
+    local ok, theme = pcall(require, 'lualine.themes.catppuccin-mocha')
+    if not ok then
+      ok, theme = pcall(require, 'lualine.themes.catppuccin')
+    end
+    return {
     options = {
-      theme = 'catppuccin',
+      theme = ok and theme or 'auto',
       icons_enabled = true,
       globalstatus = true,
       component_separators = { left = '', right = '' },
@@ -45,5 +50,6 @@ return {
       lualine_z = { 'location' },
     },
     extensions = { 'neo-tree', 'lazy', 'mason', 'fugitive', 'quickfix', 'nvim-dap-ui' },
-  },
+    }
+  end,
 }
