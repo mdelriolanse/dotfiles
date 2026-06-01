@@ -55,13 +55,14 @@ vim.keymap.set('n', '<Esc><Esc>', close_view, { desc = 'Close current view (term
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<cmd>wincmd h<CR>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<cmd>wincmd l<CR>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<cmd>wincmd j<CR>', { desc = 'Move focus to the lower window' })
--- <C-k> reassigned to smart_hover below; use native <C-w>k for window-up.
+-- Seamless nav across nvim splits AND tmux panes (vim-tmux-navigator).
+vim.keymap.set('n', '<C-h>', '<cmd>TmuxNavigateLeft<CR>', { desc = 'Move focus left (nvim split / tmux pane)' })
+vim.keymap.set('n', '<C-l>', '<cmd>TmuxNavigateRight<CR>', { desc = 'Move focus right (nvim split / tmux pane)' })
+vim.keymap.set('n', '<C-j>', '<cmd>TmuxNavigateDown<CR>', { desc = 'Move focus down (nvim split / tmux pane)' })
+vim.keymap.set('n', '<C-k>', '<cmd>TmuxNavigateUp<CR>', { desc = 'Move focus up (nvim split / tmux pane)' })
 
--- Track floats we opened so the same keybind can toggle them closed.
-local hover_win, diag_win = nil, nil
+-- Track the diagnostic float (synchronous open returns its winid).
+local diag_win = nil
 local function close_if_open(win_ref)
   if win_ref and vim.api.nvim_win_is_valid(win_ref) then
     pcall(vim.api.nvim_win_close, win_ref, true)
@@ -117,17 +118,17 @@ end
 vim.keymap.set('n', '<leader>l', toggle_line_diagnostics, { desc = 'Toggle diagnostics for current [L]ine (float)' })
 vim.keymap.set('n', '<C-q>', '<cmd>close<CR>', { desc = 'Close window' })
 
--- Insert mode: escape and switch windows
-vim.keymap.set('i', '<C-h>', '<Esc><C-w>h', { desc = 'Escape and move focus left' })
-vim.keymap.set('i', '<C-j>', '<Esc><C-w>j', { desc = 'Escape and move focus down' })
--- <C-k> in insert mode dropped — would conflict with smart_hover idiom; use <Esc><C-w>k.
-vim.keymap.set('i', '<C-l>', '<Esc><C-w>l', { desc = 'Escape and move focus right' })
+-- Insert mode: escape and switch (nvim split / tmux pane)
+vim.keymap.set('i', '<C-h>', '<Esc><cmd>TmuxNavigateLeft<CR>', { desc = 'Escape and move focus left' })
+vim.keymap.set('i', '<C-j>', '<Esc><cmd>TmuxNavigateDown<CR>', { desc = 'Escape and move focus down' })
+vim.keymap.set('i', '<C-k>', '<Esc><cmd>TmuxNavigateUp<CR>', { desc = 'Escape and move focus up' })
+vim.keymap.set('i', '<C-l>', '<Esc><cmd>TmuxNavigateRight<CR>', { desc = 'Escape and move focus right' })
 
--- Terminal mode: escape and switch windows
-vim.keymap.set('t', '<C-h>', '<C-\\><C-n><C-w>h', { desc = 'Escape terminal and move focus left' })
-vim.keymap.set('t', '<C-j>', '<C-\\><C-n><C-w>j', { desc = 'Escape terminal and move focus down' })
--- <C-k> in terminal mode dropped — reserved for symmetry with smart_hover; use <C-\><C-n><C-w>k.
-vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w>l', { desc = 'Escape terminal and move focus right' })
+-- Terminal mode: escape and switch (nvim split / tmux pane)
+vim.keymap.set('t', '<C-h>', '<C-\\><C-n><cmd>TmuxNavigateLeft<CR>', { desc = 'Escape terminal and move focus left' })
+vim.keymap.set('t', '<C-j>', '<C-\\><C-n><cmd>TmuxNavigateDown<CR>', { desc = 'Escape terminal and move focus down' })
+vim.keymap.set('t', '<C-k>', '<C-\\><C-n><cmd>TmuxNavigateUp<CR>', { desc = 'Escape terminal and move focus up' })
+vim.keymap.set('t', '<C-l>', '<C-\\><C-n><cmd>TmuxNavigateRight<CR>', { desc = 'Escape terminal and move focus right' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
