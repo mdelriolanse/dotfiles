@@ -284,3 +284,12 @@ vim.keymap.set('n', '<leader>br', function()
   require('core.buffer-refresh').refresh()
 end, { desc = '[B]uffer [R]efresh (warn if unsaved)' })
 
+-- Line notes: Google-Docs-style local comments attached to lines (core/notes.lua).
+local notes = require('core.notes')
+notes.setup()
+vim.keymap.set('n', '<A-c>', notes.add, { desc = '[N]ote: add/edit on current line' })
+vim.keymap.set('x', '<A-c>', notes.add_visual, { desc = '[N]ote: add for selected range' })
+vim.keymap.set('n', '<leader>nv', notes.view, { desc = '[N]ote: [V]iew on current line (float)' })
+vim.keymap.set('n', '<leader>nd', notes.delete, { desc = '[N]ote: [D]elete on current line' })
+vim.keymap.set('n', '<leader>nl', notes.list, { desc = '[N]ote: [L]ist all (Telescope)' })
+
