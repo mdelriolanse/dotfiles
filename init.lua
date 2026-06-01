@@ -21,6 +21,7 @@ require('lazy').setup({
   require 'plugins.csvview',
   require 'plugins.conform',
   require 'plugins.git-signs',
+  require 'plugins.diffview',
   require 'plugins.lua-rocks',
   require 'plugins.guess-indent',
   require 'plugins.catppuccin',
