@@ -15,6 +15,9 @@ return {
       backends = { 'lsp', 'treesitter', 'markdown', 'man' },
       layout = {
         default_direction = 'float', -- popup, not a docked sidebar
+        -- Wider popup: at least 50 cols (or 35% of the editor), up to 60%.
+        min_width = { 50, 0.35 },
+        max_width = { 0.6 },
       },
       -- Symbols stay in file order (top-to-bottom); this is aerial's default.
       -- filter_kind = false shows everything: functions, structs, fields,
