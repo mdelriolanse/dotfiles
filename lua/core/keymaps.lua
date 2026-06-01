@@ -239,6 +239,25 @@ end
 
 vim.keymap.set('n', '<C-w>m', toggle_zoom, { desc = 'Toggle window zoom (maximize)' })
 
+-- Adjust current window width. Step defaults to 5; an optional count overrides
+-- it, e.g. 10<C-w>> grows by 10. Repeatable: hold <C-w>, tap < or >.
+local function resize_width(sign)
+  return function()
+    local step = vim.v.count > 0 and vim.v.count or 5
+    vim.cmd('vertical resize ' .. sign .. step)
+  end
+end
+vim.keymap.set('n', '<C-w><', resize_width('-'), { desc = 'Shrink window width (count = step)' })
+vim.keymap.set('n', '<C-w>>', resize_width('+'), { desc = 'Grow window width (count = step)' })
+
+-- Equalize window widths only (even vertical splits), leaving heights alone.
+vim.keymap.set('n', '<C-w>=', function()
+  local ead = vim.o.eadirection
+  vim.o.eadirection = 'hor'
+  vim.cmd('wincmd =')
+  vim.o.eadirection = ead
+end, { desc = 'Equalize window widths (even vertical splits)' })
+
 require 'core.snippets'
 vim.keymap.set('n', '<A-t>', function()
 	TermToggle(60)
