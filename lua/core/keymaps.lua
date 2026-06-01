@@ -3,11 +3,16 @@
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 vim.keymap.set('n', '<leader>e', function()
   vim.diagnostic.setloclist({ severity = vim.diagnostic.severity.ERROR })
   vim.cmd('lopen')
 end, { desc = '[E]rrors (current buffer) in location list' })
+
+-- Tab navigation (gt-style)
+vim.keymap.set('n', 'gt', '<cmd>tabnext<CR>', { desc = 'Next tab' })
+vim.keymap.set('n', 'gT', '<cmd>tabprevious<CR>', { desc = 'Previous tab' })
+vim.keymap.set('n', 'gn', '<cmd>tabnew<CR>', { desc = 'New tab' })
+vim.keymap.set('n', 'gc', '<cmd>tabclose<CR>', { desc = 'Close tab' })
 
 -- Double-Esc is the universal "close this view" binding.
 -- Single Esc keeps its normal vim role everywhere (mode exit, nohlsearch),
