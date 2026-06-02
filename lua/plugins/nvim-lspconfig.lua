@@ -9,6 +9,28 @@ return {
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
+      -- Keep LSP off non-file buffers. Clients sometimes attach to read-only
+      -- VCS blobs (diffview://…, gitsigns://…, fugitive://…) via client reuse.
+      -- clangd rejects those URIs ("only supports 'file' URI scheme") with a
+      -- -32602 error, which nvim's handler echoes on every idle documentHighlight
+      -- request -> "Press ENTER" spam under cmdheight=0. Detach immediately so no
+      -- request is ever sent for them.
+      vim.api.nvim_create_autocmd('LspAttach', {
+        group = vim.api.nvim_create_augroup('lsp-detach-nonfile', { clear = true }),
+        callback = function(event)
+          local name = vim.api.nvim_buf_get_name(event.buf)
+          if name:match '^%w+://' and not name:match '^file://' then
+            -- Detach synchronously, before the attach machinery schedules any
+            -- request (documentHighlight, semanticTokens) for the non-file URI —
+            -- those would be rejected by the server and the error echoed on every
+            -- idle tick. Also stop semantic tokens explicitly, whose deferred
+            -- start would otherwise warn "Client … not attached" post-detach.
+            pcall(vim.lsp.semantic_tokens.stop, event.buf, event.data.client_id)
+            vim.lsp.buf_detach_client(event.buf, event.data.client_id)
+          end
+        end,
+      })
+
       -- Keymaps when LSP attaches
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('lsp-attach', { clear = true }),
@@ -42,8 +64,13 @@ return {
               and (vim.fn.has 'nvim-0.11' == 1 and client:supports_method(method, event.buf) or client.supports_method(method, { bufnr = event.buf }))
           end
 
-          -- Highlight references
-          if supports(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
+          -- Highlight references on idle. Restrict to real file buffers
+          -- (buftype == ''): on special buffers like diffview's read-only
+          -- diff views (diffview://…, buftype=nowrite) the CursorHold request
+          -- errors against the non-file URI and, with our low updatetime,
+          -- echoes that error every idle tick -> "Press ENTER" prompt spam.
+          if vim.bo[event.buf].buftype == ''
+            and supports(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
             local hl = vim.api.nvim_create_augroup('lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
