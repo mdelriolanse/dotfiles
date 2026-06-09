@@ -24,7 +24,7 @@ Load the `/tdd` skill and enforce its red-green-refactor cycle. Do not mark any 
 If and only if the current build includes a frontend component, you must perform visual validation as a mandatory testing step:
 
 1. Launch the working version of the frontend from the current worktree on its own dedicated port (e.g., 3001, 3002, etc.).
-2. Use the Browserbase MCP to visually inspect and validate all changes on the fully working frontend.
+2. Use a browser-automation MCP — **Browserbase or Playwright** (interchangeable; use whichever is configured) — to visually inspect and validate all changes on the fully working frontend.
 3. Do not consider the task complete until visual validation passes alongside the automated test suite.
 
 ### Backend API Pre-Flight Validation (Non-Negotiable)
