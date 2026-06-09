@@ -1,0 +1,26 @@
+# ============================================================================
+# Secrets — NEVER commit these. They live on disk (gitignored) and are
+# hand-copied / regenerated per machine. See secrets/secrets.env.example.
+# ============================================================================
+secrets/secrets.env
+# Cursor's real MCP config holds live API keys; only mcp.json.example is tracked.
+cursor/dot-cursor/mcp.json
+
+# ============================================================================
+# Transient / machine-generated
+# ============================================================================
+**/node_modules/
+*.bak
+*.bak.*
+
+# Cursor heavy state / binaries (never centralized, listed defensively)
+cursor/dot-cursor/extensions/
+cursor/dot-cursor/projects/
+cursor/dot-cursor/worktrees/
+cursor/dot-cursor/ai-tracking/
+cursor/dot-cursor/.claude/
+cursor/dot-cursor/statsig-cache.json
+cursor/dot-cursor/ide_state.json
+cursor/User/globalStorage/
+cursor/User/History/
+cursor/User/workspaceStorage/
