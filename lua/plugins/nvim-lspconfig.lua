@@ -13,21 +13,35 @@ return {
       -- VCS blobs (diffview://…, gitsigns://…, fugitive://…) via client reuse.
       -- clangd rejects those URIs ("only supports 'file' URI scheme") with a
       -- -32602 error, which nvim's handler echoes on every idle documentHighlight
-      -- request -> "Press ENTER" spam under cmdheight=0. Detach immediately so no
-      -- request is ever sent for them.
-      vim.api.nvim_create_autocmd('LspAttach', {
+      -- request -> "Press ENTER" spam under cmdheight=0. Detach so no request is
+      -- ever sent for them.
+      --
+      -- Three subtleties this guards against:
+      --   1. Check the *resolved* URI (vim.uri_from_bufnr — exactly what nvim
+      --      sends the server), not the raw name regex: it's the ground truth and
+      --      covers schemes the regex would miss.
+      --   2. Re-check on BufWinEnter, not just LspAttach: diffview names some
+      --      blob buffers *after* the client attaches (and with buftype=''), so an
+      --      attach-time-only check sees an empty/temp name and misses the detach.
+      --   3. Defer with vim.schedule + pcall: diffview swaps these buffers into
+      --      windows from inside an async coroutine (nvim_win_set_buf). Detaching
+      --      synchronously there reenters LSP change-tracking mid-setup and throws
+      --      "_changetracking.lua: attempt to index local 'buf_state' (a nil
+      --      value)", killing diffview. Running on the next tick lets diffview
+      --      finish its step first; pcall absorbs any residual race.
+      local function detach_if_nonfile(buf)
+        if not vim.api.nvim_buf_is_valid(buf) then return end
+        if vim.uri_from_bufnr(buf):sub(1, 7) == 'file://' then return end
+        for _, client in ipairs(vim.lsp.get_clients { bufnr = buf }) do
+          pcall(vim.lsp.semantic_tokens.stop, buf, client.id)
+          pcall(vim.lsp.buf_detach_client, buf, client.id)
+        end
+      end
+      vim.api.nvim_create_autocmd({ 'LspAttach', 'BufWinEnter' }, {
         group = vim.api.nvim_create_augroup('lsp-detach-nonfile', { clear = true }),
         callback = function(event)
-          local name = vim.api.nvim_buf_get_name(event.buf)
-          if name:match '^%w+://' and not name:match '^file://' then
-            -- Detach synchronously, before the attach machinery schedules any
-            -- request (documentHighlight, semanticTokens) for the non-file URI —
-            -- those would be rejected by the server and the error echoed on every
-            -- idle tick. Also stop semantic tokens explicitly, whose deferred
-            -- start would otherwise warn "Client … not attached" post-detach.
-            pcall(vim.lsp.semantic_tokens.stop, event.buf, event.data.client_id)
-            vim.lsp.buf_detach_client(event.buf, event.data.client_id)
-          end
+          local buf = event.buf
+          vim.schedule(function() detach_if_nonfile(buf) end)
         end,
       })
 
@@ -75,7 +89,14 @@ return {
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
               group = hl,
-              callback = vim.lsp.buf.document_highlight,
+              -- Final guard at request time: a buftype='' buffer can still carry
+              -- a non-file name (diffview blobs are renamed after attach), so
+              -- re-check the resolved URI — what clangd actually receives —
+              -- before asking, or it answers with a -32602.
+              callback = function()
+                if vim.uri_from_bufnr(0):sub(1, 7) ~= 'file://' then return end
+                vim.lsp.buf.document_highlight()
+              end,
             })
             vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
               buffer = event.buf,
