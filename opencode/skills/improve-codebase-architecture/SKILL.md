@@ -28,6 +28,8 @@ Key principles (see [LANGUAGE.md](LANGUAGE.md) for the full list):
 
 This skill is _informed_ by the project's domain model. The domain language gives names to good seams; ADRs record decisions the skill should not re-litigate.
 
+> **Memory checkpoint:** before proposing changes, `memory_smart_search` for prior architecture decisions and domain language in this area. `memory_save` accepted deepening decisions (type: `architecture`, including the trade-off/why).
+
 ## Process
 
 ### 1. Explore
