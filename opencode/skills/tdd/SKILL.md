@@ -98,34 +98,7 @@ After all tests pass, look for [refactor candidates](refactoring.md):
 
 **Never refactor while RED.** Get to GREEN first.
 
-## Build-Specific Testing Requirements
-
-### Frontend Visual Validation (Non-Negotiable)
-
-If and only if the current build includes a frontend component, you must perform visual validation as a mandatory testing step:
-
-1. Launch the working version of the frontend from the current worktree on its own dedicated port (e.g., 3001, 3002, etc.).
-2. Use the Browserbase MCP to visually inspect and validate all changes on the fully working frontend.
-3. Do not consider the task complete until visual validation passes alongside the automated test suite.
-
-### Backend API Pre-Flight Validation (Non-Negotiable)
-
-If and only if the current build includes a backend component, you must validate API accessibility before launching the TDD pipeline:
-
-1. **Conservative API Usage in Tests:** All tests must contain only a conservative, strictly necessary amount of legitimate API calls. Avoid excessive or redundant calls to external services.
-2. **Preliminary Subagent:** The orchestrator must launch a dedicated preliminary subagent before delegating to the TDD pipeline subagents.
-3. **Health-Check Task:** This preliminary subagent must identify all external APIs required by the test suite and perform a legitimate, conservative API health-check call for each endpoint to confirm it is fully accessible.
-4. **Abort on Failure:** If any required API is unreachable or returns non-successful responses, abort the entire pipeline immediately and notify the user with the exact failing endpoint(s) and error details.
-5. **Gate:** Do not proceed with subagent delegation for the TDD pipeline until all APIs are confirmed accessible by the preliminary subagent.
-
-### End-to-End Test Orchestration (Non-Negotiable)
-
-Once all phases or tasks assigned to individual subagents are marked complete, the orchestrator must:
-
-1. **Autonomously Trigger E2E:** Run the end-to-end (e2e) test for the entire build itself, without waiting for user instruction.
-2. **Monitor Execution:** Actively monitor the e2e test execution for pass/fail status and logs.
-3. **Delegate Debugging on Failure:** If any part of the e2e test fails, the orchestrator must immediately launch dedicated subagents to investigate and fix the failures.
-4. **No Self-Debugging:** Under no circumstances should the orchestrator attempt to debug, diagnose, or fix e2e failures itself. Doing so risks severe context bloat and must be avoided by strictly delegating to subagents.
+> For multi-agent **build** orchestration — frontend visual validation, backend API pre-flight, and end-to-end test orchestration — see the `handoff-build` command. This skill stays focused on the red-green-refactor loop itself.
 
 ## Checklist Per Cycle
 
