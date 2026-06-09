@@ -7,38 +7,31 @@
   // Agent configurations
   "agent": {
     "coder": {
-      "model": "deepinfra/moonshotai/Kimi-K2.6",
       "maxTokens": 8192,
       "reasoningEffort": "high",
       "prompt": "{file:./instructions/subagent-system.md}"
     },
     "architect": {
-      "model": "deepinfra/moonshotai/Kimi-K2.6",
       "prompt": "{file:./instructions/subagent-system.md}"
     },
     "build": {
       "mode": "primary",
-      "model": "deepinfra/moonshotai/Kimi-K2.6",
       "prompt": "{file:./instructions/subagent-system.md}"
     },
     "plan": {
       "mode": "primary",
-      "model": "deepinfra/moonshotai/Kimi-K2.6",
       "prompt": "{file:./instructions/subagent-system.md}"
     },
     "general": {
       "mode": "subagent",
-      "model": "deepinfra/moonshotai/Kimi-K2.6",
       "prompt": "{file:./instructions/subagent-system.md}"
     },
     "explore": {
       "mode": "subagent",
-      "model": "deepinfra/moonshotai/Kimi-K2.6",
       "prompt": "{file:./instructions/subagent-system.md}"
     },
     "scout": {
       "mode": "subagent",
-      "model": "deepinfra/moonshotai/Kimi-K2.6",
       "prompt": "{file:./instructions/subagent-system.md}"
     }
   },

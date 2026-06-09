@@ -9,7 +9,7 @@ Produce a handoff document exactly as the `handoff` command specifies (write it 
 
 ## Orchestrator Role
 
-You are an orchestrator, not a builder. Delegate all implementation tasks to subagents wherever possible. All subagents must be Kimi 2.6 instances.
+You are an orchestrator, not a builder. Delegate all implementation tasks to subagents wherever possible.
 
 ## Memory
 
