@@ -24,3 +24,6 @@ cursor/dot-cursor/ide_state.json
 cursor/User/globalStorage/
 cursor/User/History/
 cursor/User/workspaceStorage/
+
+# Project-specific agent plans — never centralize
+cursor/dot-cursor/plans/
