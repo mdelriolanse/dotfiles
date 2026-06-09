@@ -9,6 +9,14 @@ DEST="$HOME/.cursor/skills"
 
 mkdir -p "$DEST"
 
+# Prune stale links: drop any symlink in DEST whose target no longer exists
+# (e.g. a skill that was deleted/renamed in the source tree).
+find "$DEST" -maxdepth 1 -type l ! -exec test -e {} \; -print0 2>/dev/null |
+while IFS= read -r -d '' dangling; do
+  rm -f "$dangling"
+  echo "pruned stale link $(basename "$dangling")"
+done
+
 find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0 |
 while IFS= read -r -d '' skill_md; do
   src="$(dirname "$skill_md")"

@@ -55,8 +55,16 @@ link "$HOME/.config/Cursor/User/snippets"          "$REPO_DIR/cursor/User/snippe
 link "$HOME/.cursor/argv.json"                     "$REPO_DIR/cursor/dot-cursor/argv.json"
 link "$HOME/.cursor/cli-config.json"               "$REPO_DIR/cursor/dot-cursor/cli-config.json"
 link "$HOME/.cursor/USER_RULES.md"                 "$REPO_DIR/cursor/dot-cursor/USER_RULES.md"
-link "$HOME/.cursor/commands"                      "$REPO_DIR/cursor/dot-cursor/commands"
 link "$HOME/.cursor/skills-cursor"                 "$REPO_DIR/cursor/dot-cursor/skills-cursor"
+# NOTE: ~/.cursor/commands is NOT centralized. opencode/skills is the single
+# source of truth; those skills are deployed to ~/.cursor/skills by
+# link-cursor-skills.sh (step 5). A skill behaves as a /slash command in Cursor
+# when its frontmatter sets `disable-model-invocation: true`; otherwise it
+# auto-invokes. Remove any stale ~/.cursor/commands symlink from older installs.
+if [ -L "$HOME/.cursor/commands" ]; then
+  rm -f "$HOME/.cursor/commands"
+  ok "removed stale ~/.cursor/commands symlink (skills now cover commands)"
+fi
 # NOTE: ~/.cursor/plans/ is intentionally NOT centralized — it holds
 # project-specific agent plans and stays local-only.
 
