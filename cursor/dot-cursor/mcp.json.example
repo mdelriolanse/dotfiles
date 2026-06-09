@@ -1,0 +1,59 @@
+{
+  "mcpServers": {
+    "composio": {
+      "url": "https://connect.composio.dev/mcp"
+    },
+    "context7": {
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin",
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
+    "agentmemory": {
+      "command": "npx",
+      "args": ["-y", "@agentmemory/mcp@0.9.16"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin",
+        "AGENTMEMORY_URL": "http://localhost:3111",
+        "AGENTMEMORY_SECRET": "${AGENTMEMORY_SECRET}"
+      }
+    },
+    "browserbase": {
+      "command": "npx",
+      "args": ["-y", "@browserbasehq/mcp"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin",
+        "BROWSERBASE_API_KEY": "${BROWSERBASE_API_KEY}",
+        "BROWSERBASE_PROJECT_ID": "${BROWSERBASE_PROJECT_ID}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+      }
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "html-extractor-mcp"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "excalidraw": {
+      "command": "npx",
+      "args": ["-y", "mcp-excalidraw-server"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin"
+      }
+    }
+  }
+}
