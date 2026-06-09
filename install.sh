@@ -88,21 +88,38 @@ fi
 # ---------------------------------------------------------------------------
 # 4. Cursor real mcp.json (gitignored) — generate from example + secrets.
 #    Cursor's ${VAR} expansion is unreliable, so we materialize real values.
+#    Missing/empty keys are fine: we still write a stub so the rest of the
+#    bootstrap is uninterrupted — those MCP servers just fail at runtime.
 #    Never overwrites an existing mcp.json.
 # ---------------------------------------------------------------------------
 MCP_REAL="$REPO_DIR/cursor/dot-cursor/mcp.json"
 MCP_EX="$REPO_DIR/cursor/dot-cursor/mcp.json.example"
+
+# Load secrets defensively — a missing var or sourcing hiccup must NOT abort.
+if [ -f "$SECRETS" ]; then
+  set +e +u
+  set -a; . "$SECRETS" 2>/dev/null; set +a
+  set -e -u
+fi
+
+# Inform (don't fail) when MCP keys are absent — those servers will be stubs.
+mcp_missing=""
+for v in FIRECRAWL_API_KEY BROWSERBASE_API_KEY BROWSERBASE_PROJECT_ID \
+         GEMINI_API_KEY AGENTMEMORY_SECRET GITHUB_TOKEN; do
+  [ -z "${!v:-}" ] && mcp_missing="$mcp_missing $v"
+done
+[ -n "$mcp_missing" ] && warn "MCP keys empty/unset:$mcp_missing — those Cursor MCP servers will be stubbed and fail until you fill secrets.env (bootstrap continues)."
+
 if [ ! -e "$MCP_REAL" ]; then
-  if [ -f "$SECRETS" ] && command -v envsubst >/dev/null 2>&1; then
-    set -a; . "$SECRETS"; set +a
-    : "${NODE_BIN_PATH:=$(dirname "$(command -v node 2>/dev/null || echo /usr/bin/node)")}"
-    export NODE_BIN_PATH
-    envsubst '$NODE_BIN_PATH $FIRECRAWL_API_KEY $AGENTMEMORY_SECRET $BROWSERBASE_API_KEY $BROWSERBASE_PROJECT_ID $GEMINI_API_KEY $GITHUB_TOKEN' \
-      < "$MCP_EX" > "$MCP_REAL"
-    ok "generated cursor/dot-cursor/mcp.json from example + secrets.env"
+  : "${NODE_BIN_PATH:=$(dirname "$(command -v node 2>/dev/null || echo /usr/bin/node)")}"
+  export NODE_BIN_PATH
+  if command -v envsubst >/dev/null 2>&1 \
+     && envsubst '$NODE_BIN_PATH $FIRECRAWL_API_KEY $AGENTMEMORY_SECRET $BROWSERBASE_API_KEY $BROWSERBASE_PROJECT_ID $GEMINI_API_KEY $GITHUB_TOKEN' \
+          < "$MCP_EX" > "$MCP_REAL" 2>/dev/null; then
+    ok "generated cursor/dot-cursor/mcp.json (any empty keys are written as stubs)"
   else
-    cp "$MCP_EX" "$MCP_REAL"
-    warn "wrote mcp.json from example WITHOUT substitution (set secrets.env + install gettext/envsubst, then re-run)."
+    cp "$MCP_EX" "$MCP_REAL" 2>/dev/null || true
+    warn "wrote mcp.json stub from example (no envsubst, or substitution failed) — fill secrets.env + re-run."
   fi
 fi
 link "$HOME/.cursor/mcp.json" "$MCP_REAL"
