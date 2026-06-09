@@ -1,0 +1,149 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Model preferences
+  "model": "deepinfra/moonshotai/Kimi-K2.6",
+
+  // Agent configurations
+  "agent": {
+    "coder": {
+      "model": "deepinfra/moonshotai/Kimi-K2.6",
+      "maxTokens": 8192,
+      "reasoningEffort": "high",
+      "prompt": "{file:./instructions/subagent-system.md}"
+    },
+    "architect": {
+      "model": "deepinfra/moonshotai/Kimi-K2.6",
+      "prompt": "{file:./instructions/subagent-system.md}"
+    },
+    "build": {
+      "mode": "primary",
+      "model": "deepinfra/moonshotai/Kimi-K2.6",
+      "prompt": "{file:./instructions/subagent-system.md}"
+    },
+    "plan": {
+      "mode": "primary",
+      "model": "deepinfra/moonshotai/Kimi-K2.6",
+      "prompt": "{file:./instructions/subagent-system.md}"
+    },
+    "general": {
+      "mode": "subagent",
+      "model": "deepinfra/moonshotai/Kimi-K2.6",
+      "prompt": "{file:./instructions/subagent-system.md}"
+    },
+    "explore": {
+      "mode": "subagent",
+      "model": "deepinfra/moonshotai/Kimi-K2.6",
+      "prompt": "{file:./instructions/subagent-system.md}"
+    },
+    "scout": {
+      "mode": "subagent",
+      "model": "deepinfra/moonshotai/Kimi-K2.6",
+      "prompt": "{file:./instructions/subagent-system.md}"
+    }
+  },
+
+  // Permission rules
+  "permission": "allow",
+
+  // MCP server configurations (also loaded from mcp/*.json files)
+
+  "mcp": {
+    "composio": {
+      "type": "remote",
+      "url": "https://connect.composio.dev/mcp",
+      "enabled": true
+    },
+    "context7": {
+    "type": "remote",
+    "url": "https://mcp.context7.com/mcp",
+    "enabled": true
+  },
+    "firecrawl-mcp": {
+      "type": "local",
+      "command": ["npx", "-y", "firecrawl-mcp"],
+      "environment": {
+        "FIRECRAWL_API_KEY": "{env:FIRECRAWL_API_KEY}"
+      }
+    },
+    "agentmemory": {
+      "type": "local",
+      "command": ["npx", "-y", "@agentmemory/mcp@0.9.16"],
+      "environment": {
+        "AGENTMEMORY_URL": "http://localhost:3111"
+      },
+      "enabled": true
+    },
+
+    "browserbase": {
+      "type": "local",
+      "command": ["npx", "-y", "@browserbasehq/mcp"],
+      "environment": {
+        "BROWSERBASE_API_KEY": "{env:BROWSERBASE_API_KEY}",
+        "BROWSERBASE_PROJECT_ID": "{env:BROWSERBASE_PROJECT_ID}"
+      }
+    },
+    "fetch": {
+      "type": "local",
+      "command": ["npx", "-y", "html-extractor-mcp"]
+    },
+    "github": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
+      "environment": {
+        "GITHUB_TOKEN": "{env:GITHUB_TOKEN}"
+      }
+    }
+  },
+
+    // Files auto-included in AI context (prompt-cached, included once)
+    "instructions": [
+        "instructions/output-concision.md",
+        "instructions/context-efficiency.md",
+        "instructions/agentmemory-conventions.md",
+        "instructions/memory-first-codebase.md"
+    ],
+
+  // Provider prompt caching
+  "provider": {
+    "anthropic": {
+      "options": {
+        "setCacheKey": true
+      }
+    }
+  },
+
+  // Compaction: keep context lean
+  "compaction": {
+    "auto": true,
+    "tail_turns": 2,
+    "preserve_recent_tokens": 8000
+  },
+
+  // LSP configurations
+  "lsp": {
+    "python": {
+      "command": ["pyright-langserver", "--stdio"],
+      "extensions": [".py"]
+    },
+    "c": {
+      "command": ["clangd"],
+      "extensions": [".c", ".h"]
+    },
+    "cpp": {
+      "command": ["clangd"],
+      "extensions": [".cpp", ".cc", ".cxx", ".hpp"]
+    },
+    "typescript": {
+      "command": ["typescript-language-server", "--stdio"],
+      "extensions": [".ts", ".tsx"]
+    },
+    "rust": {
+      "command": ["rust-analyzer"],
+      "extensions": [".rs"]
+    }
+  },
+
+  // Shell configuration
+  "shell": "/bin/bash"
+}
