@@ -1,0 +1,6 @@
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "theme": "catppuccin-mocha",
+  "scroll_speed": 3,
+  "mouse": true
+}
