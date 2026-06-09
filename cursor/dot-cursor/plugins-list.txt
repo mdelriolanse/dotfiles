@@ -1,0 +1,5 @@
+context7-plugin
+linear
+shadcn
+slack
+superpowers
