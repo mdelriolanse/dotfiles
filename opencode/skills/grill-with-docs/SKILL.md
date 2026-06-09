@@ -15,6 +15,10 @@ If a question can be answered by exploring the codebase, explore the codebase in
 
 <supporting-info>
 
+## Memory discipline
+
+Before re-opening a question, `memory_smart_search` agentmemory for whether it was already resolved; if so, offer that as a working assumption to confirm rather than re-asking. When a decision crystallises, `memory_save` it (type: `architecture` or `pattern`) with the question, the answer, and the *why*.
+
 ## Domain awareness
 
 During codebase exploration, also look for existing documentation:

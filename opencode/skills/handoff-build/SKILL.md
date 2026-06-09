@@ -13,7 +13,7 @@ You are an orchestrator, not a builder. Delegate all implementation tasks to sub
 
 ## Memory
 
-Regularly update agent memory with your progress. For any ambiguities, reference agent memory before asking the user.
+Before asking the user about prior decisions, `memory_smart_search` agentmemory first. When the build spans sessions, `memory_save` a work-in-progress memory (type: `workflow`) capturing next steps, blockers, and files touched before ending.
 
 ## Test-Driven Development
 
