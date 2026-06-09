@@ -39,4 +39,9 @@ vim.api.nvim_create_user_command('ExternalEditFinish', function()
   M.finish_external_edit()
 end, { desc = 'Save and close buffer (finish external editing)' })
 
+-- Keybinding for finishing external edit
+vim.keymap.set('n', '<leader>e', function()
+  M.finish_external_edit()
+end, { desc = 'Finish external editing (save & close)' })
+
 return M

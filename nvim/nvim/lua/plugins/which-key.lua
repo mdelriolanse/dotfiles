@@ -60,14 +60,10 @@ return {
 			-- Document existing key chains
 			spec = {
 				{ '<leader>a', group = '[A]I/Claude' },
-				{ '<leader>b', group = '[B]uffer' },
-				{ '<leader>c', group = '[C]ode (build/run/debug)' },
-				{ '<leader>d', group = '[D]ebug' },
 				{ '<leader>s', group = '[S]earch' },
 				{ '<leader>t', group = '[T]oggle' },
-				{ '<leader>o', desc = '[O]utline (toggle popup)' },
+				{ '<leader>g', group = '[G]it' },
 				{ '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
-				{ '<leader>j', group = '[J]Git diff' },
 				{ '<leader>r', group = '[R]emote' },
 			},
 		},

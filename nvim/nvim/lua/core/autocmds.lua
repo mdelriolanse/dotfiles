@@ -22,21 +22,6 @@ vim.api.nvim_create_autocmd('TermOpen', {
   end,
 })
 
--- In neo-tree sidebar, make :q behave like :qa (quit all)
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'neo-tree',
-  desc = ':q in neo-tree quits everything',
-  callback = function(ev)
-    vim.keymap.set('n', ':q<CR>',  ':qa<CR>',  { buffer = ev.buf, silent = true })
-    vim.keymap.set('n', ':q!<CR>', ':qa!<CR>', { buffer = ev.buf, silent = true })
-    vim.keymap.set('n', ':wq<CR>', ':wqa<CR>', { buffer = ev.buf, silent = true })
-    -- Also handle when the user types :q at the cmdline (abbreviation)
-    vim.cmd([[cnoreabbrev <expr> <buffer> q (getcmdtype()==':' && getcmdline()==#'q') ? 'qa' : 'q']])
-    vim.cmd([[cnoreabbrev <expr> <buffer> q! (getcmdtype()==':' && getcmdline()==#'q!') ? 'qa!' : 'q!']])
-    vim.cmd([[cnoreabbrev <expr> <buffer> wq (getcmdtype()==':' && getcmdline()==#'wq') ? 'wqa' : 'wq']])
-  end,
-})
-
 -- Auto-enter insert mode when entering a terminal buffer (covers mouse clicks)
 vim.api.nvim_create_autocmd('BufEnter', {
   group = terminal_group,

@@ -14,14 +14,6 @@ return {
     require('core.external-editor')
     -- Setup claudecode with opts
     require('claudecode').setup(opts)
-    -- Extend selection tracking to fire on window focus/resize events
-    local group = vim.api.nvim_create_augroup('ClaudeCodeSelection', { clear = false })
-    vim.api.nvim_create_autocmd({ 'WinEnter', 'WinResized' }, {
-      group = group,
-      callback = function()
-        require('claudecode.selection').on_cursor_moved()
-      end,
-    })
   end,
   cmd = {
     'ClaudeCode',
