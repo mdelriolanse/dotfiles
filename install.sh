@@ -57,7 +57,8 @@ link "$HOME/.cursor/cli-config.json"               "$REPO_DIR/cursor/dot-cursor/
 link "$HOME/.cursor/USER_RULES.md"                 "$REPO_DIR/cursor/dot-cursor/USER_RULES.md"
 link "$HOME/.cursor/commands"                      "$REPO_DIR/cursor/dot-cursor/commands"
 link "$HOME/.cursor/skills-cursor"                 "$REPO_DIR/cursor/dot-cursor/skills-cursor"
-link "$HOME/.cursor/plans"                         "$REPO_DIR/cursor/dot-cursor/plans"
+# NOTE: ~/.cursor/plans/ is intentionally NOT centralized — it holds
+# project-specific agent plans and stays local-only.
 
 # ---------------------------------------------------------------------------
 # 2. Secrets scaffold (real values live ONLY here, gitignored)

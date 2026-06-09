@@ -3,17 +3,29 @@
 Centralized configuration for **Neovim**, **opencode**, and **Cursor**. The real
 config locations are symlinks into this repo, so editing here == editing live.
 
-## Bootstrap (fresh machine)
+## Quickstart
 
 ```bash
+# 1. Clone
 git clone https://github.com/mdelriolanse/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-./install.sh                 # create symlinks, scaffold secrets, check prereqs
-$EDITOR secrets/secrets.env  # paste real API keys (gitignored)
-./install.sh                 # re-run: materializes Cursor mcp.json from secrets
-exec $SHELL                  # new shell so secrets.env is sourced
-./install.sh --extensions    # optional: reinstall Cursor extensions
+
+# 2. Link everything (idempotent; backs up anything it would overwrite)
+./install.sh
+
+# 3. Add your secrets (install.sh created secrets.env from the example)
+$EDITOR secrets/secrets.env          # paste real API keys — file is gitignored
+
+# 4. Re-run to materialize Cursor's mcp.json from your keys, then reload shell
+./install.sh
+exec $SHELL
+
+# 5. (optional) reinstall the same Cursor extensions
+./install.sh --extensions
 ```
+
+That's it — Neovim, opencode, and Cursor now read their config straight from
+this repo via symlinks. `secrets/secrets.env.example` lists every key you need.
 
 `install.sh` is idempotent and backs up anything it would overwrite to
 `~/.dotfiles-backup-<timestamp>/`. It does **not** install the apps themselves
@@ -26,7 +38,7 @@ nvim/                    -> ~/.config/nvim            (whole dir)
 opencode/                -> ~/.config/opencode        (whole dir; node_modules ignored)
 cursor/User/*            -> ~/.config/Cursor/User/*    (settings, keybindings, snippets)
 cursor/dot-cursor/*      -> ~/.cursor/*                (argv, cli-config, commands,
-                                                        skills-cursor, plans, USER_RULES,
+                                                        skills-cursor, USER_RULES,
                                                         mcp.json)
 secrets/secrets.env      (gitignored) real keys; sourced by ~/.bashrc
 install.sh               symlink + bootstrap script
@@ -53,6 +65,8 @@ and are consumed two ways:
   `cursor/dot-cursor/plugins-list.txt` and Cursor re-fetches on demand.
 - Cursor `extensions/` — captured in `cursor/dot-cursor/extensions-list.txt`;
   reinstall with `./install.sh --extensions`.
+- `~/.cursor/plans/` — project-specific agent plans; intentionally **not**
+  centralized (stays local-only) to keep work context out of this repo.
 - Heavy state (`globalStorage/`, `History/`, `workspaceStorage/`, caches,
   `projects/` transcripts, `worktrees/`) is never centralized.
 
