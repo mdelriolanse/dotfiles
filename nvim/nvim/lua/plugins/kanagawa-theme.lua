@@ -1,6 +1,5 @@
 return {
   'rebelot/kanagawa.nvim',
-  lazy = true,
   config = function()
     require('kanagawa').setup {
       compile = false, -- enable compiling the colorscheme
@@ -76,7 +75,7 @@ return {
       },
     }
 
-    -- Do NOT auto-apply: catppuccin is the default. Run `:colorscheme kanagawa`
-    -- manually to switch.
+    -- Apply the colorscheme
+    vim.cmd.colorscheme 'kanagawa'
   end,
 }

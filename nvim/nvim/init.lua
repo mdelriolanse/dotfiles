@@ -21,10 +21,9 @@ require('lazy').setup({
   require 'plugins.csvview',
   require 'plugins.conform',
   require 'plugins.git-signs',
-  require 'plugins.diffview',
   require 'plugins.lua-rocks',
   require 'plugins.guess-indent',
-  require 'plugins.catppuccin',
+  require 'plugins.kanagawa-theme',
   require 'plugins.neo-tree',
   -- require 'plugins.null-ls',
   require 'plugins.nvim-lspconfig',
@@ -37,7 +36,6 @@ require('lazy').setup({
   require 'plugins.lsp',
   require 'plugins.cmp-config',
   require 'plugins.barbecue',
-  require 'plugins.aerial',
   require 'plugins.dap',
   require 'plugins.render-markdown',
   require 'plugins.indent-blankline',
@@ -50,7 +48,7 @@ require('lazy').setup({
   require 'plugins.swenv',
   require 'plugins.oil',
   require 'plugins.ssh-remote',
-  require 'plugins.tmux-navigator',
+  require 'plugins.neogit',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
@@ -75,5 +73,4 @@ require 'core.options'
 require 'core.snippets'
 require 'core.keymaps'
 require 'core.autocmds'
-require 'core.c-cpp'
 require 'colors'

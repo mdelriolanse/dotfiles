@@ -1,5 +1,19 @@
 vim.g.have_nerd_font = true
 
+-- WSL clipboard integration
+vim.g.clipboard = {
+  name = 'WslClipboard',
+  copy = {
+    ['+'] = 'clip.exe',
+    ['*'] = 'clip.exe',
+  },
+  paste = {
+    ['+'] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+    ['*'] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+  },
+  cache_enabled = 0,
+}
+
 vim.o.clipboard = 'unnamedplus'
 
 vim.o.number = true
@@ -8,10 +22,6 @@ vim.o.mouse = 'a'
 vim.o.showmode = false
 vim.o.breakindent = true
 vim.o.undofile = true
-
-vim.o.tabstop = 2
-vim.o.shiftwidth = 2
-vim.o.softtabstop = 2
 
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
 vim.o.ignorecase = true
@@ -46,11 +56,9 @@ vim.keymap.set('n', '<Tab>', ':bnext<CR>', opts)
 vim.keymap.set('n', '<S-Tab>', ':bprevious<CR>', opts)
 vim.keymap.set('n', '\\', '<Cmd>Neotree toggle<CR>')
 
-vim.cmd 'colorscheme catppuccin'
+vim.cmd 'colorscheme kanagawa-dragon'
 
--- <Esc> in terminal mode intentionally left unbound — single Esc passes through
--- to the program inside the terminal. Use <Esc><Esc> to exit terminal mode
--- (set in core/keymaps.lua), then <C-w>h to move to the editor window.
+vim.keymap.set('t', '<Esc>', '<C-\\><C-n><C-w>h', { silent = true })
 
 local opts = { noremap = true, silent = true }
 

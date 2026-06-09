@@ -16,21 +16,21 @@ return {
 		opts = {
 			notify_on_error = false,
 			format_on_save = function(bufnr)
-				-- Disable "format_on_save lsp_fallback" for languages that don't
-				-- have a well standardized coding style. You can add additional
-				-- languages here or re-enable it for the disabled ones.
+				-- Don't format on save for c/cpp by default (it can fight with WIP code).
+				-- Use <leader>f for explicit format, or set vim.b.format_on_save=true per buffer.
 				local disable_filetypes = { c = true, cpp = true }
-				if disable_filetypes[vim.bo[bufnr].filetype] then
+				if disable_filetypes[vim.bo[bufnr].filetype] and not vim.b[bufnr].format_on_save then
 					return nil
-				else
-					return {
-						timeout_ms = 500,
-						lsp_format = 'fallback',
-					}
 				end
+				return {
+					timeout_ms = 500,
+					lsp_format = 'fallback',
+				}
 			end,
 			formatters_by_ft = {
 				lua = { 'stylua' },
+				c = { 'clang-format' },
+				cpp = { 'clang-format' },
 				-- Hardware development formatters
 				verilog = { 'vsg' },
 				systemverilog = { 'vsg' },
