@@ -9,6 +9,8 @@ return {
 				topdelete = { text = '‾' },
 				changedelete = { text = '~' },
 			},
+			numhl = true,  -- highlight line numbers with diff color
+			linehl = true, -- highlight changed lines themselves
 		},
 	},
 }

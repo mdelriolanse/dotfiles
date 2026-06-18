@@ -2,6 +2,43 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ','
 
+-- Auto-detect nerd font support. Must run BEFORE lazy.setup.
+-- Override: export NVIM_NERD_FONT=0 to force-disable.
+vim.g.have_nerd_font = (function()
+  if vim.fn.has('gui_running') == 1 then return true end
+  if vim.fn.has('multi_byte') == 0 then return false end
+  local env = vim.fn.getenv('NVIM_NERD_FONT')
+  if env == '0' or env == 'false' then return false end
+  return true
+end)()
+
+if not vim.g.have_nerd_font then
+  -- Mock nvim-web-devicons so every plugin (lualine, neo-tree, oil, etc.)
+  -- gets empty strings instead of broken nerd font glyphs.
+  package.preload['nvim-web-devicons'] = function()
+    local e = function() return '', '' end
+    return {
+      get_icon = e, get_icon_by_filetype = e, get_icon_colors = e,
+      get_icon_colors_by_filetype = e, get_icon_color = function() return '' end,
+      get_icon_color_by_filetype = function() return '' end,
+      get_icon_cterm_color = function() return '' end,
+      get_icon_cterm_color_by_filetype = function() return '' end,
+      get_icon_name_by_filetype = function() return '' end,
+      get_default_icon = function() return { icon = '', color = '', name = '' } end,
+      get_icons = function() return {} end,
+      get_icons_by_filename = function() return {} end,
+      get_icons_by_extension = function() return {} end,
+      get_icons_by_operating_system = function() return {} end,
+      get_icons_by_desktop_environment = function() return {} end,
+      get_icons_by_window_manager = function() return {} end,
+      set_up_highlights = function() end, setup = function() end,
+      set_icon = function() end, set_icon_by_filetype = function() end,
+      set_default_icon = function() end, refresh = function() end,
+      has_loaded = function() return true end,
+    }
+  end
+end
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'

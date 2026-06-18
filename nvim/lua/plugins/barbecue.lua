@@ -6,6 +6,12 @@ return {
     'SmiteshP/nvim-navic',
     'nvim-tree/nvim-web-devicons',
   },
-  opts = {},
+  opts = {
+    symbols = {
+      separator = ' > ',
+    },
+    -- Disable kind icons (nerd font glyphs) — plain text breadcrumb chain.
+    kinds = false,
+  },
 }
 

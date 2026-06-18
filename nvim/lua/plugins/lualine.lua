@@ -10,7 +10,7 @@ return {
     return {
     options = {
       theme = ok and theme or 'auto',
-      icons_enabled = true,
+      icons_enabled = vim.g.have_nerd_font ~= false,
       globalstatus = true,
       component_separators = { left = '', right = '' },
       section_separators = { left = '', right = '' },
@@ -23,12 +23,12 @@ return {
       lualine_a = { 'mode' },
       lualine_b = {
         'branch',
-        { 'diff', symbols = { added = ' ', modified = ' ', removed = ' ' } },
+        { 'diff', symbols = { added = '+', modified = '~', removed = '-' } },
         { 'diagnostics', sources = { 'nvim_diagnostic' },
-          symbols = { error = ' ', warn = ' ', info = ' ', hint = '󰌶 ' } },
+          symbols = { error = 'E', warn = 'W', info = 'I', hint = 'H' } },
       },
       lualine_c = {
-        { 'filename', path = 1, symbols = { modified = ' ●', readonly = ' ', unnamed = '[No Name]' } },
+        { 'filename', path = 1, symbols = { modified = '+', readonly = 'RO', unnamed = '[No Name]' } },
       },
       lualine_x = {
         -- LSP servers attached to current buffer

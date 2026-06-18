@@ -9,7 +9,7 @@ return {
     heading = {
       enabled = true,
       sign = true,
-      icons = { '󰲡 ', '󰲣 ', '󰲥 ', '󰲧 ', '󰲩 ', '󰲫 ' },
+      icons = { '# ', '## ', '### ', '#### ', '##### ', '###### ' },
     },
     code = {
       enabled = true,
@@ -23,8 +23,8 @@ return {
     },
     checkbox = {
       enabled = true,
-      unchecked = { icon = '󰄱 ' },
-      checked = { icon = '󰱒 ' },
+      unchecked = { icon = '[ ]' },
+      checked = { icon = '[x]' },
     },
     pipe_table = {
       enabled = true,

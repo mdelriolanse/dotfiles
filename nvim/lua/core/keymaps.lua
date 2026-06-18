@@ -58,8 +58,6 @@ vim.keymap.set('n', '<Esc><Esc>', close_view, { desc = 'Close current view (term
 -- Seamless nav across nvim splits AND tmux panes (vim-tmux-navigator).
 vim.keymap.set('n', '<C-h>', '<cmd>TmuxNavigateLeft<CR>', { desc = 'Move focus left (nvim split / tmux pane)' })
 vim.keymap.set('n', '<C-l>', '<cmd>TmuxNavigateRight<CR>', { desc = 'Move focus right (nvim split / tmux pane)' })
-vim.keymap.set('n', '<C-j>', '<cmd>TmuxNavigateDown<CR>', { desc = 'Move focus down (nvim split / tmux pane)' })
-vim.keymap.set('n', '<C-k>', '<cmd>TmuxNavigateUp<CR>', { desc = 'Move focus up (nvim split / tmux pane)' })
 
 -- Track the diagnostic float (synchronous open returns its winid).
 local diag_win = nil
@@ -207,14 +205,10 @@ vim.keymap.set('n', '<C-q>', '<cmd>close<CR>', { desc = 'Close window' })
 
 -- Insert mode: escape and switch (nvim split / tmux pane)
 vim.keymap.set('i', '<C-h>', '<Esc><cmd>TmuxNavigateLeft<CR>', { desc = 'Escape and move focus left' })
-vim.keymap.set('i', '<C-j>', '<Esc><cmd>TmuxNavigateDown<CR>', { desc = 'Escape and move focus down' })
-vim.keymap.set('i', '<C-k>', '<Esc><cmd>TmuxNavigateUp<CR>', { desc = 'Escape and move focus up' })
 vim.keymap.set('i', '<C-l>', '<Esc><cmd>TmuxNavigateRight<CR>', { desc = 'Escape and move focus right' })
 
 -- Terminal mode: escape and switch (nvim split / tmux pane)
 vim.keymap.set('t', '<C-h>', '<C-\\><C-n><cmd>TmuxNavigateLeft<CR>', { desc = 'Escape terminal and move focus left' })
-vim.keymap.set('t', '<C-j>', '<C-\\><C-n><cmd>TmuxNavigateDown<CR>', { desc = 'Escape terminal and move focus down' })
-vim.keymap.set('t', '<C-k>', '<C-\\><C-n><cmd>TmuxNavigateUp<CR>', { desc = 'Escape terminal and move focus up' })
 vim.keymap.set('t', '<C-l>', '<C-\\><C-n><cmd>TmuxNavigateRight<CR>', { desc = 'Escape terminal and move focus right' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
@@ -268,8 +262,24 @@ vim.keymap.set('n', '<leader>td', function()
 	vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, { silent = true, noremap = true })
 
--- Copy selected text to Windows clipboard with Ctrl+C
-vim.keymap.set({ 'v', 'x' }, '<C-c>', '"+y', { desc = 'Copy selection to Windows clipboard' })
+-- Copy selected text to system clipboard via xclip (no +clipboard compiled in)
+vim.keymap.set({ 'v', 'x' }, '<C-c>', function()
+  vim.cmd('normal! "xy')
+  local text = vim.fn.getreg('x')
+  if #text > 0 then
+    vim.fn.system('xclip -selection clipboard -i', text)
+  end
+end, { desc = 'Copy selection to system clipboard' })
+
+-- Paste from system clipboard (via xclip). Reads clipboard, sets the " register
+-- (so subsequent p/P or C-r" in insert mode can paste it), then pastes in place.
+vim.keymap.set('n', '<leader>P', function()
+  local text = vim.fn.system('xclip -selection clipboard -o')
+  if vim.v.shell_error ~= 0 or #text == 0 then return end
+  text = text:gsub('\n$', '')
+  vim.fn.setreg('"', text, 'c')
+  vim.cmd('normal! p')
+end, { desc = '[P]aste from system clipboard' })
 
 -- Arrow symbol auto-replacement in insert mode
 vim.keymap.set('i', '-->', '→', { desc = 'Replace --> with →' })

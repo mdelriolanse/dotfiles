@@ -59,8 +59,9 @@ return {
       formatting = {
         fields = { 'kind', 'abbr', 'menu' },
         format = function(entry, vim_item)
-          -- Kind icons (using nerd font symbols)
-          local kind_icons = {
+          -- Kind icons (nerd font symbols; fall back to text labels when disabled)
+          local nf = vim.g.have_nerd_font ~= false
+          local kind_icons = nf and {
             Text = '󰉿',
             Method = '󰆧',
             Function = '󰊕',
@@ -86,6 +87,32 @@ return {
             Event = '',
             Operator = '󰆕',
             TypeParameter = '',
+          } or {
+            Text = '[T]',
+            Method = '[M]',
+            Function = '[F]',
+            Constructor = '[C]',
+            Field = '[Fd]',
+            Variable = '[V]',
+            Class = '[Cl]',
+            Interface = '[I]',
+            Module = '[Mo]',
+            Property = '[P]',
+            Unit = '[U]',
+            Value = '[Va]',
+            Enum = '[E]',
+            Keyword = '[K]',
+            Snippet = '[S]',
+            Color = '[Co]',
+            File = '[Fi]',
+            Reference = '[R]',
+            Folder = '[Fo]',
+            EnumMember = '[EM]',
+            Constant = '[Cn]',
+            Struct = '[St]',
+            Event = '[Ev]',
+            Operator = '[Op]',
+            TypeParameter = '[TP]',
           }
           vim_item.kind = kind_icons[vim_item.kind] or vim_item.kind
           vim_item.menu = ({

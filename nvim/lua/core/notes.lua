@@ -185,7 +185,12 @@ end
 local function input_float(default_text, on_submit)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].filetype = 'markdown'
+  -- Only set markdown filetype if the treesitter parser is available, otherwise
+  -- render-markdown.nvim (or other FileType autocmds) may crash trying to use it.
+  local ok, _ = pcall(vim.treesitter.language.get, 'markdown')
+  if ok then
+    vim.bo[buf].filetype = 'markdown'
+  end
 
   local lines = vim.split(default_text or '', '\n', { plain = true })
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)

@@ -53,18 +53,44 @@ return {
             vim.keymap.set(mode or 'n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
 
+          -- Override Neovim's default 'gd' (goes to definition, which on
+          -- barrel/re-export files lands on the re-export, not the original).
+          -- Prefer declaration when the server supports it (clangd, pyright,
+          -- lua_ls); fall back to definition (tsserver, gopls) otherwise.
+          map('gd', function()
+            local clients = vim.lsp.get_clients { bufnr = 0 }
+            for _, c in ipairs(clients) do
+              if c.server_capabilities.declarationProvider then
+                vim.lsp.buf.declaration()
+                return
+              end
+            end
+            vim.lsp.buf.definition()
+          end, 'Go to declaration (or definition fallback)')
           map('grn', vim.lsp.buf.rename, 'Rename')
           map('gra', vim.lsp.buf.code_action, 'Code Action', { 'n', 'x' })
           map('grr', require('telescope.builtin').lsp_references, 'References')
           map('gri', require('telescope.builtin').lsp_implementations, 'Implementation')
           map('grd', require('telescope.builtin').lsp_definitions, 'Definition')
-          map('grD', vim.lsp.buf.declaration, 'Declaration')
+          map('grD', function()
+            for _, c in ipairs(vim.lsp.get_clients { bufnr = 0 }) do
+              if c.server_capabilities.declarationProvider then
+                vim.lsp.buf.declaration()
+                return
+              end
+            end
+            vim.lsp.buf.definition()
+          end, 'Declaration (or definition fallback)')
           map('gO', require('telescope.builtin').lsp_document_symbols, 'Document Symbols')
           map('gW', require('telescope.builtin').lsp_dynamic_workspace_symbols, 'Workspace Symbols')
           map('grt', require('telescope.builtin').lsp_type_definitions, 'Type Definition')
+          -- Ctrl+K: inline signature help (parameter types, overloads)
           map('K', function()
             vim.lsp.buf.hover { border = 'rounded' }
           end, 'Hover Documentation')
+          map('<C-k>', function()
+            vim.lsp.buf.signature_help { border = 'rounded' }
+          end, 'Signature Help', { 'n', 'i' })
 
           local client = vim.lsp.get_client_by_id(event.data.client_id)
 
@@ -180,6 +206,9 @@ return {
             },
           },
         },
+        ts_ls = {
+          filetypes = { 'typescript', 'javascript', 'typescriptreact', 'javascriptreact' },
+        },
         lua_ls = {
           settings = {
             Lua = {
@@ -208,7 +237,7 @@ return {
       local ensure_installed = mason_servers
       -- clang-format intentionally NOT in Mason: Mason installs it via a pip venv,
       -- which fails without python3-venv. Install via apt instead: `sudo apt install clang-format`.
-      vim.list_extend(ensure_installed, { 'stylua', 'clangd', 'pyright', 'codelldb' })
+      vim.list_extend(ensure_installed, { 'stylua', 'clangd', 'pyright', 'ts_ls', 'codelldb' })
       -- Note: rust_hdl, verible, and vsg need manual installation:
       -- rust_hdl: Install via cargo: cargo install rust_hdl
       -- verible: Download from https://github.com/chipsalliance/verible/releases or install via package manager
