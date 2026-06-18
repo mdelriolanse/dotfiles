@@ -1,111 +1,221 @@
 ---
-name: tdd
-description: Test-driven development with red-green-refactor loop. Use when user wants to build features or fix bugs using TDD, mentions "red-green-refactor", wants integration tests, or asks for test-first development.
+name: test-driven-development
+description: Use when implementing any feature or bugfix, before writing implementation code
 ---
 
-# Test-Driven Development
+# Test-Driven Development — Agent Swarm
 
-## Philosophy
+## Overview
 
-**Core principle**: Tests should verify behavior through public interfaces, not implementation details. Code can change entirely; tests shouldn't.
-
-**Good tests** are integration-style: they exercise real code paths through public APIs. They describe _what_ the system does, not _how_ it does it. A good test reads like a specification - "user can checkout with valid cart" tells you exactly what capability exists. These tests survive refactors because they don't care about internal structure.
-
-**Bad tests** are coupled to implementation. They mock internal collaborators, test private methods, or verify through external means (like querying a database directly instead of using the interface). The warning sign: your test breaks when you refactor, but behavior hasn't changed. If you rename an internal function and tests fail, those tests were testing implementation, not behavior.
-
-See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
-
-## Anti-Pattern: Horizontal Slices
-
-**DO NOT write all tests first, then all implementation.** This is "horizontal slicing" - treating RED as "write all tests" and GREEN as "write all code."
-
-This produces **crap tests**:
-
-- Tests written in bulk test _imagined_ behavior, not _actual_ behavior
-- You end up testing the _shape_ of things (data structures, function signatures) rather than user-facing behavior
-- Tests become insensitive to real changes - they pass when behavior breaks, fail when behavior is fine
-- You outrun your headlights, committing to test structure before understanding the implementation
-
-**Correct approach**: Vertical slices via tracer bullets. One test → one implementation → repeat. Each test responds to what you learned from the previous cycle. Because you just wrote the code, you know exactly what behavior matters and how to verify it.
+A three-agent swarm that enforces the Iron Law structurally: the agent that writes the code has NEVER seen the test being written. Each RED→GREEN cycle is a fresh pair of subagents with zero shared context.
 
 ```
-WRONG (horizontal):
-  RED:   test1, test2, test3, test4, test5
-  GREEN: impl1, impl2, impl3, impl4, impl5
-
-RIGHT (vertical):
-  RED→GREEN: test1→impl1
-  RED→GREEN: test2→impl2
-  RED→GREEN: test3→impl3
-  ...
+Orchestrator (you)
+      │
+      │  Break task into behaviors
+      │
+      ▼
+┌──────────────────────────────────────────┐
+│  CYCLE 1                                 │
+│                                          │
+│  RED agent     →  GREEN agent            │
+│  (write test,   (write code,             │
+│   verify fail)   verify pass)            │
+│       │               ▲                  │
+│       └─── test ──────┘                  │
+│            (only shared artifact)        │
+│                                          │
+│  Orchestrator: refactor, verify green    │
+└──────────────────────────────────────────┘
+      │
+      │  Next behavior
+      ▼
+┌──────────────────────────────────────────┐
+│  CYCLE 2                                 │
+│  RED agent → GREEN agent → refactor      │
+└──────────────────────────────────────────┘
+      │
+      ▼
+   DONE
 ```
 
-## Workflow
+**The Iron Law is enforced structurally:** GREEN agents receive only the test file and error output. They have no access to the conversation that produced the test. They cannot "know" what the test author intended — they can only make the test pass.
 
-### 1. Planning
+**Violating the letter of the rules is violating the spirit of the rules.**
 
-When exploring the codebase, use the project's domain glossary so that test names and interface vocabulary match the project's language, and respect ADRs in the area you're touching.
+## When to Use
 
-Before writing any code:
+**Always:**
+- New features
+- Bug fixes
+- Refactoring
+- Behavior changes
 
-- [ ] Confirm with user what interface changes are needed
-- [ ] Confirm with user which behaviors to test (prioritize)
-- [ ] Identify opportunities for [deep modules](deep-modules.md) (small interface, deep implementation)
-- [ ] Design interfaces for [testability](interface-design.md)
-- [ ] List the behaviors to test (not implementation steps)
-- [ ] Get user approval on the plan
+**Exceptions (ask your human partner):**
+- Throwaway prototypes
+- Generated code
+- Configuration files
 
-Ask: "What should the public interface look like? Which behaviors are most important to test?"
-
-**You can't test everything.** Confirm with the user exactly which behaviors matter most. Focus testing effort on critical paths and complex logic, not every possible edge case.
-
-### 2. Tracer Bullet
-
-Write ONE test that confirms ONE thing about the system:
+## The Iron Law
 
 ```
-RED:   Write test for first behavior → test fails
-GREEN: Write minimal code to pass → test passes
+NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 ```
 
-This is your tracer bullet - proves the path works end-to-end.
+## Orchestrator Workflow
 
-### 3. Incremental Loop
+### Step 0: Discover project conventions
 
-For each remaining behavior:
+Before spawning any subagent, determine:
 
+```bash
+# Test framework + file conventions
+ls {__tests__,tests,spec,test} 2>/dev/null
+cat package.json | jq '.scripts.test' 2>/dev/null
+# Or: pyproject.toml, go.mod, Cargo.toml, etc.
 ```
-RED:   Write next test → fails
-GREEN: Minimal code to pass → passes
+
+Capture:
+- **Test command**: e.g., `npm test`, `pytest`, `go test ./...`
+- **Test file pattern**: e.g., `src/__tests__/foo.test.ts`, `tests/test_foo.py`
+- **Source file pattern**: e.g., `src/foo.ts`, `pkg/foo/foo.go`
+
+### Step 1: Break task into behaviors
+
+From the user's request, identify discrete, testable behaviors. Each behavior = one RED→GREEN cycle.
+
+Example: "Add email validation to the signup form"
+```
+1. Rejects empty email
+2. Rejects invalid email format
+3. Accepts valid email
+4. Trims whitespace from email
 ```
 
-Rules:
+Present the behavior list to the user for approval before starting cycles.
 
-- One test at a time
-- Only enough code to pass current test
-- Don't anticipate future tests
-- Keep tests focused on observable behavior
+### Step 2: For each behavior — RED agent
 
-### 4. Refactor
+Dispatch a `general` subagent with the RED agent prompt (`references/red-agent-prompt.md`).
 
-After all tests pass, look for [refactor candidates](refactoring.md):
+Provide:
+- The behavior to test
+- The test file path (derived from conventions)
+- The test command
+- The source file that will be modified (if known)
+- Any existing test file content (so the agent appends, not overwrites)
 
-- [ ] Extract duplication
-- [ ] Deepen modules (move complexity behind simple interfaces)
-- [ ] Apply SOLID principles where natural
-- [ ] Consider what new code reveals about existing code
-- [ ] Run tests after each refactor step
+The RED agent MUST:
+1. Read the relevant source code to understand existing patterns
+2. Write ONE failing test for this behavior
+3. Run the test and verify it FAILS (not errors)
+4. Report: test file, test name, the failure output
 
-**Never refactor while RED.** Get to GREEN first.
+**If test passes:** RED agent failed. Tell it to fix — the test must fail because the feature doesn't exist.
 
-> For multi-agent **build** orchestration — frontend visual validation, backend API pre-flight, and end-to-end test orchestration — see the `handoff-build` command. This skill stays focused on the red-green-refactor loop itself.
+**If test errors:** RED agent must fix the error (typo, import issue) and re-verify failure.
 
-## Checklist Per Cycle
+**Parallel optimization (optional):** If multiple behaviors target different source files AND different test files (zero overlap), dispatch those RED agents in the same response. They run concurrently. Never parallel-dispatch agents that would edit the same file.
 
+### Step 3: For each behavior — GREEN agent
+
+Dispatch a `general` subagent with the GREEN agent prompt (`references/green-agent-prompt.md`).
+
+Provide ONLY:
+- The test file content (or path to read)
+- The test failure output from the RED agent
+- The source file path to modify
+- The test command
+- Project language/framework context
+
+**CRITICAL: Do NOT pass any conversation context, reasoning, or intent.** The GREEN agent must work purely from the test and error output. It must discover what the test wants by reading it.
+
+The GREEN agent MUST:
+1. Read the test file to understand what's being asked
+2. Read the source file to understand the existing code
+3. Write MINIMAL code to make the test pass
+4. Run the test and verify it PASSES
+5. Run the full test suite and verify no regressions
+6. Report: what was changed, test output
+
+**If test still fails:** GREEN agent must fix and re-verify.
+
+**If other tests break:** GREEN agent must fix regressions.
+
+**Parallel optimization (optional):** If the corresponding RED agents ran in parallel and the behaviors touch different source files, dispatch those GREEN agents in the same response. Same constraint: never parallel-edit the same file.
+
+### Step 4: Orchestrator verify
+
+After GREEN agent reports success, independently verify:
+
+1. **Review GREEN agent's report** — check file:line changes match what the test requires
+2. **Check for conflicts** — did the GREEN agent modify anything outside the expected source file?
+3. **Run full test suite yourself** — do NOT trust the agent's report alone
+```bash
+{test command}
 ```
-[ ] Test describes behavior, not implementation
-[ ] Test uses public interface only
-[ ] Test would survive internal refactor
-[ ] Code is minimal for this test
-[ ] No speculative features added
-```
+4. **Spot check the code** — read the changed lines. Is it minimal? Does it match existing patterns?
+5. **If anything is off** — either fix directly (small) or restart the cycle (large)
+
+### Step 5: Refactor
+
+After the cycle passes:
+- Remove duplication between cycles
+- Improve names
+- Extract helpers
+
+Run full test suite after each refactor step. Stay green.
+
+### Repeat
+
+Next behavior → next RED agent → next GREEN agent → refactor.
+
+### Step 6: Final verification
+
+After all cycles complete and final refactor is done:
+- [ ] Every new function/method has a test
+- [ ] Full test suite passes
+- [ ] Each test failed before its implementation existed
+- [ ] No dead code, no premature abstraction
+- [ ] Commit or report completion
+
+## Constraints
+
+### MUST DO
+- Break task into testable behaviors and get user approval
+- Fresh subagent pair per cycle — never reuse RED or GREEN agent
+- GREEN agent receives only: test file, failure output, source file path, test command
+- Verify full suite passes after each cycle
+- Run refactor with full suite verification
+
+### MUST NOT DO
+- Pass conversation context from RED to GREEN agent
+- Implement code in the orchestrator (that's the GREEN agent's job)
+- Skip the RED verification step
+- Let a GREEN agent see how the test was designed
+- Proceed to next behavior while current cycle has failures
+- Reuse a subagent across cycles
+
+## Common Mistakes
+
+| Mistake | Fix |
+|---------|-----|
+| **Behavior too broad** — "validates email" instead of "rejects empty email" | One assertion per behavior. Split anything with "and" in the name. |
+| **Context leak** — GREEN agent received conversation history or intent notes | GREEN agent gets ONLY: test file path, failure output, source file path, test command. Nothing else. |
+| **GREEN over-implements** — added options, abstractions, or "future-proofing" | Restart cycle. GREEN must write minimal code. |
+| **Skipping full suite verification** — GREEN agent only ran the one test | Restart cycle. Run full suite yourself as orchestrator. |
+| **Reusing a subagent** — same RED or GREEN agent across cycles | Fresh subagent every cycle. Zero shared context. |
+| **Orchestrator writes code** — you implement instead of dispatching GREEN | Stop. Dispatch GREEN agent. That's its job. |
+| **Behaviors touch same code, run in parallel** — two agents edit same file | Sequential only when file conflict. Parallel only for disjoint files. |
+
+## When NOT to Use (ask your human partner)
+
+- Behaviors are deeply coupled — changing one changes all
+- Exploring unfamiliar code — need to understand before testing
+- All behaviors modify the same single function (sequential is fine, just can't parallelize)
+
+## Files
+
+- `SKILL.md` — this file (orchestrator workflow)
+- `references/red-agent-prompt.md` — RED subagent prompt template
+- `references/green-agent-prompt.md` — GREEN subagent prompt template
