@@ -47,6 +47,7 @@ info "Dotfiles repo: $REPO_DIR"
 # ---------------------------------------------------------------------------
 # 1. Symlinks  (whole dirs for nvim/opencode; individual items for Cursor)
 # ---------------------------------------------------------------------------
+link "$HOME/.tmux.conf"                           "$REPO_DIR/tmux/tmux.conf"
 link "$HOME/.config/nvim"                          "$REPO_DIR/nvim"
 link "$HOME/.config/opencode"                      "$REPO_DIR/opencode"
 link "$HOME/.config/Cursor/User/settings.json"     "$REPO_DIR/cursor/User/settings.json"
