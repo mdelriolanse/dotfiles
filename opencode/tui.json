@@ -2,5 +2,14 @@
   "$schema": "https://opencode.ai/tui.json",
   "theme": "catppuccin-mocha",
   "scroll_speed": 3,
-  "mouse": true
+  "mouse": true,
+  "keybinds": {
+    "session_timeline": "ctrl+o",
+    "prompt_stash": "ctrl+s",
+    "prompt_stash_pop": "ctrl+shift+s",
+    "input_delete_to_line_end": ["ctrl+k", "alt+k"],
+    "input_newline": "alt+j",
+    "messages_page_up": "alt+t",
+    "messages_page_down": "alt+e"
+  }
 }
