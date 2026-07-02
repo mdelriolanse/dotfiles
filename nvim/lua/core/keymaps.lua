@@ -275,6 +275,19 @@ vim.keymap.set({ 'v', 'x' }, '<C-c>', '"+y', { desc = 'Copy selection to Windows
 vim.keymap.set('i', '-->', '→', { desc = 'Replace --> with →' })
 vim.keymap.set('i', '==>', '⇒', { desc = 'Replace ==> with ⇒' })
 
+-- Drop animation keymaps
+vim.keymap.set('n', '<leader>dt', function()
+  if _G.DropPickTheme then
+    _G.DropPickTheme()
+  end
+end, { desc = '[D]rop [T]heme picker' })
+
+vim.keymap.set('n', '<leader>dT', function()
+  if _G.DropToggle then
+    _G.DropToggle()
+  end
+end, { desc = '[D]rop [T]oggle (manual)' })
+
 -- Python virtual environment switcher
 vim.keymap.set('n', '<leader>pv', '<cmd>SwenvPick<CR>', { desc = '[P]ick Python [V]env' })
 vim.keymap.set('n', '<leader>pV', '<cmd>SwenvCurrent<CR>', { desc = 'Show current Python [V]env' })

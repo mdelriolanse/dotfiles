@@ -53,6 +53,7 @@ return {
         { name = 'nvim_lsp' },
         { name = 'luasnip' },
         { name = 'path' },
+        { name = 'crates' }, -- Cargo.toml version completion (inert elsewhere)
       }, {
         { name = 'buffer' },
       }),
@@ -93,6 +94,7 @@ return {
             luasnip = '[Snip]',
             buffer = '[Buf]',
             path = '[Path]',
+            crates = '[Crates]',
           })[entry.source.name]
           return vim_item
         end,

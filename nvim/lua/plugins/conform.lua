@@ -31,6 +31,7 @@ return {
 				lua = { 'stylua' },
 				c = { 'clang-format' },
 				cpp = { 'clang-format' },
+				rust = { 'rustfmt' },
 				-- Hardware development formatters
 				verilog = { 'vsg' },
 				systemverilog = { 'vsg' },
