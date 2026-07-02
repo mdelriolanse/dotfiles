@@ -3,15 +3,11 @@ name: loop
 description: >-
   Run a prompt or skill in this session on a recurring or variable interval
   (e.g. /loop 5m /foo).
-disabled-environments:
-  - cloud
 metadata:
   disabledEnvironments:
     - cloud
 ---
 # Loop
-
-Use monitored shell output when the goal is to wake the agent for recurring local work.
 
 ## Parse
 
@@ -23,6 +19,8 @@ Accept `/loop [interval] <prompt>`.
 - Empty prompt: show `Usage: /loop [interval] <prompt>`.
 
 Use intervals like `30s`, `5m`, `2h`, `1d`. Convert unit words to short units.
+
+Use monitored shell output to wake the agent for recurring local work.
 
 ## Fixed Schedule
 
