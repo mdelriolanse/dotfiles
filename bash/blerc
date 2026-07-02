@@ -1,0 +1,16 @@
+# ble.sh user config — auto-loaded by ble.sh (~/.blerc).
+# See: https://github.com/akinomyoga/ble.sh/wiki
+
+# --- Autocomplete: stop the fish-style "guess after one keystroke" behavior ---
+# complete_auto_complete = the gray inline suggestion that appears as you type.
+# complete_auto_menu     = the completion menu that pops open on its own.
+# Both are disabled here; pressing TAB still completes normally.
+bleopt complete_auto_complete=
+bleopt complete_auto_menu=
+
+# --- Red highlighting over half-typed commands --------------------------------
+# ble.sh paints a command word with the `syntax_error` face (default: red
+# background) until it resolves to a real command — so every command flashes red
+# mid-typing. Drop the red background; keep a subtle red foreground so genuine
+# syntax errors are still hinted without highlighting normal typing.
+ble-face syntax_error='fg=red'
