@@ -25,6 +25,7 @@ require('lazy').setup({
   require 'plugins.lua-rocks',
   require 'plugins.guess-indent',
   require 'plugins.catppuccin',
+  require 'plugins.gruvbox',
   require 'plugins.drop',
   require 'plugins.snacks',
   require 'plugins.neo-tree',
@@ -80,3 +81,7 @@ require 'core.keymaps'
 require 'core.autocmds'
 require 'core.c-cpp'
 require 'colors'
+
+-- Owns colorscheme selection + the catppuccin<->gruvbox/transparent :ThemeToggle.
+-- Runs last so it has the final word on the active colorscheme at startup.
+require('core.theme-toggle').setup()

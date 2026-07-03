@@ -7,9 +7,16 @@ return {
     if not ok then
       ok, theme = pcall(require, 'lualine.themes.catppuccin')
     end
-    return {
+    -- Remember the catppuccin theme name so core.theme-toggle can restore it when
+    -- switching back from gruvbox.
+    _G.LualineCatppuccinTheme = ok and theme or 'auto'
+    -- Honour the persisted theme mode: if gruvbox is active, load lualine themed to
+    -- match so a restored session's statusline isn't briefly catppuccin-colored.
+    local tt_ok, tt = pcall(require, 'core.theme-toggle')
+    local active_theme = (tt_ok and tt.mode == 'gruvbox') and 'gruvbox' or (ok and theme or 'auto')
+    local config = {
     options = {
-      theme = ok and theme or 'auto',
+      theme = active_theme,
       icons_enabled = true,
       globalstatus = true,
       component_separators = { left = '', right = '' },
@@ -51,5 +58,9 @@ return {
     },
     extensions = { 'neo-tree', 'lazy', 'mason', 'fugitive', 'quickfix', 'nvim-dap-ui' },
     }
+    -- Stash the fully-built config so core.theme-toggle can re-run setup() with a
+    -- swapped options.theme (gruvbox <-> catppuccin) without losing these sections.
+    _G.LualineOpts = config
+    return config
   end,
 }

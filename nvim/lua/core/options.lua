@@ -46,7 +46,8 @@ vim.keymap.set('n', '<Tab>', ':bnext<CR>', opts)
 vim.keymap.set('n', '<S-Tab>', ':bprevious<CR>', opts)
 vim.keymap.set('n', '\\', '<Cmd>Neotree toggle<CR>')
 
-vim.cmd 'colorscheme catppuccin'
+-- Colorscheme is applied by core.theme-toggle (required last in init.lua) so the
+-- persisted catppuccin/gruvbox mode is restored without a flash.
 
 -- <Esc> in terminal mode intentionally left unbound — single Esc passes through
 -- to the program inside the terminal. Use <Esc><Esc> to exit terminal mode
