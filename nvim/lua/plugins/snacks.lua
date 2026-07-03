@@ -4,6 +4,9 @@ return {
   lazy = false,
   opts = {
     dashboard = {
+      preset = {
+        header = '⟨ nvim ⟩',
+      },
       sections = {
         { section = 'header' },
         { icon = ' ', title = 'Keymaps', section = 'keys', indent = 2 },
