@@ -27,3 +27,6 @@ cursor/User/workspaceStorage/
 
 # Project-specific agent plans — never centralize
 cursor/dot-cursor/plans/
+
+# Claude Code session worktrees (ephemeral)
+.claude/worktrees/
