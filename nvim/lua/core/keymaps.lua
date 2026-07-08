@@ -195,8 +195,17 @@ local function smart_hover()
 end
 vim.keymap.set('n', '<A-k>', smart_hover, { desc = 'Hover docs (LSP → man/help), toggle' })
 
+local ts_filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' }
+
 local function toggle_line_diagnostics()
   if close_if_open(diag_win) then diag_win = nil; return end
+  if vim.tbl_contains(ts_filetypes, vim.bo.filetype) then
+    local ok, pte = pcall(require, 'pretty-ts-errors')
+    if ok then
+      pte.show_formatted_error()
+      return
+    end
+  end
   local _, win = vim.diagnostic.open_float(nil, { focus = false, border = 'rounded', scope = 'line' })
   diag_win = win
 end
