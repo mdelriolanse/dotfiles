@@ -248,7 +248,7 @@ No-op that appends a one-line trace entry. Exit should be 0.
 ### 6.8. Mirror the rendered report to chat (all modes)
 
 Read `$review_dir/artifact.md` and output the full content directly to
-the chat — NOT a summary, the full sectioned report. This
+the Claude Code chat — NOT a summary, the full sectioned report. This
 lets the user inspect findings without bouncing to GitHub (and is the
 only output in local mode).
 

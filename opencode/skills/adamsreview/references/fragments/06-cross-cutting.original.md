@@ -1,6 +1,6 @@
 ## Phase 5 — Cross-cutting review (deep lane only)
 
-One sub-agent looks across all deep-lane `is_actionable: true`
+One Opus sub-agent looks across all deep-lane `is_actionable: true`
 findings and emits `cross_cutting_groups` — sets of findings that must
 be fixed together, each with a combined approach. Non-deep-lane
 findings skip Phase 5 entirely.
@@ -101,7 +101,8 @@ First, token log:
 ```bash
 log-tokens.sh \
   --review-dir "$review_dir" --phase phase_5 \
-  --agent-role cross_cutting --agent-id <id> \--tokens <N or null>
+  --agent-role cross_cutting --agent-id <id> \
+  --model opus --tokens <N or null>
 ```
 
 Parse the sub-agent's JSON. If parsing fails after one retry (§24.1),

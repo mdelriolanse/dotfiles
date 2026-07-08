@@ -472,12 +472,13 @@ overflow) so the user sees them before the `question` fires:
 ```markdown
 **$auto_rec_count auto-recommendation(s) ready for batch confirm.**
 
-These findings have `auto_fix_hint` set by Phase 5.5 — sub-agent generated
+These findings have `auto_fix_hint` set by Phase 5.5 — Sonnet generated
 + verified a fix direction. Above the threshold ($threshold) and not
 yet promoted. The default path applies all of them; review per-finding
 or skip if you want a closer look.
 
 | F-id | score | disp | file:line | confidence | hint | concerns? |
+|---|---|---|---|---|---|---|
 | F003 | 75 | confirmed_manual | src/foo.py:42-58 | high | Update docstring to match the implementation… | — |
 | F008 | 68 | confirmed_report | src/bar.ts:120-134 | low | Add validation for the empty-array case… | _verify covers .filter() chain_ |
 | F012 | 80 | confirmed_mechanical (ux) | docs/api.md:200-215 | medium | Tighten the typo + casing in the example… | — |

@@ -33,29 +33,20 @@ MARKER = "<!-- adams-review-v1 -->"
 # the Light-lane Disposition cell. Raw enum values never appear in rendered
 # output — they stay machine-facing in artifact.json.
 #
-# `bin/schema-v1.json` defines 11 disposition enum values; the 8 mapped here
-# are all the ones that render into actionable / report sections. The three
+# `bin/schema-v1.json` defines 11 disposition enum values; the 9 mapped here
+# are all the ones that render into actionable / report sections. The two
 # omitted on purpose are:
-#   - `disproven`         — Phase-4 rejected, surfaced via the summary's
-#                           "Filtered out" bullet, no per-finding section.
 #   - `below_gate`        — Phase-3 nit, surfaced via summary "Filtered out"
-#                           + optional `render_polish_clusters` table.
-#   - `pending_validation` — Phase-1 parking value; should never survive past
-#                           Phase 6 finalize. If it leaks through, the
-#                           Uncategorized residual bullet in render_summary
-#                           surfaces it rather than silently absorbing the
-#                           count. Any future enum addition lands the same
-#                           way until SECTION_LABEL + render_summary are
-#                           extended.
 SECTION_LABEL = {
     "confirmed_mechanical": ("01", "Auto-fixable", "✓", "auto-fixable"),
     "confirmed_manual": ("02", "Requires manual attention", "⚠", "manual"),
     "uncertain": ("03", "Uncertain", "ℹ", "uncertain"),
-    "confirmed_report": ("04", "Confirmed — informational", "ℹ", "informational"),
-    "pre_existing_report": ("05", "Pre-existing — report-only", "ℹ", "pre-existing"),
-    "partial": ("06", "Partially fixed (retry-eligible)", "⚠", "partial"),
-    "regression": ("07", "Regression (reverted; retry-eligible)", "✗", "regression"),
-    "resolved": ("08", "Resolved", "✓", "resolved"),
+    "disproven": ("04", "Disproven", "✗", "disproven"),
+    "confirmed_report": ("05", "Confirmed — informational", "ℹ", "informational"),
+    "pre_existing_report": ("06", "Pre-existing — report-only", "ℹ", "pre-existing"),
+    "partial": ("07", "Partially fixed (retry-eligible)", "⚠", "partial"),
+    "regression": ("08", "Regression (reverted; retry-eligible)", "✗", "regression"),
+    "resolved": ("09", "Resolved", "✓", "resolved"),
 }
 
 DEEP_AUTO_FIX_DISPOSITIONS = ("confirmed_mechanical", "partial", "regression", "resolved")
@@ -252,22 +243,14 @@ def render_summary(buckets):
 
     deep_bits = []
     for disp in ("confirmed_mechanical", "partial", "regression", "resolved",
-                 "confirmed_manual", "confirmed_report", "uncertain"):
+                 "confirmed_manual", "confirmed_report", "uncertain", "disproven"):
         n = len(deep(disp))
         if n:
             deep_bits.append(f"{n} {SECTION_LABEL[disp][3]}")
 
     light_bits = []
-    # `uncertain` included: §13.1 Phase-4 rule "score 45-59 → uncertain" applies
-    # regardless of lane. Light-lane uncertain findings were silently dropped
-    # from both this summary and render_light_lane's table prior to Stage 2.5.D —
-    # the C13 ray-finance run quietly lost 3 findings from its PR comment.
-    # `partial` / `regression` / `resolved` included for lane symmetry with
-    # deep_bits: a light-lane finding promoted via :promote and then run through
-    # :fix can land in any of these states, and would otherwise drop from the
-    # summary count (same Xilem #1791 silent-drop class).
     for disp in ("confirmed_mechanical", "partial", "regression", "resolved",
-                 "confirmed_manual", "confirmed_report", "uncertain"):
+                 "confirmed_manual", "confirmed_report", "uncertain", "disproven"):
         n = len(light(disp))
         if n:
             light_bits.append(f"{n} {SECTION_LABEL[disp][3]}")
@@ -340,11 +323,11 @@ def render_summary(buckets):
     # dispositions.
     deep_accounted = sum(len(deep(d)) for d in (
         "confirmed_mechanical", "partial", "regression", "resolved",
-        "confirmed_manual", "confirmed_report", "uncertain",
+        "confirmed_manual", "confirmed_report", "uncertain", "disproven",
     ))
     light_accounted = sum(len(light(d)) for d in (
         "confirmed_mechanical", "partial", "regression", "resolved",
-        "confirmed_manual", "confirmed_report", "uncertain",
+        "confirmed_manual", "confirmed_report", "uncertain", "disproven",
     ))
     accounted_total = (
         deep_accounted + light_accounted + pre_existing_n + disproven_n + below_gate_n
@@ -816,6 +799,71 @@ def render_fix_runs(artifact):
     return "\n".join(lines)
 
 
+def render_disproven(buckets):
+    """Render a dedicated section for disproven findings with 2-sentence summaries.
+
+    Both deep- and light-lane disproven findings surface here so reviewers
+    know why Phase 4 rejected them. Each entry is a concise distillation
+    of the agent's rationale.
+    """
+    rows = [f for f in buckets.get("disproven", [])]
+    if not rows:
+        return ""
+    lines = [f"### Rejected findings ({len(rows)})", ""]
+    lines.append(
+        "Phase 4 or Phase 6c audited these and could not confirm. "
+        "Listed so you can see what was challenged and why."
+    )
+    lines.append("")
+    lines.append("| # | Score | Impact | File | Claim | Why disproven |")
+    lines.append("|---|-------|--------|------|-------|---------------|")
+    for f in rows:
+        why = f.get("reason") or ""
+        if len(why) > 200:
+            why = why[:197] + "..."
+        # If an audit_result exists, prefer its summary
+        audit = f.get("audit_result") or {}
+        if audit.get("summary"):
+            why = audit["summary"]
+        lines.append(
+            f"| {f.get('id')} | {f.get('score_phase4') or f.get('score_phase3') or ''} | "
+            f"{f.get('impact_type', '?')} | {file_link(f)} | {f.get('claim', '')} | {why} |"
+        )
+    return "\n".join(lines)
+
+
+def render_audit(buckets):
+    """Surface Phase 6c audit challenges on findings that have an audit_result.
+
+    Renders a compact table of findings that were challenged — whether they
+    were retained, downgraded, or flagged (split verdict). This is separate
+    from render_disproven because audit_result can exist on any disposition.
+    """
+    rows = [f for f_list in buckets.values() for f in f_list if f.get("audit_result")]
+    if not rows:
+        return ""
+    lines = [f"## Phase 6c audit challenges ({len(rows)})", ""]
+    lines.append(
+        "Dual-agent challenge: one agent plays devil's advocate, the other "
+        "re-verifies from scratch. Disagreement or consensus downgrade shifts "
+        "the finding to `uncertain`."
+    )
+    lines.append("")
+    lines.append("| # | Verdict | File | Claim | 2-sentence summary |")
+    lines.append("|---|---------|------|-------|--------------------|")
+    for f in rows:
+        ar = f.get("audit_result") or {}
+        verdict = ar.get("verdict", "?")
+        summary = ar.get("summary", "")
+        if len(summary) > 280:
+            summary = summary[:277] + "..."
+        lines.append(
+            f"| {f.get('id')} | {verdict} | {file_link(f)} | "
+            f"{f.get('claim', '')} | {summary} |"
+        )
+    return "\n".join(lines)
+
+
 def render_footer(artifact):
     return "🤖 Generated with the [adamsreview](https://github.com/adamjgmiller/adamsreview) Review Skill"
 
@@ -839,6 +887,8 @@ def render(artifact):
         render_deep_other(buckets, "confirmed_manual"),
         render_deep_other(buckets, "uncertain"),
         render_deep_other(buckets, "confirmed_report"),
+        render_disproven(buckets),
+        render_audit(buckets),
         render_light_lane(buckets),
         render_polish_clusters(buckets),
         render_pre_existing(buckets),

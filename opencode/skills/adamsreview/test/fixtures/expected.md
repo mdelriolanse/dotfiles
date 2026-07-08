@@ -8,7 +8,7 @@
 **Sub-agent tokens:** 12,000 across 8 invocations
 
 Found 8 findings across all lanes:
-- Deep lane (correctness/security): 1 resolved, 1 manual, 1 uncertain
+- Deep lane (correctness/security): 1 resolved, 1 manual, 1 uncertain, 1 disproven
 - Light lane (ux/policy/architecture): 1 auto-fixable, 1 uncertain
 - Pre-existing (high-confidence origin, report-only): 1
 - Filtered out: 1 disproven, 1 below score gate (<45)
@@ -50,6 +50,14 @@ _Not auto-applied by `/adamsreview:fix` directly — these need a confirmation s
 
 Phase 4 couldn't confirm decisively. Re-run `/adamsreview:review` if you suspect this deserves
 further investigation with fresh context.
+
+### Rejected findings (1)
+
+Phase 4 or Phase 6c audited these and could not confirm. Listed so you can see what was challenged and why.
+
+| # | Score | Impact | File | Claim | Why disproven |
+|---|-------|--------|------|-------|---------------|
+| F100 | 25 | correctness | `src/auth/session.ts:10` | Race condition on session refresh | Phase 4 validation refuted the claim against the actual code |
 
 ## Light lane — ux, policy, architecture
 

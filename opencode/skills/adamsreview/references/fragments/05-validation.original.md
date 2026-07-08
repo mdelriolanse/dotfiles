@@ -1,9 +1,9 @@
 ## Phase 4 — Validation (lane-aware)
 
 Phase 3's survivors get validated: deep-lane candidates (correctness +
-security outside trivial mode) go through Phase 4a — one sub-agent
+security outside trivial mode) go through Phase 4a — one Opus sub-agent
 per candidate. Everything else (plus every candidate under
-`trivial_mode`) goes through Phase 4b — chunked-batch sub-agent
+`trivial_mode`) goes through Phase 4b — chunked-batch Sonnet
 chunk-agents (≤25 candidates per chunk; see §4.3), lighter.
 
 Chain-wave retry (§4): the orchestrator dispatches Wave 1 (deep
@@ -11,7 +11,7 @@ per-candidate + light chunked-batch); if any Wave 1 deep output
 references further candidates via `related_candidates_to_investigate`,
 the orchestrator aggregates those at the orchestrator level and
 dispatches Wave 2. Hard cap at two waves. Wave 2 is deep-lane only,
-one sub-agent per candidate.
+one Opus per candidate.
 
 Capture `phase_4_start_epoch=$(date +%s)` as the first action of this
 phase — step 4.7 logs the elapsed time.
@@ -35,21 +35,21 @@ Per §13.9 + §19.6, light lane under trivial_mode refuses to emit
 Else: partition by `validation_lane` (which was set at Phase 1 based
 on `impact_type`):
 
-- `validation_lane == "deep"` → Wave 1 deep lane (sub-agent).
-- `validation_lane == "light"` → Wave 1 light lane (sub-agent).
+- `validation_lane == "deep"` → Wave 1 deep lane (Opus).
+- `validation_lane == "light"` → Wave 1 light lane (Sonnet).
 
-### 4.2. Wave 1 — deep lane (sub-agent per candidate; skipped under trivial_mode)
+### 4.2. Wave 1 — deep lane (Opus per candidate; skipped under trivial_mode)
 
 > **One turn for all deep-lane `Agent` dispatches — not one turn per
-> candidate.** Phase 4a wall-clock latency is `max(agent_durations)`, not
-> `sum(agent_durations)`. Serializing turns the deep lane into a
+> candidate.** Phase 4a wall-clock latency is `max(opus_durations)`, not
+> `sum(opus_durations)`. Serializing turns the deep lane into a
 > per-candidate timer.
 
 For each deep-lane candidate, launch ONE `Task` tool-use with
 , `subagent_type: general`. Dispatch all in one
 orchestrator turn for concurrency.
 
-**Never batch deep-lane candidates into one sub-agent call.** Each candidate needs independent blast-radius and fix-proposal work. The `--apply-decisions --expected $N` guard catches under-count violations but cannot catch the collapse-then-correct-unwrap failure mode (batching N candidates into one sub-agent call, then unwrapping the response into N tuples to satisfy the guard). The discipline is yours.
+**Never batch deep-lane candidates into one Opus call.** Each candidate needs independent blast-radius and fix-proposal work. The `--apply-decisions --expected $N` guard catches under-count violations but cannot catch the collapse-then-correct-unwrap failure mode (batching N candidates into one Opus call, then unwrapping the response into N tuples to satisfy the guard). The discipline is yours.
 
 Each sub-agent receives:
 - The full stored finding JSON. `evidence_snippet` is not among the
@@ -191,7 +191,7 @@ Prompt essence:
 > information into `evidence[]`, `blast_radius.invariants_at_stake[]`,
 > and `fix_proposal.{approach,files_to_modify}` instead.
 
-### 4.3. Wave 1 — light lane (sub-agent, chunked-batch fan-out)
+### 4.3. Wave 1 — light lane (Sonnet, chunked-batch fan-out)
 
 > **One turn for all chunk-`Agent` dispatches — not one turn per chunk.**
 > Light-lane chunks are independent; serializing turns the lane into a
@@ -203,7 +203,7 @@ balanced as evenly as feasible. For each chunk, launch ONE `Agent`
 tool-use with . Dispatch all chunk-agents in one
 orchestrator turn for concurrency.
 
-Light-lane batches well — rubric-checking against CLAUDE.md, not per-candidate blast-radius investigation. Cap chunks at 25: unbounded batches collapse score resolution onto the rubric anchors and stop using parallelism on large reviews. The §4.4 `--apply-decisions --expected $N` guard catches a chunk-agent dropping a finding the same way it catches collapsed deep-lane sub-agent calls.
+Light-lane batches well — rubric-checking against CLAUDE.md, not per-candidate blast-radius investigation. Cap chunks at 25: unbounded batches collapse score resolution onto the rubric anchors and stop using parallelism on large reviews. The §4.4 `--apply-decisions --expected $N` guard catches a chunk-agent dropping a finding the same way it catches collapsed deep-lane Opus calls.
 
 Prompt essence:
 
@@ -258,13 +258,15 @@ matching the Phase 3 pattern in §3.3 step 1):
 log-tokens.sh \
   --review-dir "$review_dir" --phase phase_4a \
   --agent-role validator --finding-id "$id" \
-  --agent-id <id>  --tokens <N or null>
+  --agent-id <id> --model opus \
+  --tokens <N or null>
 
 # Light lane (per chunk-agent — --finding-id omitted):
 log-tokens.sh \
   --review-dir "$review_dir" --phase phase_4b \
   --agent-role validator \
-  --agent-id <id>  --tokens <N or null>
+  --agent-id <id> --model sonnet \
+  --tokens <N or null>
 ```
 
 Then collect every Wave 1 sub-agent response into a single JSON array
@@ -278,6 +280,7 @@ sees a single summary line instead of N per-finding prose blocks.
 **Derivation (performed by `--apply-decisions`):**
 
 | Score | Rule | Disposition | is_actionable | Other |
+|---|---|---|---|---|
 | `null` | parse failure | `uncertain` | false | reason default: "uncertain (Phase 4 inconclusive)" |
 | `< 45` | disproven | `disproven` | false | reason default: "disproven by Phase 4" |
 | `45-59` | uncertain | `uncertain` | false | reason default: "uncertain (Phase 4 inconclusive)" |
@@ -375,7 +378,7 @@ mkdir -p "$scratch"
 # (count individual candidates, NOT chunk-agents — each light-lane
 # chunk-agent owns multiple findings and is expected to return one
 # tuple per finding it owned). Used by --expected as the structural
-# guard against batched-sub-agent collapse and chunk-array drops.
+# guard against batched-Opus collapse and chunk-array drops.
 #
 # The orchestrator already has the lane-partitioned id lists in
 # context from §4.1 — surface them as comma-separated bash strings
@@ -416,7 +419,7 @@ failure does not trip the structural guard — it surfaces as an
 **On `--expected` rejection (exit 6, count mismatch):** the helper
 emits a stderr block naming the expected vs received count and the
 recovery action. The check is bidirectional — under-count means a
-collapsed deep-lane sub-agent call (re-dispatch one Task per missing
+collapsed deep-lane Opus call (re-dispatch one Task per missing
 candidate and recompose the tuple array on the full per-finding
 result set) OR a light-lane chunk-agent dropped findings from its
 returned array (re-dispatch the chunk for the missing ids); over-
@@ -553,7 +556,7 @@ If the resulting list is non-empty AND we haven't already done Wave 2:
    gate, same prompt as Wave 1 BUT add: "This is Wave 2 — do NOT emit
    further `related_candidates_to_investigate` entries." (Hard-cap
    enforcement: §4 says "Hard cap at 2 waves.") Wave 2 is deep-lane
-   only — one sub-agent per candidate, no batching, same rule as §4.2.
+   only — one Opus per candidate, no batching, same rule as §4.2.
 
    > **One turn for all Wave 2 `Agent` dispatches — not one turn per
    > candidate.** Same parallelism contract as §4.2 above; serializing

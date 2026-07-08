@@ -17,9 +17,10 @@ results happens on the next turn.
 Based on the Phase 0 variables:
 
 | Lens | Runs when |
+|---|---|
 | L1 — diff-local scan | always |
 | L2 — structural / blast-radius | `trivial_mode != true` |
-| L3 — AGENTS.md / instructions / ponytail compliance | always |
+| L3 — CLAUDE.md compliance | always |
 | L4 — comment compliance | always |
 | L5 — UX | `user_facing == true AND trivial_mode != true` |
 | L6 — lightweight security | `trivial_mode != true` |
@@ -131,11 +132,11 @@ lens claim.
 
 ### 1.2a. Ensemble readiness (not ported)
 
-The ensemble integration has not been ported to opencode.
+The ensemble/Codex integration has not been ported to opencode.
 Record one line in `trace.md`:
 
 ```
-Phase 1 ensemble readiness gate skipped — not available in opencode port
+Phase 1 ensemble readiness gate skipped — ensemble/Codex not available in opencode port
 ```
 
 Set `codex_available=false` in your working context. Continue to step 1.3.
@@ -194,7 +195,7 @@ sub-section as its own dispatch turn defeats the parallelism this
 phase relies on: Phase 1 wall-clock latency goes from
 `max(lens_durations)` to `sum(lens_durations)`.
 
-#### L1 — diff-local scan (sub-agent)
+#### L1 — diff-local scan (Sonnet)
 
 > **Read L1–L6 before issuing any Task tool-use.** The per-lens sub-sections
 > below are spec data (model, prompt body, substitutions). Issue every
@@ -208,7 +209,7 @@ Prompt body: `references/fragments/lens-prompts/L1.md` (read in step 1.3's bulk
 pre-read; its content is the L1 prompt body verbatim). Final prompt =
 shared invariants (from step 1.2.1) + lens body.
 
-#### L2 — structural / blast-radius (sub-agent; skipped if `trivial_mode`)
+#### L2 — structural / blast-radius (Opus; skipped if `trivial_mode`)
 
 > **Spec data — issue this lens's `Agent` block in the single `#### Dispatch turn` at the end of §1.3, not here.**
 
@@ -224,7 +225,7 @@ substitution: `$prior_fix_suspects` → the JSON array captured at step
 1.2b. Final prompt = shared invariants (from step 1.2.1) + lens body
 (with substitution applied).
 
-#### L3 — AGENTS.md / instructions / ponytail compliance (sub-agent)
+#### L3 — CLAUDE.md compliance (Sonnet)
 
 > **Spec data — issue this lens's `Agent` block in the single `#### Dispatch turn` at the end of §1.3, not here.**
 
@@ -236,7 +237,7 @@ substitution: `$claude_md_paths` → the newline-joined list from Phase
 0 step 0.7. Final prompt = shared invariants (from step 1.2.1) + lens
 body (with substitution applied).
 
-#### L4 — comment compliance (sub-agent)
+#### L4 — comment compliance (Sonnet)
 
 > **Spec data — issue this lens's `Agent` block in the single `#### Dispatch turn` at the end of §1.3, not here.**
 
@@ -248,7 +249,7 @@ Prompt body: `references/fragments/lens-prompts/L4.md` (read in step 1.3's bulk
 pre-read; its content is the L4 prompt body verbatim). Final prompt =
 shared invariants (from step 1.2.1) + lens body.
 
-#### L5 — UX (sub-agent; skipped if `trivial_mode` or `user_facing == false`)
+#### L5 — UX (Sonnet; skipped if `trivial_mode` or `user_facing == false`)
 
 > **Spec data — issue this lens's `Agent` block in the single `#### Dispatch turn` at the end of §1.3, not here.**
 
@@ -261,7 +262,7 @@ for now to avoid scope creep). Per-lens substitution: `$claude_md_paths`
 → the newline-joined list from Phase 0 step 0.7. Final prompt = shared
 invariants (from step 1.2.1) + lens body (with substitution applied).
 
-#### L6 — lightweight security (sub-agent; skipped if `trivial_mode`)
+#### L6 — lightweight security (Sonnet; skipped if `trivial_mode`)
 
 > **Spec data — issue this lens's `Agent` block in the single `#### Dispatch turn` at the end of §1.3, not here.**
 
@@ -321,10 +322,10 @@ For each sub-agent result, in the order it returns:
    ```
 
     <lens-name>` is one of `lens_1_diff_local`, `lens_2_structural`,
-    `lens_3_agents_md`, `lens_4_comments`, `lens_5_ux`, `lens_6_security`,
+    `lens_3_claude_md`, `lens_4_comments`, `lens_5_ux`, `lens_6_security`,
     `lens_7_holistic`. The paired per-finding `sources[]` entry — used in
     the jq builder at step 1.5 — is the shorter lens tag: `L1-diff-local`,
-    `L2-structural`, `L3-agents-md`, `L4-comments`, `L5-ux`, `L6-security`,
+    `L2-structural`, `L3-claude-md`, `L4-comments`, `L5-ux`, `L6-security`,
     `L7-holistic`.
 
 2. **Light JSON repair** if the output isn't a parseable array — strip code

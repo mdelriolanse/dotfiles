@@ -1,6 +1,6 @@
 ## Phase 5.5 — Auto-fix-hint generation
 
-A two-pass sub-agent generation+verification chain produces an
+A two-pass Sonnet generation+verification chain produces an
 `auto_fix_hint` per eligible finding — pre-computing what
 `/adamsreview:walkthrough`'s per-finding briefer would write so that
 downstream `/adamsreview:fix` and `:walkthrough` can surface a
@@ -8,8 +8,8 @@ batch-confirm UI instead of a per-finding interactive loop.
 
 Runs after Phase 5 cross-cutting and before Phase 6 finalize. Single
 fragment for both `:review` and `:codex-review` — the work is
-downstream of either validator and is sub-agent-driven, so there is no
-provider split here.
+downstream of either validator and is Sonnet-driven, so there is no
+Claude / Codex split here.
 
 Capture `phase_5_5_start_epoch=$(date +%s)` as the first action of
 this phase — step 5.5.5 logs the elapsed time.
@@ -118,7 +118,7 @@ The verification pass (§5.5.3) reads the same chunk file plus the
 gen pass's output for the chunk; it does NOT see the proposer's
 self-critique — independence is the second-opinion mechanism.
 
-### 5.5.2. Generation pass — one sub-agent per chunk
+### 5.5.2. Generation pass — one Sonnet sub-agent per chunk
 
 ★ **Parallel dispatch — load-bearing.** Issue every generation
 sub-agent's `Task` tool-use in a SINGLE orchestrator turn so they
@@ -161,7 +161,8 @@ output:
 log-tokens.sh \
   --review-dir "$review_dir" --phase phase_5_5_gen \
   --agent-role auto_fix_hint_gen \
-  --agent-id <id-from-Agent-result>  --tokens <N or null>
+  --agent-id <id-from-Agent-result> --model sonnet \
+  --tokens <N or null>
 ```
 
 Light JSON repair + one retry per `_prelude-shared.md` §1. On second
@@ -172,7 +173,7 @@ reason=unparseable` to `$trace_log_path`.
 Save each chunk's parsed output to
 `$review_dir/phase5_5_chunks/${chunk_id}-gen.json`.
 
-### 5.5.3. Verification pass — one sub-agent per chunk
+### 5.5.3. Verification pass — one Sonnet sub-agent per chunk
 
 ★ **Parallel dispatch — load-bearing.** Same parallelism contract as
 §5.5.2. Verification depends on generation having returned, but the
@@ -208,7 +209,8 @@ After each verify sub-agent returns:
 log-tokens.sh \
   --review-dir "$review_dir" --phase phase_5_5_verify \
   --agent-role auto_fix_hint_verify \
-  --agent-id <id-from-Agent-result>  --tokens <N or null>
+  --agent-id <id-from-Agent-result> --model sonnet \
+  --tokens <N or null>
 ```
 
 Light JSON repair + one retry per `_prelude-shared.md` §1. On second

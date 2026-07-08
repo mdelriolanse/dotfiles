@@ -3,8 +3,13 @@
 #
 # Usage:
 #   log-tokens.sh --review-dir <d> --phase <phase_label> --agent-role <role>
-#                 --agent-id <id> --model <name> --tokens <n|null>
+#                 --agent-id <id> [--model <name>] --tokens <n|null>
 #                 [--finding-id <F0XX>] [--lens <L2>]
+#
+# --model is optional (default "default"). The opencode port is model-agnostic;
+# all sub-agents inherit the orchestrator's globally configured model. The field
+# is retained for observability and back-compat with existing artifacts but
+# carries no semantic weight.
 #
 # --tokens accepts an integer OR the literal "null" (DESIGN §11
 # parse-failure fallback: if the <usage> block couldn't be extracted
@@ -13,7 +18,7 @@
 #
 # Emits one JSON line per invocation:
 #   {"phase":"phase_4a","agent_role":"validator","finding_id":"F001",
-#    "agent_id":"a155...","model":"opus","tokens":27714,
+#    "agent_id":"a155...","model":"default","tokens":27714,
 #    "ts":"2026-04-17T19:23:14Z"}
 #
 # Exits: 0 success; 1 write failure; 64 usage error.
@@ -23,13 +28,15 @@ set -euo pipefail
 usage() {
     cat >&2 <<USAGE
 Usage: $(basename "$0") --review-dir <d> --phase <phase_label> --agent-role <role>
-                       --agent-id <id> --model <name> --tokens <n|null>
-                       [--finding-id <F0XX>] [--lens <L2>]
+                        --agent-id <id> [--model <name>] --tokens <n|null>
+                        [--finding-id <F0XX>] [--lens <L2>]
 
 Appends one JSON line to <review-dir>/tokens.jsonl for post-run
 token cost tallies (DESIGN §11). Token value may be "null" when the
 <usage> block could not be parsed — that is observability, not an
-error.
+error. --model is optional (default "default"); the opencode port
+is model-agnostic and all sub-agents inherit the orchestrator's
+configured model.
 USAGE
 }
 
@@ -39,7 +46,7 @@ REVIEW_DIR=""
 PHASE=""
 ROLE=""
 AGENT_ID=""
-MODEL=""
+MODEL="default"
 TOKENS=""
 FINDING_ID=""
 LENS=""
@@ -79,7 +86,6 @@ done
 [[ -n "$PHASE" ]]      || die_usage "--phase is required"
 [[ -n "$ROLE" ]]       || die_usage "--agent-role is required"
 [[ -n "$AGENT_ID" ]]   || die_usage "--agent-id is required"
-[[ -n "$MODEL" ]]      || die_usage "--model is required"
 [[ -n "$TOKENS" ]]     || die_usage "--tokens is required (integer or literal 'null')"
 
 mkdir -p "$REVIEW_DIR"

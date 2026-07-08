@@ -1,6 +1,6 @@
 ## Phase 3 — Cheap scoring + gate
 
-Chunked-batch sub-agent scoring against the §20 rubric (err-up; up to 25
+Chunked-batch Sonnet scoring against the §20 rubric (err-up; up to 25
 candidates per chunk-agent), followed by the §13.1 Phase-3 gate that
 decides which candidates move on to expensive Phase 4 validation.
 
@@ -59,12 +59,12 @@ be all-gate skip too).
 
 Split `scoring_ids` into chunks of **at most 25 candidates per chunk**,
 balanced as evenly as feasible (e.g. 22 → one chunk of 22; 50 → 25/25;
-60 → 20/20/20). For each chunk, launch ONE sub-agent. Fire all
+60 → 20/20/20). For each chunk, launch ONE Sonnet sub-agent. Fire all
 chunk-agents from a single orchestrator turn so they run concurrently —
 same parallel fan-out pattern as Phase 1 lenses, but at chunk granularity.
 
 **Why chunked, not per-finding.** Chunk into batches of at most 25
-candidates per sub-agent. Unbounded batches collapse score
+candidates per Sonnet sub-agent. Unbounded batches collapse score
 resolution onto the rubric anchors (every score landing on
 0/25/50/75/100) and stop using parallelism on large reviews — the
 25-cap restores both. The Phase-3 gate is a sharp cutoff at 45, so
@@ -92,19 +92,19 @@ Prompt essence:
 > | Score | Meaning |
 > |---|---|
 > | **0** | Not confident. Clear false positive that doesn't stand up to light scrutiny. |
-> | **25** | Somewhat confident. Might be real, but more likely a false positive or a stylistic issue not explicitly called out in AGENTS.md, instructions, or CLAUDE.md. |
+> | **25** | Somewhat confident. Might be real, but more likely a false positive or a stylistic issue not explicitly called out in CLAUDE.md. |
 > | **50** | Moderately confident. Verified real, but a nitpick or edge case; not important relative to the rest of the PR. |
-> | **75** | Highly confident. Verified real; will likely be hit in practice; directly impacts functionality OR directly violates an AGENTS.md, instructions, or CLAUDE.md rule. |
+> | **75** | Highly confident. Verified real; will likely be hit in practice; directly impacts functionality OR directly violates a CLAUDE.md rule. |
 > | **100** | Absolutely certain. Real; will happen frequently; evidence directly confirms. |
 >
 > **Err-up instruction:** When genuinely uncertain between two adjacent
 > levels, pick the HIGHER one. This gate feeds expensive Phase 4
 > investigation that filters false positives; the cost of flagging a FP
-> here is one agent of investigation. The cost of missing a real
+> here is one Opus agent of investigation. The cost of missing a real
 > bug is that the bug ships. Err upward when ambiguous.
 >
 > **Stylistic-cap rule:** Issues that are stylistic and not explicitly
-> called out in project rules (AGENTS.md, instructions, CLAUDE.md) cap at 25.
+> called out in CLAUDE.md cap at 25.
 >
 > **UX note:** UX issues score on the same rubric. A destructive-action
 > regression or silent-failure-no-feedback warrants 75+. A minor copy
@@ -135,7 +135,8 @@ For each chunk-agent's result:
     ```bash
     log-tokens.sh \
       --review-dir "$review_dir" --phase phase_3 \
-      --agent-role scoring --agent-id <id-from-result> \--tokens <N or null>
+      --agent-role scoring --agent-id <id-from-result> \
+      --model sonnet --tokens <N or null>
     ```
 
 2. **Parse** the JSON array (retry once on parse failure).

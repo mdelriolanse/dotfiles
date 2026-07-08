@@ -80,7 +80,7 @@ Branch:
   and fall back to §9.pre.abort — findings are still `attempted` so abort
   tuples apply cleanly.
 
-#### 9.pre.reconcile — one sub-agent merge agent
+#### 9.pre.reconcile — one Opus merge agent
 
 Dispatched when `$overlap_choice == reconcile`. Produces a reconciled tree
 and replaces `fix_groups` with a synthetic `FG-RECON` entry so 9a/9b/9c/9d
@@ -217,7 +217,7 @@ Dispatch ONE `Task` tool-use with `subagent_type: general`,
 After the agent returns:
 
 1. **Log tokens** via `log-tokens.sh --phase phase_9_reconcile
-   --agent-role reconcile`. (Match Phase 8 §8.6 step 1 —
+   --agent-role reconcile --model opus`. (Match Phase 8 §8.6 step 1 —
    always log tokens before branching on content so cost is accounted
    even when output fails to parse.)
 
@@ -505,7 +505,7 @@ Reached from `abort`, delete-leak short-circuit, or reconcile fallback.
 
 **If `overlap_files` is empty**: proceed to 9a.
 
-### 9a. Phase 9 post-fix review (one sub-agent)
+### 9a. Phase 9 post-fix review (one Opus sub-agent)
 
 Dispatch ONE `Agent` (`subagent_type: general`)
 carrying the §19.9 prompt. Embeds all attempted findings, Phase 8 per-group
@@ -663,7 +663,7 @@ Return JSON of exactly this shape:
 After the agent returns:
 
 1. **Log tokens** via `log-tokens.sh --phase phase_9 --agent-role
-   post_fix_review`.
+   post_fix_review --model opus`.
 2. Parse JSON; light repair + one retry on parse failure.
 3. Full parse failure after retry: mark every attempted finding as
    `outcome: partial` with `phase_9_finding: "phase 9 reviewer parse

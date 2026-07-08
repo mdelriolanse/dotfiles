@@ -9,6 +9,7 @@ Shared fragment used by both `/adamsreview:promote` and
 fragment):
 
 | Variable | Purpose |
+|---|---|
 | `finding_id` | Positional id matching `^F[0-9]+$`. |
 | `reason` | Non-empty string. Audit-focused. Caller is responsible for prompting if absent. |
 | `fix_hint` | String; empty means "unset". Caller may pre-populate from `--fix-hint`; the heuristic below auto-prompts when empty. |
@@ -19,6 +20,7 @@ fragment):
 **Outputs** (captured into ambient context for callers who care):
 
 | Variable | Purpose |
+|---|---|
 | `curr_disp` | Disposition before the patch (used by callers for their own summaries). |
 | `curr_action` | Actionability before the patch. |
 | `curr_score` | `score_phase4` before the patch (string — either a JSON integer or literal `null`). |
@@ -68,6 +70,7 @@ both the integer and null cases via `--argjson`).
 ### Step 4. Check preconditions
 
 | `curr_disp` | Additional condition | Action |
+|---|---|---|
 | `confirmed_mechanical` | `curr_hc != null` | Exit 0 with: "F$N already promoted by @$(jq -r '.reviewer' <<<"$curr_hc") on $(jq -r '.ts' <<<"$curr_hc"); no-op." — pulling reviewer and timestamp from the existing `human_confirmation` object (the bash `$reviewer` / `$ts` vars are not yet set in step 4). |
 | `confirmed_mechanical` | `curr_hc == null` | **Proceed.** Set `human_confirmation` to record the human override. May be strictly necessary (light-lane `confirmed_mechanical` fails the Phase 8 impact_type filter, deep-lane below-threshold `confirmed_mechanical` fails the score gate) or redundant-but-harmless audit (deep-lane above-threshold `confirmed_mechanical` was already eligible). Promote can't know the user's planned `/adamsreview:fix` threshold, so always proceed. |
 | `resolved` | — | Exit 1: "F$N is resolved (fix already ran); cannot promote." |

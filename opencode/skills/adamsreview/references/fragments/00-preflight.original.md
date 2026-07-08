@@ -1,6 +1,6 @@
 ## Phase 0 — Pre-flight
 
-This phase is mostly deterministic shell — the only LLM call is the sub-agent
+This phase is mostly deterministic shell — the only LLM call is the Sonnet
 user-facing-change classifier (step 0.9), and that's skipped in trivial mode.
 
 **Run every Bash command in this phase in the foreground — do NOT use
@@ -289,13 +289,13 @@ trivial_mode=$(printf '%s' "$tc_json" | jq -r '.trivial_mode')
 trivial_reason=$(printf '%s' "$tc_json" | jq -r '.reason')
 ```
 
-### 0.12. User-facing-change classifier (sub-agent — skipped in trivial mode)
+### 0.12. User-facing-change classifier (Sonnet — skipped in trivial mode)
 
 If `trivial_mode == true`, set `user_facing=false` and skip this step
 (L5 is already off in trivial mode; Phase 1's L5 gating will also
 re-check `trivial_mode`).
 
-Otherwise, launch a sub-agent with this input:
+Otherwise, launch a Sonnet sub-agent with this input:
 
 ```
 Diff files (with short descriptions of each file's apparent type):
@@ -320,7 +320,9 @@ log-tokens.sh \
   --review-dir "$review_dir" \
   --phase phase_0 \
   --agent-role user_facing_classifier \
-  --agent-id "$classifier_agent_id" \  --tokens "$classifier_tokens_or_null"
+  --agent-id "$classifier_agent_id" \
+  --model sonnet \
+  --tokens "$classifier_tokens_or_null"
 ```
 
 Where `$classifier_agent_id` is the id in the Task tool result and
@@ -342,6 +344,7 @@ If the file exists and is non-empty, read its contents as
 and determine the prior state:
 
 | Condition | `question` prompt |
+|---|---|
 | `prior.reviewed_sha == reviewed_sha` AND no `fix_attempts` on any finding | "You have a review for this exact commit from `<date>`. Re-run fresh, or abort?" |
 | `prior.reviewed_sha == reviewed_sha` AND some finding has a `fix_attempts[-1]` whose `output_sha` matches `HEAD` | "You have a review that was already fixed at this commit. Re-run fresh, or abort?" |
 | Any finding has `current_state=open` AND `is_actionable=true` | "Previous review has unresolved actionable findings. Options: (a) run `/adamsreview:fix` first, (b) proceed with fresh review, (c) abort." |
@@ -520,6 +523,7 @@ log-phase.sh \
 At the end of Phase 0, you should have captured:
 
 | Name | Source |
+|---|---|
 | `ensemble_mode`, `force_full` | Step 0.1 |
 | `head_branch`, `base_branch`, `repo_root` | Step 0.2 |
 | `comparison_ref`, `base_freshness`, `remote_sha`, `behind_count` | Step 0.2a |

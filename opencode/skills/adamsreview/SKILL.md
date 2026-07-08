@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, question, Task, todowrite
 compatibility: opencode
 metadata:
   author: "Adam Miller (ported by mateo.delriolanse)"
-  version: "0.4.3-opencode"
+  version: "0.5.0-opencode"
   domain: quality
   triggers: code review, PR review, review, adamsreview
   role: specialist
@@ -21,7 +21,7 @@ tool grants) differ.
 
 **Commands** (name in your message to route):
 
-- **`review [--full]`** — multi-lens review (6 parallel lenses). Phases 0–6.
+- **`review [--full]`** — multi-lens review (6 parallel lenses). Phases 0–6c.
 - **`fix [threshold] [--granular-commits]`** — automated fix loop. Phases 7–9.
 - **`add [paste...]`** — inject external findings into latest review.
 - **`walkthrough [threshold]`** — interactive driver for manual findings.
@@ -96,6 +96,88 @@ optional `walkthrough` → `fix`.
 12. **Helper paths.** When invoking helpers, use absolute paths:
     `$SKILL_ROOT/bin/<helper>`. All helpers are under `bin/`.
 
+## Operational rules
+
+### MANDATE: Read every fragment in its entirety
+
+**Every phase of this skill is defined by a fragment file under
+`references/fragments/`.** The orchestrator MUST read each fragment
+*completely* before executing any step within that phase.
+
+- Do NOT summarize, paraphrase, or rely on memory of what a phase
+  "usually" does.
+- Do NOT skip to the "Dispatch turn" boilerplate without having read
+  every per-lens sub-section, every substitution rule, every jq
+  builder, every schema shape, and every bash block.
+- For long fragments, use `Read` with `offset`/`limit` to consume
+  every segment sequentially — but do not execute any sub-agent
+  dispatch, any `artifact-patch.py`, or any state transition until the
+  full fragment text is in your working context.
+
+Violating this mandate produces:
+- Hallucinated prompts with wrong `source_family` / `impact_type`
+- Schema-rejected candidates that silently drop from the pool
+- Incorrect score rubrics and mis-routed dispositions
+- Broken `jq` builders that corrupt the finding-pool join
+
+If you are ever unsure whether a fragment was fully consumed, re-read
+it. The cost of reading is zero; the cost of a hallucinated dispatch
+is a broken artifact.
+
+### Sub-agent model policy
+
+**This skill is model-agnostic.** Every sub-agent dispatches with
+`subagent_type: general` and no per-call model specification. All
+sub-agents run under the orchestrator's globally configured model.
+References to `opus`, `sonnet`, `haiku`, or `Codex`/`CodeRabbit` in
+any prose are legacy descriptions from the original Claude Code
+plugin; they do NOT apply to the opencode port. Token logging still
+accepts a `--model` field for observability, but it is optional and
+carries no semantic weight.
+
+### Other rules
+
+1. **Bash 3.2 portable.** macOS `/bin/bash` 3.2 in practice. Avoid `declare -A`,
+   `mapfile`/`readarray`, `${var,,}`. `awk '!seen[$0]++' | sort` for dedup.
+
+2. **uv shebang for Python helpers.** `#!/usr/bin/env -S uv run --quiet --script`
+   with a `# /// script` inline dep spec. Never `pip install`.
+
+3. **Exit codes are a contract.** Python helpers: `0=OK, 1=validation,
+   2=invalid-transition, 3=dry-run-invalid, 4=unexpected, 5=missing-dep,
+   6=expected-mismatch, 7=all-rejected, 64=usage`. Defined in `bin/_common.py`.
+
+4. **Error-as-prompt on every helper.** Non-zero exits emit `ERROR:` / `Valid
+   input:` / `Did you mean:` / `Action:` stderr sections. No stack traces on
+   expected errors.
+
+5. **Atomic writes.** Writers go tmp-file → `rename`. On-disk artifact never in
+   invalid state mid-run.
+
+6. **Reviews root is `~/.adams-reviews/`.** Not under `~/.claude/` or
+   `~/.opencode/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
+
+7. **`repo_slug` comes from one helper.** `bin/repo-slug.sh --repo-root <path>`
+   is the single source of truth. Never reimplement inline.
+
+8. **Commit messages via `git commit -F <file>`**, not `-m "$(…)"`. Finding
+   claims contain quotes/backticks/newlines.
+
+9. **Fix-group agents may not delete or rename files.** Layered enforcement:
+   prompt prohibition + Phase 9.pre `git status --porcelain` scan.
+
+10. **Working set lives in-prompt, not shell vars.** Fragments are Read-loaded
+    as orchestrator context, so variables like `review_id`, `comparison_ref`,
+    `reviewed_files_all` are context values, not `$VAR`s. When a later fragment
+    needs an artifact-stored value, call `artifact-read.sh --filter '.foo'`.
+
+11. **`printf '%s\n'`, not `echo`, when piping JSON through bash variables.**
+    Under zsh/dash/bash with `xpg_echo`, `echo "$x"` collapses `\\` to `\`.
+    Artifact on disk is fine; corruption only happens in the bash round trip.
+
+12. **Helper paths.** When invoking helpers, use absolute paths:
+    `$SKILL_ROOT/bin/<helper>`. All helpers are under `bin/`.
+
 ## State, gates, lanes (TL;DR)
 
 - **States.** `open` → `attempted` → `resolved` | `→ open` (regression). Leftover
@@ -113,9 +195,9 @@ Full normative spec: `references/state-and-gates.md`.
 
 ## Sub-agent dispatch pattern
 
-Every `Task` tool-use specifies:
-- `subagent_type: general`
-- (Model is globally configured in opencode — no per-call `model:` specification)
+Every `Task` tool-use specifies `subagent_type: general`.
+Sub-agents inherit the orchestrator's globally configured model; no
+per-call `model:` parameter exists in the opencode port.
 
 **Parallel fan-outs** happen by firing multiple `Task` blocks in a single
 orchestrator turn. Always batch within one turn.
@@ -153,6 +235,7 @@ Build a `todowrite` list mirroring these phases:
 | 4 | `references/fragments/05-validation.md` | Validation (deep + light lanes) |
 | 5 | `references/fragments/06-cross-cutting.md` | Cross-cutting |
 | 5.5 | `references/fragments/06b-auto-fix-hint.md` | Auto-fix-hint generation |
+| 6c | `references/fragments/06c-false-positive-audit.md` | False-positive audit (dual-agent challenge) |
 | 6 | `references/fragments/07-finalize.md` | Finalize + render + publish |
 
 If a phase cannot run, mark it completed with a one-line `trace.md` note.
@@ -176,13 +259,13 @@ All git operations (staging, commit, push) happen in the orchestrator.
 ### `add [paste...] [--file <path> --line <N> --claim "..."]`
 
 Locate latest artifact, validate, build candidates from paste or structured
-`--file/--line/--claim`, dedup, assign IDs, run Phase 4 validation (deep Opus
-per candidate, light Sonnet chunked), apply decisions, re-render, re-publish.
+`--file/--line/--claim`, dedup, assign IDs, run Phase 4 validation (per-candidate
+individual + chunked confirmation), apply decisions, re-render, re-publish.
 
 ### `walkthrough [threshold]`
 
 Interactive walkthrough for findings `fix` would skip. Default threshold 60.
-Per-finding: dispatch Sonnet briefing agent, present options, record decisions.
+Per-finding: dispatch sub-agent briefing, present options, record decisions.
 Batch auto-rec findings from Phase 5.5 upfront.
 
 ### `promote <id> [--reason "..."] [--fix-hint "..."] [--force] [--defer-publish]`
@@ -198,10 +281,13 @@ helper-script error-as-prompt).
 
 ## Phase 1.5 / Ensemble
 
-**Not ported to opencode.** The ensemble/Codex integration (Phase 1.5,
-`--ensemble` flag, `/adamsreview:codex-review`) requires Claude Code's plugin
-runtime (`~/.claude/plugins/codex-companion.mjs`). All ensemble gating is
-short-circuited with `ensemble_mode=false`. L7 (holistic) lens is skipped.
+**Not ported to opencode.** The ensemble integration (Phase 1.5,
+`--ensemble` flag) is not available in the opencode port. All ensemble
+gating is short-circuited with `ensemble_mode=false`.
+
+The existing L7 (holistic) lens file (`references/fragments/lens-prompts/L7.md`)
+remains in the repository for reference purposes but is not dispatched. Phase 6c
+(dual-agent false-positive audit) provides a new opencode-native quality gate.
 
 ## Helper index
 

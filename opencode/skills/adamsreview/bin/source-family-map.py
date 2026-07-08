@@ -17,7 +17,7 @@ builders):
 
   - diff-family          (L1)
   - structural-family    (L2, Wave 2)
-  - policy-family        (L3 CLAUDE.md conformance, L4 diagnostics)
+  - policy-family        (L3 AGENTS.md / instructions / ponytail conformance, L4 diagnostics)
   - ux-family            (L5)
   - security-family      (L6)
   - holistic-family      (L7 ensemble)

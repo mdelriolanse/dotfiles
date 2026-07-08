@@ -273,7 +273,9 @@ After every agent returns (before branching on its content):
    log-tokens.sh \
      --review-dir "$review_dir" \
      --phase phase_8 --agent-role "fix_group_$group.id" \
-     --agent-id <id-from-Agent-result> \     --tokens <N or null>
+     --agent-id <id-from-Agent-result> \
+     --model opus \
+     --tokens <N or null>
    ```
 
 2. **Parse the JSON output.** Light repair (strip code fences, extract

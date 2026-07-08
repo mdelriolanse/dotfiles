@@ -33,7 +33,7 @@
 #
 #   1  L1-diff-local
 #   2  L2-structural
-#   3  L3-claude-md
+#   3  L3-agents-md
 #   4  L4-comments
 #   5  L5-ux
 #   6  L6-security
@@ -109,7 +109,7 @@ printf '%s' "$input" | jq -c --argjson start "$start_from" '
     (.sources // []) | (if length == 0 then "" else .[0] end) as $s |
     if   $s == "L1-diff-local" then 1
     elif $s == "L2-structural" then 2
-    elif $s == "L3-claude-md"  then 3
+    elif $s == "L3-agents-md"  then 3
     elif $s == "L4-comments"   then 4
     elif $s == "L5-ux"         then 5
     elif $s == "L6-security"   then 6

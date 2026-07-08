@@ -1,6 +1,6 @@
 ## Phase 2 — Dedup (LLM-only)
 
-A single sub-agent groups near-duplicate candidates so one
+A single Sonnet sub-agent groups near-duplicate candidates so one
 underlying issue doesn't surface as multiple findings downstream.
 No structural fingerprinting — one LLM pass, pennies of cost.
 
@@ -24,7 +24,7 @@ Capture as `candidate_list_json`.
 If `candidate_list_json` is `[]` (no candidates from Phase 1 + 1.5), skip
 Phase 2 entirely — log "Phase 2 skipped (no candidates)" to `trace.md`.
 
-### 2.2. Dispatch the dedup sub-agent
+### 2.2. Dispatch the Sonnet dedup sub-agent
 
 Launch one `Task` tool-use. Prompt essence:
 
@@ -59,7 +59,9 @@ log-tokens.sh \
   --review-dir "$review_dir" \
   --phase phase_2 \
   --agent-role dedup \
-  --agent-id "$dedup_agent_id" \  --tokens "$dedup_tokens_or_null"
+  --agent-id "$dedup_agent_id" \
+  --model sonnet \
+  --tokens "$dedup_tokens_or_null"
 ```
 
 Capture `dedup_agent_id` from the Task tool result; `dedup_tokens_or_null`

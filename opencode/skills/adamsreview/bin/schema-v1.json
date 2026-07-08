@@ -294,6 +294,39 @@
             "ts": { "type": "string", "format": "date-time" }
           }
         },
+        "audit_result": {
+          "description": "Set by Phase 6c (false-positive audit). Records a dual-agent challenge verdict on confirmed findings. When present and verdict=downgrade/flagged, the finding's disposition is shifted to uncertain and the audit summary is surfaced in the report.",
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["verdict", "summary"],
+              "properties": {
+                "verdict": { "enum": ["retain", "downgrade", "flagged"] },
+                "summary": { "type": "string", "minLength": 1 },
+                "agent_a": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["verdict", "summary"],
+                  "properties": {
+                    "verdict": { "enum": ["retain", "downgrade"] },
+                    "summary": { "type": "string" }
+                  }
+                },
+                "agent_b": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["verdict", "summary"],
+                  "properties": {
+                    "verdict": { "enum": ["retain", "downgrade"] },
+                    "summary": { "type": "string" }
+                  }
+                }
+              }
+            }
+          ]
+        },
         "fix_attempts": {
           "type": "array",
           "items": { "$ref": "#/$defs/fix_attempt" }

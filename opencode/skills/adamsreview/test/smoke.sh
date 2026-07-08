@@ -402,7 +402,7 @@ mkdir -p "$WORK/rev"
 "$TOOLS/log-phase.sh" --review-dir "$WORK/rev" --phase 6 --name detection --summary "smoke" --elapsed 5
 "$TOOLS/log-phase.sh" --review-dir "$WORK/rev" --phase 6 --record '{"name":"detection","elapsed_sec":5}'
 "$TOOLS/log-phase.sh" --review-dir "$WORK/rev" --phase 1_5 --record '{"name":"ensemble-adapter","elapsed_sec":7}'
-"$TOOLS/log-tokens.sh" --review-dir "$WORK/rev" --phase phase_3 --agent-role validator --agent-id ag_abc --model opus --tokens 12345 --finding-id F001
+"$TOOLS/log-tokens.sh" --review-dir "$WORK/rev" --phase phase_3 --agent-role validator --agent-id ag_abc --tokens 12345 --finding-id F001
 # Verify both records landed; the 1_5 entry should keep phase as the
 # literal string.
 phase_1_5_phase=$(jq -r 'select(.name == "ensemble-adapter") | .phase' "$WORK/rev/phases.jsonl" | head -1)
@@ -666,7 +666,7 @@ fi
 # U. reviewer_sources Phase-6.3a regex correctly classifies lens tags.
 # Simulates the jq expression in 07-finalize.md step 6.3a against a
 # synthetic sources[] union.
-U_OUT=$(echo '["L1-diff-local","L3-claude-md","L7-holistic","codex","external-pr:greptile-apps[bot]","random-tag"]' \
+U_OUT=$(echo '["L1-diff-local","L3-agents-md","L7-holistic","codex","external-pr:greptile-apps[bot]","random-tag"]' \
     | jq -c 'map(
         if test("^L[0-9]+-") then "internal"
         elif . == "codex" then .
@@ -748,7 +748,7 @@ PV_SEED=$(jq '.review_id = "rev_applydecisions" | .findings = [
    "score_history":[{"phase":"phase_3","score":50}],
    "validation_result":null,"fix_attempts":[],
    "introduced_in_sha":null,"suggested_follow_up":null,"related_parent_finding_id":null},
-  {"id":"F103","sources":["L3-claude-md"],"source_families":["code-review"],
+  {"id":"F103","sources":["L3-agents-md"],"source_families":["code-review"],
    "impact_type":"policy","origin":"introduced_by_pr","origin_confidence":"low",
    "actionability":"manual","validation_lane":"light",
    "current_state":"open","disposition":"pending_validation","is_actionable":false,
@@ -1564,7 +1564,7 @@ fi
 
 # Assertion DD-4: pre_existing/high keeper + introduced_by_pr/high
 # sibling → max_conf=medium (C2 cross-origin cap). The exact scenario
-# Codex round-2 surfaced: C1 alone filters to pre_existing-only members
+# External round-2 surfaced: C1 alone filters to pre_existing-only members
 # (just the keeper, max_conf=high), and the unchanged "leave origin on
 # keeper" rule keeps keeper.origin=pre_existing — §13.1 still fires
 # under C1 alone. C2 caps to medium when cross-origin disagreement
@@ -1816,10 +1816,10 @@ AI_TOOL="$TOOLS/assign-finding-ids.sh"
 # Assertion AI-1: internal-only pool — 3 L1 + 2 L2 + 1 L3. Expect
 # F001..F006 in source-priority order (L1 → L2 → L3) with input order
 # preserved within each source bucket.
-in='[{"sources":["L1-diff-local"],"file":"a.ts"},{"sources":["L1-diff-local"],"file":"b.ts"},{"sources":["L1-diff-local"],"file":"c.ts"},{"sources":["L2-structural"],"file":"d.ts"},{"sources":["L2-structural"],"file":"e.ts"},{"sources":["L3-claude-md"],"file":"f.ts"}]'
+in='[{"sources":["L1-diff-local"],"file":"a.ts"},{"sources":["L1-diff-local"],"file":"b.ts"},{"sources":["L1-diff-local"],"file":"c.ts"},{"sources":["L2-structural"],"file":"d.ts"},{"sources":["L2-structural"],"file":"e.ts"},{"sources":["L3-agents-md"],"file":"f.ts"}]'
 out=$(echo "$in" | "$AI_TOOL")
 line=$(echo "$out" | jq -r '[.[] | "\(.id):\(.sources[0]):\(.file)"] | join(",")')
-expected="F001:L1-diff-local:a.ts,F002:L1-diff-local:b.ts,F003:L1-diff-local:c.ts,F004:L2-structural:d.ts,F005:L2-structural:e.ts,F006:L3-claude-md:f.ts"
+expected="F001:L1-diff-local:a.ts,F002:L1-diff-local:b.ts,F003:L1-diff-local:c.ts,F004:L2-structural:d.ts,F005:L2-structural:e.ts,F006:L3-agents-md:f.ts"
 if [[ "$line" == "$expected" ]]; then
     pass "AI-1 (§13.12): internal-only pool assigns F001..F006 in L1→L2→L3 source order"
 else
@@ -4119,12 +4119,12 @@ else
     fail "L7-3: expected pre_existing/medium on ancestor L7 range; got origin=$origin conf=$conf"
 fi
 
-# L7-4: opencode port — SKILL.md documents ensemble/Codex as not ported.
+# L7-4: opencode port — SKILL.md documents ensemble as not ported.
 if grep -qF 'Not ported to opencode' "$REPO/SKILL.md" \
-    && grep -qF 'ensemble/Codex integration' "$REPO/SKILL.md"; then
-    pass "L7-4 (opencode): SKILL.md documents ensemble/Codex as not ported"
+    && grep -qF 'ensemble integration' "$REPO/SKILL.md"; then
+    pass "L7-4 (opencode): SKILL.md documents ensemble as not ported"
 else
-    fail "L7-4: SKILL.md missing ensemble/Codex not-ported documentation"
+    fail "L7-4: SKILL.md missing ensemble not-ported documentation"
 fi
 
 # L7-5: artifact-patch.py --add-finding accepts source_families:
@@ -4335,10 +4335,10 @@ fi
 
 # TK-2: 4-line log with a tokens:null entry → correct totals, null coerced to 0.
 cat > "$TK_DIR/tokens.jsonl" <<'JSONL'
-{"phase":"phase_1","agent_role":"lens_security","agent_id":"a1","model":"sonnet","tokens":1000,"ts":"2026-04-21T10:00:00Z"}
-{"phase":"phase_1","agent_role":"lens_ux","agent_id":"a2","model":"sonnet","tokens":2000,"ts":"2026-04-21T10:00:05Z"}
-{"phase":"phase_4a","agent_role":"validator","agent_id":"a3","model":"opus","tokens":null,"ts":"2026-04-21T10:01:00Z","finding_id":"F001"}
-{"phase":"phase_4a","agent_role":"validator","agent_id":"a4","model":"opus","tokens":5000,"ts":"2026-04-21T10:01:10Z","finding_id":"F002"}
+{"phase":"phase_1","agent_role":"lens_security","agent_id":"a1","model":"default","tokens":1000,"ts":"2026-04-21T10:00:00Z"}
+{"phase":"phase_1","agent_role":"lens_ux","agent_id":"a2","model":"default","tokens":2000,"ts":"2026-04-21T10:00:05Z"}
+{"phase":"phase_4a","agent_role":"validator","agent_id":"a3","model":"default","tokens":null,"ts":"2026-04-21T10:01:00Z","finding_id":"F001"}
+{"phase":"phase_4a","agent_role":"validator","agent_id":"a4","model":"default","tokens":5000,"ts":"2026-04-21T10:01:10Z","finding_id":"F002"}
 JSONL
 "$TOOLS/tally-subagent-tokens.sh" \
     --tokens-log "$TK_DIR/tokens.jsonl" \
@@ -4370,8 +4370,8 @@ fi
 
 # TK-4: append new lines → total strictly grows by the appended sum (the
 # cumulative-growth invariant that the lifecycle wiring relies on).
-printf '{"phase":"phase_9","agent_role":"post_fix_reviewer","agent_id":"a5","model":"opus","tokens":3500,"ts":"2026-04-21T11:00:00Z"}\n' >> "$TK_DIR/tokens.jsonl"
-printf '{"phase":"phase_9","agent_role":"fix_group","agent_id":"a6","model":"opus","tokens":1500,"ts":"2026-04-21T11:00:30Z"}\n' >> "$TK_DIR/tokens.jsonl"
+printf '{"phase":"phase_9","agent_role":"post_fix_reviewer","agent_id":"a5","model":"default","tokens":3500,"ts":"2026-04-21T11:00:00Z"}\n' >> "$TK_DIR/tokens.jsonl"
+printf '{"phase":"phase_9","agent_role":"fix_group","agent_id":"a6","model":"default","tokens":1500,"ts":"2026-04-21T11:00:30Z"}\n' >> "$TK_DIR/tokens.jsonl"
 "$TOOLS/tally-subagent-tokens.sh" \
     --tokens-log "$TK_DIR/tokens.jsonl" \
     --artifact   "$TK_DIR/artifact.json" \
@@ -4415,7 +4415,7 @@ fi
 #   (b) total / phase_4b in by_phase reflect the new tokens,
 #   (c) by_finding_phase4 still keys only on real finding ids
 #       (the chunk-agent's tokens roll up only into total/by_phase/by_model).
-printf '{"phase":"phase_4b","agent_role":"validator","agent_id":"a7","model":"sonnet","tokens":2400,"ts":"2026-04-24T12:00:00Z"}\n' >> "$TK_DIR/tokens.jsonl"
+printf '{"phase":"phase_4b","agent_role":"validator","agent_id":"a7","model":"default","tokens":2400,"ts":"2026-04-24T12:00:00Z"}\n' >> "$TK_DIR/tokens.jsonl"
 "$TOOLS/tally-subagent-tokens.sh" \
     --tokens-log "$TK_DIR/tokens.jsonl" \
     --artifact   "$TK_DIR/artifact.json" \
@@ -5583,9 +5583,9 @@ else
 fi
 
 # ------------------------------------------------------------------ CR-* /adamsreview:codex-review structural assertions
-# opencode port: codex-review not ported (requires Codex CLI plugin runtime).
+# opencode port: external-review not ported (requires Codex CLI plugin runtime).
 # All CR-1 through CR-16c tests skipped.
-pass "CR-ALL: codex-review not ported — all CR tests skipped"
+pass "CR-ALL: external-review not ported — all CR tests skipped"
 
 echo
 echo "smoke: PASS ($N assertions)"
@@ -5596,7 +5596,7 @@ exit 0
 # substitution gets the right value. Guards against a regression that
 # drops the working-context assignment and silently produces an
 # artifact tagged ["internal"] (would still validate but lose the
-# Codex-vs-Claude lineage marker).
+# provider lineage marker).
 if grep -qF 'reviewer_sources_label="internal-codex"' "$CR_CMD"; then
     pass "CR-2: codex-review.md sets reviewer_sources_label=internal-codex (Phase 0 step 0.15 substitution)"
 else
@@ -5616,7 +5616,7 @@ else
     fail "CR-3: codex-review.md readiness gate missing or incomplete"
 fi
 
-# CR-4: each new Codex fragment exists, is non-trivial, and references
+# CR-4: each new External fragment exists, is non-trivial, and references
 # the codex-companion task primitive. Catches an accidental commit
 # of an empty file or a refactor that drops the companion invocation.
 CR_FRAGMENTS=(
@@ -5634,9 +5634,9 @@ for f in "${CR_FRAGMENTS[@]}"; do
     fi
 done
 if [[ -z "$cr4_missing" ]]; then
-    pass "CR-4: codex fragments present (>= 1000 bytes each) and all reference 'node \"\$CODEX_COMPANION\" task --background'"
+    pass "CR-4: External fragments present (>= 1000 bytes each) and all reference 'node \"\$CODEX_COMPANION\" task --background'"
 else
-    fail "CR-4: codex fragments incomplete:$cr4_missing"
+    fail "CR-4: External fragments incomplete:$cr4_missing"
 fi
 
 # CR-5: 00-preflight.md step 0.15 passes --reviewer-sources to
@@ -5702,13 +5702,13 @@ case "$PV" in
         ;;
 esac
 
-# CR-9: every Codex result-pluck site leads with .storedJob.result.rawOutput.
+# CR-9: every External result-pluck site leads with .storedJob.result.rawOutput.
 # codex-companion stores task output at .storedJob.result.rawOutput
 # (lib/job-control.mjs sets `result: execution.payload`); the original
 # implementation plucked from .storedJob.payload.rawOutput, so every
-# Codex job extracted empty string and hit the §3.7 retry fallback.
+# External job extracted empty string and hit the §3.7 retry fallback.
 # Two checks:
-#   a. no line in the 4 Codex docs begins (after whitespace) with
+#   a. no line in the 4 External docs begins (after whitespace) with
 #      `.storedJob.payload.rawOutput //` — the original bug pattern.
 #   b. every Codex doc references `.storedJob.result.rawOutput` —
 #      catches accidental removal of the canonical key.
@@ -5729,9 +5729,9 @@ for f in "${CR_PLUCK_DOCS[@]}"; do
     fi
 done
 if [[ -z "$cr9_violations" ]]; then
-    pass "CR-9: every Codex pluck-site leads with .storedJob.result.rawOutput (regression guard for path-mismatch bug)"
+    pass "CR-9: every external pluck-site leads with .storedJob.result.rawOutput (regression guard for path-mismatch bug)"
 else
-    fail "CR-9: Codex rawOutput pluck contract violated:$cr9_violations"
+    fail "CR-9: external rawOutput pluck contract violated:$cr9_violations"
 fi
 
 # CR-10: Phase 4 codex-validation type-guards $raw_repaired to an object
@@ -5832,7 +5832,7 @@ fi
 #      to "before **Dispatch.**" closes the regression class where a
 #      future edit relocates the inits *below* the dispatch prose
 #      while leaving them inside the same `####` sub-section — the
-#      original ordering defect under a new disguise. Codex-flagged
+#      original ordering defect under a new disguise. Externally flagged
 #      finding from the round-1 review of the relocation PR.
 #   b. negative twin — neither var present in §1.4 (`### 1.4.` →
 #      `### 1.5.`). Catches future-edit duplication.
@@ -6018,7 +6018,7 @@ else
     fail "CR-13a: bin/codex-poll.sh missing, not executable, or wrong shebang"
 fi
 
-# CR-13b — each codex fragment invokes the helper
+# CR-13b — each External fragment invokes the helper
 CR13_FRAGMENTS=(
     "fragments/01-codex-detection.md"
     "fragments/05-codex-validation.md"
@@ -6035,7 +6035,7 @@ done
 # in that file specifically.
 v05_count=$(grep -cF 'poll=$(codex-poll.sh' "$REPO/references/fragments/05-codex-validation.md" 2>/dev/null || echo 0)
 if [[ -z "$cr13b_missing" ]] && [[ "$v05_count" -ge 2 ]]; then
-    pass "CR-13b: every codex fragment invokes codex-poll.sh (05-codex-validation.md hosts both §4.2.3 and §4.3.2; v05_count=$v05_count)"
+    pass "CR-13b: every External fragment invokes codex-poll.sh (05-codex-validation.md hosts both §4.2.3 and §4.3.2; v05_count=$v05_count)"
 else
     fail "CR-13b: codex-poll.sh wiring incomplete:$cr13b_missing v05_count=$v05_count (expected ≥2 in 05-codex-validation.md)"
 fi
@@ -6069,7 +6069,7 @@ for f in "${CR13_FRAGMENTS[@]}"; do
     fi
 done
 if [[ -z "$cr13c_violations" ]]; then
-    pass "CR-13c: no codex fragment calls 'node \"\$CODEX_COMPANION\" status|result' directly — all poll/fetch sites go through codex-poll.sh"
+    pass "CR-13c: no External fragment calls 'node \"\$CODEX_COMPANION\" status|result' directly — all poll/fetch sites go through codex-poll.sh"
 else
     fail "CR-13c: direct status/result-poll calls found:$cr13c_violations"
 fi
@@ -6087,7 +6087,7 @@ else
     fail "CR-13d: codex-poll.sh missing 'No job found' → broker_desynced fallback on the status read path"
 fi
 
-# CR-13e — no codex fragment uses non-portable `timeout` for cancel.
+# CR-13e — no External fragment uses non-portable `timeout` for cancel.
 # `timeout` is GNU coreutils — not on stock macOS — and the prior pattern
 # `timeout 30 node ... || true` silently no-ops there, leaving wedged jobs
 # uncancelled while the orchestrator believes cancel happened.
@@ -6100,7 +6100,7 @@ for f in "${CR13_FRAGMENTS[@]}"; do
     fi
 done
 if [[ -z "$cr13e_violations" ]]; then
-    pass "CR-13e: no codex fragment uses non-portable \`timeout\` to cancel codex jobs (Bash 3.2 macOS portable)"
+    pass "CR-13e: no External fragment uses non-portable \`timeout\` to cancel codex jobs (Bash 3.2 macOS portable)"
 else
     fail "CR-13e: non-portable \`timeout\` cancel pattern found:$cr13e_violations"
 fi
@@ -6187,6 +6187,24 @@ if awk '/if ! \[\[ "\$cx_mode" == "shared"/,/^[[:space:]]*fi[[:space:]]*$/' "$CR
     pass "CR-16c: commands/codex-review.md retains fatal exit 1 on non-bypass not-ready (cold-start bypass cannot accidentally swallow real failures)"
 else
     fail "CR-16c: commands/codex-review.md readiness gate missing fatal exit 1 in non-bypass branch — cold-start bypass may be swallowing real not-ready failures"
+fi
+
+# FAST-1: Phase 6c fragment exists and is non-trivial
+if [[ -s "$REPO/references/fragments/06c-false-positive-audit.md" ]] \
+    && grep -qF 'dual-agent challenge' "$REPO/references/fragments/06c-false-positive-audit.md"; then
+    pass "FAST-1: 06c-false-positive-audit.md exists and references dual-agent challenge"
+else
+    fail "FAST-1: 06c-false-positive-audit.md missing or too short"
+fi
+
+# FAST-2: audit_result passes schema validation.
+# Re-use the L7 artifact (already seeded; add a synthetic F_L7 finding).
+F_AUDIT='{"id":"F902","sources":["L1-diff-local"],"source_families":["diff-family"],"impact_type":"correctness","origin":"introduced_by_pr","origin_confidence":"high","actionability":"auto_fixable","validation_lane":"deep","current_state":"open","disposition":"confirmed_mechanical","is_actionable":true,"reason":"test","confirmed_strength":"strong","file":"src/audit/test.ts","line_range":[10,12],"claim":"Audit schema smoke","score_phase3":65,"score_phase4":70,"score_history":[{"phase":"phase_3","score":65},{"phase":"phase_4","score":70}],"validation_result":null,"fix_attempts":[],"introduced_in_sha":null,"suggested_follow_up":null,"related_parent_finding_id":null,"audit_result":{"verdict":"downgrade","summary":"Both agents found the claim over-interpreted.","agent_a":{"verdict":"downgrade","summary":"Code does not show the claimed pattern."},"agent_b":{"verdict":"downgrade","summary":"Independent re-read confirms no issue."}}}'
+if "$TOOLS/artifact-patch.py" --path "$L7_ART" --add-finding "$F_AUDIT" >/dev/null 2>&1 \
+    && "$TOOLS/artifact-validate.sh" --path "$L7_ART" >/dev/null 2>&1; then
+    pass "FAST-2: audit_result schema passes validation"
+else
+    fail "FAST-2: schema rejected audit_result-bearing finding"
 fi
 
 echo
