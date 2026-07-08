@@ -27,8 +27,8 @@ Create well-structured issues on the [<Provider> - Planner](https://github.com/o
 | Field | Field ID | Option ID → Name |
 |---|---|---|
 | Status | `PVTSSF_lADOD20yV84BUEJ6zhBO0dw` | `f75ad846` → Backlog, `75a337ac` → Future, `7add7ae9` → UI Handover, `47fc9ee4` → In progress, `df73e18b` → In review, `98236657` → Done |
-| Priority | `PVTSSF_lADOD20yV84BUEJ6zhBO0pI` | `79628723` → P0, `0a877460` → P1, `da944a9c` → P2 |
-| Size | `PVTSSF_lADOD20yV84BUEJ6zhBO0pM` | `6c6483d2` → XS, `f784b110` → S, `7515a9f1` → M, `817d0097` → L, `db339eb2` → XL |
+| Priority | `PVTSSF_lADOD20yV84BUEJ6zhBO0pI` | `ALWAYS LEAVE EMPTY` |
+| Size | `PVTSSF_lADOD20yV84BUEJ6zhBO0pM` | `ALWAYS LEAVE EMPTY` |
 
 ## Step-by-step workflow
 
