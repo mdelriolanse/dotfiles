@@ -29,3 +29,9 @@ cursor/User/workspaceStorage/
 
 # Project-specific agent plans — never centralize
 cursor/dot-cursor/plans/
+
+# Claude Code worktrees (git worktree checkouts, machine-local)
+.claude/worktrees/
+
+# Stray MCP server log
+excalidraw.log
