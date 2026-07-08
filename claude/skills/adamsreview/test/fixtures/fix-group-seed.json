@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "review_id": "rev_stage3fixgroup",
+  "generated_at": "2026-04-18T12:00:00Z",
+  "review_started_at": "2026-04-18T12:00:00Z",
+  "reviewed_sha": "fedcba9876543210",
+  "base_branch": "main",
+  "head_branch": "feature/stage3-fixgroup",
+  "mode": "local",
+  "pr_state": null,
+  "pr_number": null,
+  "comment_id": null,
+  "trivial_mode": false,
+  "reviewer_sources": ["internal"],
+  "reviewed_files_all": ["src/a.ts", "src/b.ts", "src/c.ts", "src/d.ts", "src/e.ts"],
+  "claude_md_paths": [],
+  "findings": [
+    {
+      "id": "F001",
+      "sources": ["L2-structural"],
+      "source_families": ["structural-family"],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "confirmed_mechanical",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": "strong",
+      "file": "src/a.ts",
+      "line_range": [1, 10],
+      "claim": "F001 — shares a.ts with F002",
+      "score_phase3": 70,
+      "score_phase4": 75,
+      "score_history": [
+        {"phase": "phase_3", "score": 70},
+        {"phase": "phase_4", "score": 75}
+      ],
+      "validation_result": {
+        "evidence": ["a.ts:5 — bug A"],
+        "blast_radius": {
+          "writers": [],
+          "consumers": [],
+          "parallel_paths": [],
+          "invariants_at_stake": []
+        },
+        "fix_proposal": {
+          "approach": "fix A in a.ts",
+          "files_to_modify": [
+            {"file": "src/a.ts", "what": "fix A", "why": "bug"}
+          ]
+        },
+        "verification_context": {
+          "how_to_verify_fix": ["grep a.ts"],
+          "edge_cases_to_preserve": [],
+          "what_would_break_if_incomplete": []
+        }
+      },
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    },
+    {
+      "id": "F002",
+      "sources": ["L2-structural"],
+      "source_families": ["structural-family"],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "confirmed_mechanical",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": "strong",
+      "file": "src/a.ts",
+      "line_range": [20, 30],
+      "claim": "F002 — shares a.ts with F001",
+      "score_phase3": 72,
+      "score_phase4": 78,
+      "score_history": [
+        {"phase": "phase_3", "score": 72},
+        {"phase": "phase_4", "score": 78}
+      ],
+      "validation_result": {
+        "evidence": ["a.ts:25 — bug B"],
+        "blast_radius": {
+          "writers": [],
+          "consumers": [],
+          "parallel_paths": [],
+          "invariants_at_stake": []
+        },
+        "fix_proposal": {
+          "approach": "fix B in a.ts",
+          "files_to_modify": [
+            {"file": "src/a.ts", "what": "fix B", "why": "bug"}
+          ]
+        },
+        "verification_context": {
+          "how_to_verify_fix": ["grep a.ts"],
+          "edge_cases_to_preserve": [],
+          "what_would_break_if_incomplete": []
+        }
+      },
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    },
+    {
+      "id": "F003",
+      "sources": ["L2-structural"],
+      "source_families": ["structural-family"],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "confirmed_mechanical",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": "moderate",
+      "file": "src/b.ts",
+      "line_range": [5, 15],
+      "claim": "F003 — standalone on b.ts",
+      "score_phase3": 65,
+      "score_phase4": 70,
+      "score_history": [
+        {"phase": "phase_3", "score": 65},
+        {"phase": "phase_4", "score": 70}
+      ],
+      "validation_result": {
+        "evidence": ["b.ts:10 — bug C"],
+        "blast_radius": {
+          "writers": [],
+          "consumers": [],
+          "parallel_paths": [],
+          "invariants_at_stake": []
+        },
+        "fix_proposal": {
+          "approach": "fix C in b.ts",
+          "files_to_modify": [
+            {"file": "src/b.ts", "what": "fix C", "why": "bug"}
+          ]
+        },
+        "verification_context": {
+          "how_to_verify_fix": ["grep b.ts"],
+          "edge_cases_to_preserve": [],
+          "what_would_break_if_incomplete": []
+        }
+      },
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    },
+    {
+      "id": "F004",
+      "sources": ["L2-structural"],
+      "source_families": ["structural-family"],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "confirmed_mechanical",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": "strong",
+      "file": "src/c.ts",
+      "line_range": [1, 20],
+      "claim": "F004 — file c.ts, linked to F005 via CCG, shares c.ts with F006",
+      "score_phase3": 80,
+      "score_phase4": 85,
+      "score_history": [
+        {"phase": "phase_3", "score": 80},
+        {"phase": "phase_4", "score": 85}
+      ],
+      "validation_result": {
+        "evidence": ["c.ts:5 — bug D"],
+        "blast_radius": {
+          "writers": [],
+          "consumers": [],
+          "parallel_paths": [],
+          "invariants_at_stake": []
+        },
+        "fix_proposal": {
+          "approach": "fix D in c.ts",
+          "files_to_modify": [
+            {"file": "src/c.ts", "what": "fix D", "why": "bug"}
+          ]
+        },
+        "verification_context": {
+          "how_to_verify_fix": ["grep c.ts"],
+          "edge_cases_to_preserve": [],
+          "what_would_break_if_incomplete": []
+        }
+      },
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    },
+    {
+      "id": "F005",
+      "sources": ["L2-structural"],
+      "source_families": ["structural-family"],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "confirmed_mechanical",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": "strong",
+      "file": "src/d.ts",
+      "line_range": [30, 40],
+      "claim": "F005 — file d.ts, linked to F004 via CCG G1",
+      "score_phase3": 78,
+      "score_phase4": 82,
+      "score_history": [
+        {"phase": "phase_3", "score": 78},
+        {"phase": "phase_4", "score": 82}
+      ],
+      "validation_result": {
+        "evidence": ["d.ts:35 — bug E"],
+        "blast_radius": {
+          "writers": [],
+          "consumers": [],
+          "parallel_paths": [],
+          "invariants_at_stake": []
+        },
+        "fix_proposal": {
+          "approach": "fix E in d.ts",
+          "files_to_modify": [
+            {"file": "src/d.ts", "what": "fix E", "why": "bug"}
+          ]
+        },
+        "verification_context": {
+          "how_to_verify_fix": ["grep d.ts"],
+          "edge_cases_to_preserve": [],
+          "what_would_break_if_incomplete": []
+        }
+      },
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    },
+    {
+      "id": "F006",
+      "sources": ["L2-structural"],
+      "source_families": ["structural-family"],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "confirmed_mechanical",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": "moderate",
+      "file": "src/c.ts",
+      "line_range": [60, 70],
+      "claim": "F006 — shares c.ts with F004 (transitive closure via file)",
+      "score_phase3": 68,
+      "score_phase4": 72,
+      "score_history": [
+        {"phase": "phase_3", "score": 68},
+        {"phase": "phase_4", "score": 72}
+      ],
+      "validation_result": {
+        "evidence": ["c.ts:65 — bug F"],
+        "blast_radius": {
+          "writers": [],
+          "consumers": [],
+          "parallel_paths": [],
+          "invariants_at_stake": []
+        },
+        "fix_proposal": {
+          "approach": "fix F in c.ts",
+          "files_to_modify": [
+            {"file": "src/c.ts", "what": "fix F", "why": "bug"}
+          ]
+        },
+        "verification_context": {
+          "how_to_verify_fix": ["grep c.ts"],
+          "edge_cases_to_preserve": [],
+          "what_would_break_if_incomplete": []
+        }
+      },
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    },
+    {
+      "id": "F007",
+      "sources": ["L2-structural"],
+      "source_families": ["structural-family"],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "confirmed_mechanical",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": "moderate",
+      "file": "src/e.ts",
+      "line_range": [1, 5],
+      "claim": "F007 — standalone single-eligible test",
+      "score_phase3": 66,
+      "score_phase4": 70,
+      "score_history": [
+        {"phase": "phase_3", "score": 66},
+        {"phase": "phase_4", "score": 70}
+      ],
+      "validation_result": {
+        "evidence": ["e.ts:3 — bug G"],
+        "blast_radius": {
+          "writers": [],
+          "consumers": [],
+          "parallel_paths": [],
+          "invariants_at_stake": []
+        },
+        "fix_proposal": {
+          "approach": "fix G in e.ts",
+          "files_to_modify": [
+            {"file": "src/e.ts", "what": "fix G", "why": "bug"}
+          ]
+        },
+        "verification_context": {
+          "how_to_verify_fix": ["grep e.ts"],
+          "edge_cases_to_preserve": [],
+          "what_would_break_if_incomplete": []
+        }
+      },
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    }
+  ],
+  "cross_cutting_groups": [
+    {
+      "id": "G1",
+      "finding_ids": ["F004", "F005"],
+      "combined_approach": "Fix F004 first; F005 becomes coherent."
+    }
+  ],
+  "subagent_tokens": {
+    "total": 0,
+    "invocations": 0,
+    "by_phase": {},
+    "by_model": {},
+    "by_lens": {},
+    "by_finding_phase4": {}
+  },
+  "metrics": {
+    "phase_9_verified_pct": null,
+    "required_followup": null,
+    "time_elapsed_seconds": 0,
+    "pr_size_buckets": {"files_changed": 5, "lines_changed": 50}
+  }
+}

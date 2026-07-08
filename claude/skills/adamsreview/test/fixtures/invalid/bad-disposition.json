@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "review_id": "rev_baddisp",
+  "generated_at": "2026-04-17T21:00:00Z",
+  "review_started_at": "2026-04-17T21:00:00Z",
+  "reviewed_sha": "abcdef0123456789",
+  "base_branch": "main",
+  "head_branch": "test",
+  "mode": "local",
+  "pr_state": null,
+  "pr_number": null,
+  "comment_id": null,
+  "trivial_mode": false,
+  "reviewer_sources": [],
+  "reviewed_files_all": [],
+  "claude_md_paths": [],
+  "findings": [
+    {
+      "id": "F001",
+      "sources": [],
+      "source_families": [],
+      "impact_type": "correctness",
+      "origin": "introduced_by_pr",
+      "origin_confidence": "high",
+      "actionability": "auto_fixable",
+      "validation_lane": "deep",
+      "current_state": "open",
+      "disposition": "bogus_disposition",
+      "is_actionable": true,
+      "reason": null,
+      "confirmed_strength": null,
+      "file": "x.ts",
+      "line_range": [1, 1],
+      "claim": "c",
+      "score_phase3": 80,
+      "score_phase4": null,
+      "score_history": [],
+      "validation_result": null,
+      "fix_attempts": [],
+      "introduced_in_sha": null,
+      "suggested_follow_up": null,
+      "related_parent_finding_id": null
+    }
+  ],
+  "cross_cutting_groups": [],
+  "subagent_tokens": {
+    "total": 0,
+    "invocations": 0,
+    "by_phase": {},
+    "by_model": {},
+    "by_lens": {},
+    "by_finding_phase4": {}
+  },
+  "metrics": {
+    "phase_9_verified_pct": null,
+    "required_followup": null,
+    "time_elapsed_seconds": null,
+    "pr_size_buckets": {
+      "files_changed": 0,
+      "lines_changed": 0
+    }
+  }
+}

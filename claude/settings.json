@@ -1,8 +1,21 @@
 {
-  "tui": "fullscreen",
-  "theme": "dark-ansi",
-  "model": "opus",
   "permissions": {
     "defaultMode": "bypassPermissions"
-  }
+  },
+  "model": "opus",
+  "enabledPlugins": {
+    "ponytail@ponytail": true
+  },
+  "extraKnownMarketplaces": {
+    "ponytail": {
+      "source": {
+        "source": "directory",
+        "path": "$HOME/dotfiles/opencode/ponytail"
+      }
+    }
+  },
+  "effortLevel": "high",
+  "tui": "fullscreen",
+  "theme": "dark-ansi",
+  "skipDangerousModePermissionPrompt": true
 }

@@ -1,0 +1,375 @@
+#!/usr/bin/env bash
+# origin-crosscheck.sh — blame-based origin classifier (DESIGN §13.11, §21.9).
+#
+# Takes a JSON array of Phase-1 candidates and a comparison ref, then uses
+# `git blame` + `git merge-base --is-ancestor` to decide whether each
+# candidate's line range is entirely pre-existing (every implicated SHA is
+# reachable from $comparison_ref) vs. PR-modified. The §13.1 pre-existing
+# override (origin=pre_existing AND origin_confidence=high →
+# disposition=pre_existing_report) keys off the {origin, origin_confidence}
+# pair, so correcting it here — before --add-finding — feeds §13.1 the
+# right inputs: lens-respect (already pre_existing/high) and rename-follow
+# extraction (override to high) fire the override at Phase 3; main-path
+# lens-vs-blame disagreement (Option A2) is downgraded to medium so
+# Phase 3 + Phase 4 decide instead of force-routing to footnote.
+#
+# Decision table per candidate:
+#   file not in comparison_ref tree:
+#       git log --follow reveals pre-PR ancestor AND blame SHAs ⊆ {file-add
+#         commits}                         → override to pre_existing/high
+#         (file was renamed/extracted from a pre-PR ancestor and the
+#         candidate lines came in with that extraction — F038 case;
+#         this is the one main-path-style override that survives because
+#         the --follow trace is stronger evidence than a lens claim.
+#         Caveat: this branch retains the same Mode 2 risk profile A2
+#         removed from the main path — an exposure finding whose cited
+#         lines live inside an extracted file would still be force-
+#         classified pre_existing/high here. Accepted limitation per
+#         plans/pre-existing-fix.md §A2; recoverable via walkthrough
+#         off-menu promote. Note: Phase 2 dedup C1+C2 in
+#         fragments/03-dedup.md may later cap this override to medium
+#         when grouped with same-origin non-high or any cross-origin
+#         sibling; single-id groups preserve the override untouched.)
+#       git log --follow reveals pre-PR ancestor but blame sees later PR
+#         commits                          → respect lens (content was added
+#         AFTER extraction, within the PR)
+#       no pre-PR ancestor (genuinely new) → respect lens (new-file)
+#   blame fails                            → respect lens (skipped)
+#   all SHAs reachable from comparison_ref:
+#       lens already pre_existing/high     → respect (no-op)
+#       otherwise                          → set pre_existing/medium
+#         (lens disagrees with blame — either the cited line range is
+#         wrong or the bug is an "exposure" finding where new code in
+#         this PR makes old code stale; in either case let Phase 3 +
+#         Phase 4 decide instead of force-routing through the §13.1
+#         override to the report-only footnote)
+#   any SHA NOT reachable:
+#       lens is pre_existing/high          → downgrade confidence to medium
+#       otherwise                          → respect
+#
+# Usage:
+#   origin-crosscheck.sh --comparison-ref <ref> --candidates <path|@-|inline-json>
+#
+# Input: JSON array of objects with at least {id, file, line_range, origin,
+# origin_confidence}. Extra fields pass through untouched.
+#
+# Output: same array on stdout, with origin / origin_confidence possibly
+# corrected. One stderr line per candidate:
+#   origin_crosscheck: id=<id> action=<respected|overridden|downgraded|skipped>[ reason=<...>]
+#
+# Exits: 0 success (per-candidate blame failures do NOT abort the run —
+# they're captured as action=skipped); 1 EXIT_VALIDATION (unknown ref,
+# bad JSON); 5 EXIT_MISSING_DEP (no git, no jq); 64 usage.
+
+set -euo pipefail
+
+usage() {
+    cat >&2 <<USAGE
+Usage: $(basename "$0") --comparison-ref <ref> --candidates <path|@-|inline-json>
+
+Blame-classifies each candidate's origin (DESIGN §13.11). Reads a JSON
+array (via file path, stdin with "@-", or inline JSON on the command
+line) and emits the same array with corrected {origin, origin_confidence}.
+Per-candidate audit lines land on stderr.
+USAGE
+}
+
+die_usage() { echo "ERROR: $1" >&2; usage; exit 64; }
+die_validation() { echo "ERROR: $1" >&2; exit 1; }
+die_missing_dep() { echo "ERROR: $1" >&2; exit 5; }
+
+COMPARISON_REF=""
+CANDIDATES_ARG=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --comparison-ref)
+            [[ $# -ge 2 ]] || die_usage "--comparison-ref requires a value"
+            COMPARISON_REF="${2:-}"; shift 2 ;;
+        --candidates)
+            [[ $# -ge 2 ]] || die_usage "--candidates requires a value"
+            CANDIDATES_ARG="${2:-}"; shift 2 ;;
+        -h|--help)        usage; exit 0 ;;
+        *) die_usage "unknown arg '$1'" ;;
+    esac
+done
+
+[[ -n "$COMPARISON_REF" ]] || die_usage "--comparison-ref is required"
+[[ -n "$CANDIDATES_ARG" ]] || die_usage "--candidates is required (path, @- for stdin, or inline JSON)"
+
+command -v git >/dev/null 2>&1 || die_missing_dep "git not found on PATH"
+command -v jq  >/dev/null 2>&1 || die_missing_dep "jq not found on PATH"
+
+# Validate the ref up-front — error-as-prompt per DESIGN §8.6.
+if ! git rev-parse --verify --quiet "$COMPARISON_REF" >/dev/null 2>&1; then
+    {
+        echo "ERROR: --comparison-ref '$COMPARISON_REF' did not resolve to a commit"
+        echo "Context: origin-crosscheck.sh needs a ref that git rev-parse can resolve so blame-reachability checks have a valid anchor."
+        echo "Valid values: any revspec git understands (branch name, tag, remote-tracking name, SHA)."
+        echo "Did you mean:"
+        git rev-parse --symbolic --branches --remotes=origin 2>/dev/null | head -10 | sed 's/^/  /'
+        echo "Action: pass a ref that resolves (e.g. 'main', 'origin/main', or a full SHA)."
+    } >&2
+    exit 1
+fi
+
+# Load candidates into a variable (file path, stdin, or inline).
+if [[ "$CANDIDATES_ARG" == "@-" ]]; then
+    CANDIDATES_JSON="$(cat)"
+elif [[ "${CANDIDATES_ARG:0:1}" == "@" ]]; then
+    path="${CANDIDATES_ARG:1}"
+    [[ -r "$path" ]] || die_validation "candidates file not readable: $path"
+    CANDIDATES_JSON="$(cat "$path")"
+elif [[ -f "$CANDIDATES_ARG" && "${CANDIDATES_ARG:0:1}" != "[" && "${CANDIDATES_ARG:0:1}" != "{" ]]; then
+    CANDIDATES_JSON="$(cat "$CANDIDATES_ARG")"
+else
+    CANDIDATES_JSON="$CANDIDATES_ARG"
+fi
+
+# Validate shape — must be a JSON array. On failure, include enough
+# diagnostic info that trace.md readers can tell whether the caller
+# passed empty input, prose, or malformed JSON without re-running.
+if ! echo "$CANDIDATES_JSON" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    input_size=${#CANDIDATES_JSON}
+    if [[ $input_size -eq 0 ]]; then
+        die_validation "--candidates received empty input (zero bytes) — caller likely passed an empty lens response or an unset variable; upstream should drop the lens before invoking this helper"
+    else
+        input_type=$(echo "$CANDIDATES_JSON" | jq -r 'type' 2>/dev/null || echo 'unparseable')
+        first60=$(echo "$CANDIDATES_JSON" | head -c 60 | tr '\n' ' ')
+        die_validation "--candidates must parse as a JSON array; got $input_type (size=${input_size}B, head=\"$first60\")"
+    fi
+fi
+
+N=$(echo "$CANDIDATES_JSON" | jq 'length')
+
+# Per-candidate processing. We emit corrected objects to a temp file then
+# wrap them in an array for stdout.
+out_tmp="$(mktemp)"
+trap 'rm -f "$out_tmp"' EXIT
+
+for (( i = 0; i < N; i++ )); do
+    cand=$(echo "$CANDIDATES_JSON" | jq ".[$i]")
+    cand_id=$(echo "$cand" | jq -r '.id // ("idx-" + (env.I // "'$i'"))' 2>/dev/null || echo "idx-$i")
+    file=$(echo "$cand" | jq -r '.file // ""')
+    start=$(echo "$cand" | jq -r '.line_range[0] // 0')
+    end=$(echo "$cand" | jq -r '.line_range[1] // 0')
+    lens_origin=$(echo "$cand" | jq -r '.origin // "introduced_by_pr"')
+    lens_conf=$(echo "$cand" | jq -r '.origin_confidence // "high"')
+
+    action="respected"
+    reason=""
+    new_origin="$lens_origin"
+    new_conf="$lens_conf"
+
+    if [[ -z "$file" || "$start" == "0" || "$end" == "0" ]]; then
+        action="skipped"
+        reason="missing file or line_range"
+    elif ! git cat-file -e "$COMPARISON_REF:$file" 2>/dev/null; then
+        # File did not exist at the comparison ref. Before defaulting to
+        # respect-lens/new-file, walk `git log --follow` to see whether
+        # the file is a rename or extraction from a pre-PR ancestor.
+        # Two sub-cases where the §13.1 override should fire:
+        #   1. Pure rename — blame carries the pre-rename SHAs through
+        #      (git blame follows renames within a single ref by default).
+        #   2. Content-preserving extraction (F038 case) — blame points
+        #      to the file-add commit, but that commit's content came
+        #      from a pre-PR ancestor that `git log --follow` can reach.
+        # Genuinely-new file (no rename / no extraction) keeps the
+        # existing respect-lens/new-file behavior.
+        action="respected"
+        reason="new-file"
+
+        # Walk the history of this path WITH rename detection, looking
+        # for the first commit that is an ancestor of $COMPARISON_REF.
+        # Uses git rename-detection (default 50% similarity threshold).
+        # Files below that threshold are not followed — they fall
+        # through to reason=new-file, which may miss pre-existing
+        # extractions with heavy rewriting.
+        pre_pr_ancestor=""
+        follow_shas=$(git log --follow --format=%H HEAD -- "$file" 2>/dev/null | awk 'NF')
+        for fsha in $follow_shas; do
+            if git merge-base --is-ancestor "$fsha" "$COMPARISON_REF" 2>/dev/null; then
+                pre_pr_ancestor="$fsha"
+                break
+            fi
+        done
+
+        if [[ -n "$pre_pr_ancestor" ]]; then
+            # File is a rename/extraction. Collect file-add commits
+            # (commits in comparison_ref..HEAD that introduced this
+            # path; normally exactly one) so the extraction sub-case
+            # can recognize blame-to-add-commit as "content came
+            # across the rename boundary."
+            add_shas=$(git log --diff-filter=A --format=%H \
+                "$COMPARISON_REF..HEAD" -- "$file" 2>/dev/null \
+                | awk 'NF' | awk '!seen[$0]++')
+
+            # Blame the requested line range and classify each SHA:
+            #   ancestor of comparison_ref → pre-existing (pure rename)
+            #   equal to a file-add commit → pre-existing (extraction)
+            #   else                       → PR-modified
+            _bl_err_tmp=$(mktemp)
+            blame_rc=0
+            blame_out=$(git blame -L "$start,$end" --porcelain HEAD -- "$file" 2>"$_bl_err_tmp") || blame_rc=$?
+            blame_err=""
+            if [[ $blame_rc -ne 0 ]]; then
+                blame_err=$(head -c 200 "$_bl_err_tmp" 2>/dev/null | tr '\n' ' ' | awk '{$1=$1; print}')
+            fi
+            rm -f "$_bl_err_tmp"
+
+            if [[ $blame_rc -ne 0 ]]; then
+                action="skipped"
+                reason="blame-failed rc=$blame_rc${blame_err:+; $blame_err}"
+            else
+                shas=$(printf '%s\n' "$blame_out" \
+                    | awk '/^[0-9a-f]{40} / { print $1 }' \
+                    | awk '!seen[$0]++')
+                if [[ -n "$shas" ]]; then
+                    all_preexisting=1
+                    for bsha in $shas; do
+                        # Ancestor-of-comparison-ref branch: pure rename.
+                        if git merge-base --is-ancestor "$bsha" "$COMPARISON_REF" 2>/dev/null; then
+                            continue
+                        fi
+                        # File-add-commit branch: content-preserving extraction.
+                        is_add=0
+                        for asha in $add_shas; do
+                            if [[ "$bsha" == "$asha" ]]; then
+                                is_add=1; break
+                            fi
+                        done
+                        if [[ "$is_add" == "1" ]]; then
+                            continue
+                        fi
+                        all_preexisting=0
+                        break
+                    done
+                    if [[ "$all_preexisting" == "1" ]]; then
+                        if [[ "$lens_origin" == "pre_existing" && "$lens_conf" == "high" ]]; then
+                            action="respected"
+                            reason="rename-followed-confirms-preexisting"
+                        else
+                            new_origin="pre_existing"
+                            new_conf="high"
+                            action="overridden"
+                            reason="rename-followed-to-preexisting"
+                        fi
+                    else
+                        action="respected"
+                        reason="rename-follow-but-lines-modified-in-pr"
+                    fi
+                fi
+                # shas empty → keep default respect/new-file.
+            fi
+        fi
+    else
+        # Collect distinct commit SHAs from blame -L <start>,<end>.
+        # Capture stderr so rc=128 is diagnosable in trace.md instead
+        # of opaque — the reason string gets a "; <stderr first line>"
+        # suffix on failure.
+        _bl_err_tmp=$(mktemp)
+        blame_rc=0
+        blame_out=$(git blame -L "$start,$end" --porcelain HEAD -- "$file" 2>"$_bl_err_tmp") || blame_rc=$?
+        blame_err=""
+        if [[ $blame_rc -ne 0 ]]; then
+            blame_err=$(head -c 200 "$_bl_err_tmp" 2>/dev/null | tr '\n' ' ' | awk '{$1=$1; print}')
+        fi
+        rm -f "$_bl_err_tmp"
+        if [[ $blame_rc -ne 0 ]]; then
+            action="skipped"
+            reason="blame-failed rc=$blame_rc${blame_err:+; $blame_err}"
+        else
+            # Porcelain SHAs are 40 hex chars at column 1, followed by
+            # line-number fields. Match strictly to avoid false-positives
+            # on porcelain header lines ("author ...", "summary ...", etc.)
+            # which ALSO start at column 1.
+            shas=$(printf '%s\n' "$blame_out" \
+                | awk '/^[0-9a-f]{40} / { print $1 }' \
+                | awk '!seen[$0]++')
+            if [[ -z "$shas" ]]; then
+                action="skipped"
+                reason="no-blame-shas"
+            else
+                all_ancestor=1
+                for sha in $shas; do
+                    if ! git merge-base --is-ancestor "$sha" "$COMPARISON_REF" 2>/dev/null; then
+                        all_ancestor=0
+                        break
+                    fi
+                done
+                if [[ "$all_ancestor" == "1" ]]; then
+                    # Every implicated SHA predates the PR.
+                    if [[ "$lens_origin" == "pre_existing" && "$lens_conf" == "high" ]]; then
+                        action="respected"
+                        reason="blame-confirms-preexisting"
+                    else
+                        # Lens did NOT assert pre_existing/high; blame is
+                        # fully ancestor of comparison_ref. The branch
+                        # covers every non-(pre_existing && high) lens
+                        # output: introduced_by_pr at any confidence,
+                        # pre_existing/medium, pre_existing/low, or
+                        # unknown. Two failure modes motivate the
+                        # downgrade: (a) the lens cited the wrong line
+                        # range (the claim is real, the cited lines
+                        # aren't); (b) the cited lines are pre-existing
+                        # but the bug is "exposure" — new code elsewhere
+                        # in the PR made these old lines wrong (stale
+                        # diagram, doc bullet contradicted by a new
+                        # fallback, function missing a field a new caller
+                        # needs). In either case do NOT promote to
+                        # pre_existing/high — that would force-route via
+                        # §13.1 to the report-only footnote and skip
+                        # Phase 4 validation. Downgrade to
+                        # pre_existing/medium so §13.1 does not fire and
+                        # the finding still flows through Phase 3 +
+                        # Phase 4 like any other candidate. The reason
+                        # string distinguishes the two main lens-output
+                        # cases so a debugger can tell which signal
+                        # triggered the branch.
+                        new_origin="pre_existing"
+                        new_conf="medium"
+                        action="downgraded"
+                        if [[ "$lens_origin" == "introduced_by_pr" ]]; then
+                            reason="lens-introduced-by-pr-but-all-blame-ancestor"
+                        else
+                            reason="lens-not-preexisting-high-but-all-blame-ancestor"
+                        fi
+                    fi
+                else
+                    # At least one SHA is in comparison_ref..HEAD.
+                    if [[ "$lens_origin" == "pre_existing" ]]; then
+                        # Lens said pre-existing; blame disagrees. Downgrade
+                        # confidence so §13.1 override does not fire, but
+                        # keep the pre_existing label so the finding is still
+                        # visible in its lane (§13.11 step 4).
+                        if [[ "$lens_conf" == "high" ]]; then
+                            new_conf="medium"
+                            action="downgraded"
+                            reason="blame-includes-pr-commits"
+                        else
+                            action="respected"
+                            reason="already-non-high"
+                        fi
+                    else
+                        action="respected"
+                        reason="blame-includes-pr-commits"
+                    fi
+                fi
+            fi
+        fi
+    fi
+
+    # Emit audit line to stderr.
+    if [[ -n "$reason" ]]; then
+        echo "origin_crosscheck: id=$cand_id action=$action reason=$reason" >&2
+    else
+        echo "origin_crosscheck: id=$cand_id action=$action" >&2
+    fi
+
+    # Emit corrected candidate to out_tmp.
+    echo "$cand" | jq --arg o "$new_origin" --arg c "$new_conf" \
+        '.origin = $o | .origin_confidence = $c' >> "$out_tmp"
+done
+
+# Wrap the per-line objects back into an array.
+jq -s '.' "$out_tmp"

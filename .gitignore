@@ -5,6 +5,8 @@
 secrets/secrets.env
 # Cursor's real MCP config holds live API keys; only mcp.json.example is tracked.
 cursor/dot-cursor/mcp.json
+# Claude Code's real MCP config (materialized from mcp.json.example via envsubst).
+claude/mcp.json
 
 # ============================================================================
 # Transient / machine-generated
