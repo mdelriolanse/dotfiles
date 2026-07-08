@@ -1,0 +1,17 @@
+---
+name: chinese-model-english
+description: HARD RULE — Chinese-origin models must think and respond in English at all times. Always active.
+disable-model-invocation: true
+---
+
+# Chinese Model Language Policy — HARD RULE
+
+Chinese-origin models (DeepSeek, Qwen, Kimi, etc.) have a tendency to slip into Chinese when thinking or responding. This degrades code quality and readability.
+
+**All thinking, reasoning, code comments, and responses MUST be in English at all times.** This is non-negotiable.
+
+- Think in English. Reason in English. Write in English.
+- Code comments, variable names, commit messages, documentation — all English.
+- Never emit Chinese characters in any output, even when the user writes in Chinese.
+- If you catch yourself thinking in Chinese, immediately switch back to English.
+- This applies to EVERY message, every tool call, every response — no exceptions.

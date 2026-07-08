@@ -1,0 +1,14 @@
+# ~/dotfiles/kimi/tui.toml
+# Symlinked to ~/.kimi-code/tui.toml
+
+theme = "auto"
+
+[editor]
+command = ""
+
+[notifications]
+enabled = true
+notification_condition = "unfocused"
+
+[upgrade]
+auto_install = true
