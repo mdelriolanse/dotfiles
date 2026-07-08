@@ -1,17 +1,6 @@
 ---
 name: canvas
-description: >-
-  A Cursor Canvas is a live React app that the user can open beside the chat.
-  You MUST use a canvas when the agent produces a standalone analytical artifact
-  — quantitative analyses, billing investigations, security audits, architecture
-  reviews, data-heavy content, timelines, charts, tables, interactive
-  explorations, repeatable tools, or any response that benefits from visual
-  layout. Especially prefer a canvas when presenting results from MCP tools
-  (Datadog, Databricks, Linear, Sentry, Slack, etc.) where the data is the
-  deliverable — render it in a rich canvas rather than dumping it into a
-  markdown table or code block. If you catch yourself about to write a markdown
-  table, stop and use a canvas instead. You MUST also read this skill whenever
-  you create, edit, or debug any .canvas.tsx file.
+description: ''
 metadata:
   surfaces:
     - ide
@@ -105,4 +94,4 @@ Both can apply at once; one or two sentences total is enough. Skip the intro for
 
 ## Troubleshooting
 
-If a canvas appears blank or missing, the most common cause is that it was not written under `/Users/<user>/.cursor/projects/<workspace>/canvases/` exactly — re-save it to that path. Do not debug this by trying to create the managed directory manually; focus on correcting the file path instead. Users can click the canvas file path in the response to open it, just like any other file path in Cursor. When present, the canvas server writes a `<name>.canvas.status.json` sidecar after each build with `status`, `diagnostics`, or `error` fields you can read; the file is best-effort and may not exist, so don't block on it.
+If a canvas appears blank or missing, the most common cause is that it was not written under `/Users/<user>/.cursor/projects/<workspace>/canvases/` exactly — re-save it to that path. Do not debug this by trying to create the managed directory manually; focus on correcting the file path instead. Users can click the canvas file path in the response to open it, just like any other file path in Cursor. Every canvas edit returns a `Canvas TypeScript check` line in the tool result reporting the file's current type errors (or "no errors") — treat that as the authoritative diagnostics signal.
