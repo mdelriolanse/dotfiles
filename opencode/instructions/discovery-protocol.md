@@ -8,11 +8,21 @@ tiers before descending.
 
 1. **Docs markdown files** — `CONTEXT.md`, ADRs in `docs/adr/`, project READMEs, and any
    markdown documentation in the repo. Use glob + read, not grep, to locate and consume these.
-2. **Codebase Memory MCP** — `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`,
-   `get_architecture`. Structural code queries with zero brute-force scanning.
-3. **Agent Memory MCP** — `memory_smart_search` (preferred) then `memory_recall`. Past sessions'
+2. **CodeGraph MCP** — `codegraph_explore` (when a `.codegraph/` index exists). Structural
+   code queries with zero brute-force scanning. One call typically answers the whole question.
+   See `AGENTS.md` for full decision flow between all backends.
+3. **Semble MCP** — `semble_search` and `semble_find_related`. Semantic (embedding + BM25)
+   code search for vague natural-language queries or finding similar code at a location.
+   ~98% fewer tokens than grep+read. Use before grep when the query is descriptive or fuzzy.
+4. **Serena MCP** — `find_declaration`, `find_referencing_symbols`, `get_symbols_overview`.
+   Symbol-level navigation and diagnostics. Use when editing/refactoring or needing language-server
+   precision. See `AGENTS.md` for when to prefer Serena over the others.
+5. **codebase-memory MCP** — `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`,
+   `get_architecture`. Use when CodeGraph is unavailable and the task needs complexity metrics,
+   ADRs, runtime traces, or custom Cypher queries.
+6. **Agent Memory MCP** — `memory_smart_search` (preferred) then `memory_recall`. Past sessions'
    discoveries, decisions, patterns, and lessons.
-4. **Grep / glob / file search** — Fallback ONLY when tiers 1–3 yield insufficient context
+7. **Grep / glob / file search** — Fallback ONLY when tiers 1–6 yield insufficient context
    or when the question is strictly file-level (string literals, config values, non-code files).
    These are the least token-efficient methods; never start here.
 
