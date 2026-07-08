@@ -1,0 +1,8 @@
+{
+  "tui": "fullscreen",
+  "theme": "dark-ansi",
+  "model": "opus",
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  }
+}
