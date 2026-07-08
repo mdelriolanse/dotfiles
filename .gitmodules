@@ -1,3 +1,6 @@
 [submodule "opencode/ponytail"]
 	path = opencode/ponytail
 	url = https://github.com/DietrichGebert/ponytail.git
+[submodule "opencode/claude-hud"]
+	path = opencode/claude-hud
+	url = https://github.com/jarrodwatts/claude-hud.git

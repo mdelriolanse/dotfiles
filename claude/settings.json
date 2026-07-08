@@ -2,9 +2,11 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
-  "model": "opus",
+  "model": "sonnet",
   "enabledPlugins": {
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "claude-hud@claude-hud": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
@@ -12,10 +14,16 @@
         "source": "directory",
         "path": "$HOME/dotfiles/opencode/ponytail"
       }
+    },
+    "claude-hud": {
+      "source": {
+        "source": "directory",
+        "path": "$HOME/dotfiles/opencode/claude-hud"
+      }
     }
   },
   "effortLevel": "high",
   "tui": "fullscreen",
-  "theme": "dark-ansi",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi"
 }
