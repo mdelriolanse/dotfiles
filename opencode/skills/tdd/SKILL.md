@@ -94,6 +94,84 @@ Example: "Add email validation to the signup form"
 
 Present the behavior list to the user for approval before starting cycles.
 
+### Step 1.5: Group behaviors into parallel batches
+
+Two agents editing one working tree corrupt each other. Grouping is what makes
+parallelism safe, so do it before dispatching anything.
+
+For each behavior, write down the **file set** it will touch: its test file and
+its source file.
+
+- Behaviors whose file sets are **disjoint** → same batch, run concurrently.
+- Behaviors whose file sets **overlap** → different batches, run sequentially.
+- When in doubt, serialize. A wrong parallel run costs more than a slow one.
+
+Write the batches to `.tdd/state.md` (create it) as a checklist:
+
+```markdown
+# Goal: <one line>
+Test command: <cmd>
+
+## Batch 1 (parallel)
+- [ ] B1: rejects empty email — tests/test_signup.py :: src/signup.py
+- [ ] B2: trims whitespace on name — tests/test_profile.py :: src/profile.py
+
+## Batch 2 (sequential — both touch src/signup.py)
+- [ ] B3: rejects invalid format — tests/test_signup.py :: src/signup.py
+```
+
+This file is the **only durable state**. Every ralph iteration re-reads it.
+Update the checkboxes as batches land. If you crash, resume from this file.
+
+**Isolation.** If a batch has more than one behavior, give each behavior's
+agents their own git worktree — create one before dispatching:
+
+```bash
+git worktree add /tmp/tdd-wt-<slug> HEAD
+```
+
+Then pass `--dir /tmp/tdd-wt-<slug>` to `opencode run` for that behavior's
+agents. A worktree is a second checkout of the same repo on its own branch, so
+concurrent edits cannot collide. Merge the worktrees back yourself, one at a
+time, running the full suite after each merge. Single-behavior batches run in
+the main tree.
+
+### Executor model
+
+RED and GREEN subagents (and any other per-cycle executor the orchestrator
+spawns) run as **Opus 4.8 instances**: pass `-m anthropic/claude-opus-4-8` on
+every `opencode run` or `Task` call that dispatches an executor. The
+orchestrator itself stays on the session's model. Do not let executors silently
+inherit the parent model.
+
+### Ralph loops
+
+Each agent runs in a **ralph loop**: a bounded retry where every attempt is a
+*brand-new* subagent given the same prompt plus the current file state. Never
+reuse a failed agent's session to "try again" — that preserves the confused
+context you are trying to discard. Spawn a fresh one via a new `Task` or
+`opencode run` call.
+
+```
+attempt = 1
+while attempt <= MAX and not success_condition():
+    spawn fresh agent (same prompt, current files)
+    attempt += 1
+```
+
+| Agent | Success condition | MAX |
+|---|---|---|
+| RED (validator) | named test exists and **fails for the right reason** | 3 |
+| GREEN (builder) | named test passes **and** full suite green **and** no test file touched | 5 |
+
+On exhausting MAX: **stop the batch and report to the user.** Do not lower the
+bar, do not skip the behavior, do not mark it done. A ralph loop that cannot
+converge is telling you the behavior is mis-specified — that is signal, not a
+failure to route around.
+
+Each iteration costs a cold start. That is the price of discarding a poisoned
+context, and it is usually worth paying.
+
 ### Step 2: For each behavior — RED agent
 
 Dispatch a `general` subagent with the RED agent prompt (`references/red-agent-prompt.md`).
@@ -130,6 +208,17 @@ Provide ONLY:
 
 **CRITICAL: Do NOT pass any conversation context, reasoning, or intent.** The GREEN agent must work purely from the test and error output. It must discover what the test wants by reading it.
 
+**Every GREEN prompt must carry this clause verbatim:**
+
+> The test file is read-only. You may not edit, delete, rename, skip, or
+> `xfail` any test, and you may not weaken an assertion. If you believe the
+> test is wrong, stop immediately and report why — that is a valid and useful
+> outcome. Making the test pass by changing the test is a failed run.
+
+Also forbid the other cheat: hardcoding the expected value so the one test
+passes while the behavior does not exist. The orchestrator catches this in
+Step 4 by reading the diff, so say plainly that it will be caught.
+
 The GREEN agent MUST:
 1. Read the test file to understand what's being asked
 2. Read the source file to understand the existing code
@@ -146,7 +235,31 @@ The GREEN agent MUST:
 
 ### Step 4: Orchestrator verify
 
-After GREEN agent reports success, independently verify:
+**Never trust a GREEN agent's self-report.** The cheapest way to make a failing
+test pass is to change the test, and a builder under pressure will find it.
+Check mechanically before you read anything the agent wrote.
+
+**Gate 0 — the builder did not touch the test.** Run this first. It is the only
+check that cannot be talked around:
+
+```bash
+git diff --name-only HEAD -- '<test path glob>'   # MUST be empty
+```
+
+Non-empty means the builder edited, deleted, skipped, or `xfail`-ed a test.
+That run is void: `git checkout -- <test path>`, discard the agent, and respawn
+a fresh one with the violation named in its prompt. Do not "just review" the
+change. Do not let it stand because the diff looks reasonable.
+
+Also confirm the test is still *run*, not merely present — a `@skip`, a renamed
+test function, or an early `return` all leave the file diff clean in spirit but
+neuter the check:
+
+```bash
+{test command} -k '<test name>'    # must execute and pass, not report "skipped"
+```
+
+Then verify the rest:
 
 1. **Review GREEN agent's report** — check file:line changes match what the test requires
 2. **Check for conflicts** — did the GREEN agent modify anything outside the expected source file?
