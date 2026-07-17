@@ -1,0 +1,13 @@
+setupVersion: 1
+modelRoles:
+  default: <provider>/glm-5-2-nvfp4
+disabledProviders:
+  - opencode
+tools:
+  approvalMode: yolo
+  approval: {}
+startup:
+  checkUpdate: false
+shellPath: /bin/bash
+compaction:
+  keepRecentTokens: 8000

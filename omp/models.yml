@@ -1,0 +1,23 @@
+providers:
+  <provider>:
+    baseUrl: https://<provider-host>/v1
+    api: openai-completions
+    authHeader: true
+    apiKey: <PROVIDER>_API_KEY
+    models:
+      - id: glm-5-2-nvfp4
+        name: GLM 5.2
+        contextWindow: 262144
+        maxTokens: 262144
+        reasoning: true
+        input:
+          - text
+          - image
+      - id: nvidia-kimi-k2-6-nvfp4
+        name: Kimi 2.6
+        contextWindow: 262144
+        maxTokens: 262144
+        reasoning: true
+        input:
+          - text
+          - image

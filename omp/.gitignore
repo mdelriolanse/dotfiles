@@ -1,0 +1,3 @@
+# Python bytecode cache (adamsreview skill scripts)
+__pycache__/
+*.pyc
