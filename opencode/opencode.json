@@ -98,14 +98,14 @@
         "uvx",
         "--from",
         "semble[mcp]",
-        "semble",
-        "mcp-server"
+        "semble"
       ],
       "enabled": true
     }
   },
   "instructions": [
     "$HOME/.config/opencode/instructions/mcp-first.md",
+    "$HOME/.config/opencode/instructions/tool-names.md",
     "$HOME/.config/opencode/AGENTS.md",
     "instructions/agentmemory-conventions.md",
     "instructions/memory-first-codebase.md",
