@@ -40,9 +40,32 @@ cursor/User/*            -> ~/.config/Cursor/User/*    (settings, keybindings, s
 cursor/dot-cursor/*      -> ~/.cursor/*                (argv, cli-config, commands,
                                                         skills-cursor, USER_RULES,
                                                         mcp.json)
+hermes/SOUL.md           -> ~/.hermes/SOUL.md          (persona / system prompt)
+hermes/news-topics.txt   -> ~/.hermes/news-topics.txt  (digest topics)
+
+hermes/config.yaml.example  scaffolded -> ~/.hermes/config.yaml  (gitignored real)
+hermes/.env.example         scaffolded -> ~/.hermes/.env         (gitignored real)
 secrets/secrets.env      (gitignored) real keys; sourced by ~/.bashrc
 install.sh               symlink + bootstrap script
 ```
+
+### Hermes agent (`~/.hermes`)
+
+Only **preferences** are centralized — never memory or runtime state. `SOUL.md`,
+`news-topics.txt`, and `scripts/` are symlinked (edit-here == edit-live).
+`config.yaml` and `.env` mix preferences with secrets **and** are rewritten by
+Hermes at runtime, so they are not symlinked: `install.sh` materializes them from
+`config.yaml.example` / `.env.example` + `secrets.env` (via `envsubst`) **only if
+absent** — it never clobbers a live config. Secret values (`HERMES_MODEL_API_KEY`,
+`AGENTMEMORY_SECRET`, `TELEGRAM_*`) live in `secrets.env`; the tracked templates
+carry `${VAR}` placeholders / blanks.
+
+Deliberately **excluded** (memory, state, caches, creds, binaries, the app
+checkout): `memories/`, `sessions/`, `state.db*`, `kanban*`, `cron/`, `auth.json`,
+all `*cache*` / `logs/`, `bin/`, `hermes-agent/`, and the bundled `skills/`
+(re-provisioned by Hermes itself). `scripts/` assume `~/.hermes` and the Obsidian
+vault path — adjust per machine. The `agentmemory` MCP `command:` path in
+`config.yaml.example` is machine-specific (flagged with a `# NOTE:`).
 
 ## Secrets & MCP keys
 

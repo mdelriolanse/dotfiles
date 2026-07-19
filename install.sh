@@ -146,6 +146,48 @@ if [ -x "$REPO_DIR/opencode/scripts/link-cursor-skills.sh" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 5b. Hermes agent (~/.hermes)
+#     Pure-preference files are symlinked (edit-here == edit-live). config.yaml
+#     and .env mix preferences with secrets AND are rewritten by Hermes at
+#     runtime, so they are NOT symlinked: we materialize them from the tracked
+#     *.example templates + secrets.env, ONCE, only if absent (never clobber a
+#     live config). Secrets already sourced into the env in step 4.
+# ---------------------------------------------------------------------------
+HERMES_HOME="$HOME/.hermes"
+if [ -d "$REPO_DIR/hermes" ]; then
+  # Symlinked preferences (persona, digest topics, cron scripts).
+  link "$HERMES_HOME/SOUL.md"         "$REPO_DIR/hermes/SOUL.md"
+  link "$HERMES_HOME/news-topics.txt" "$REPO_DIR/hermes/news-topics.txt"
+
+
+  # Scaffold secret-bearing, runtime-mutated files from templates (if absent).
+  # hermes_scaffold <target> <template> <var-list-for-envsubst>
+  hermes_scaffold() {
+    local target="$1" tmpl="$2" vars="$3"
+    [ -f "$tmpl" ] || { warn "hermes template missing, skip: ${tmpl/#$HOME/\~}"; return 0; }
+    if [ -e "$target" ]; then ok "hermes: ${target/#$HOME/\~} already present (left as-is)"; return 0; fi
+    mkdir -p "$(dirname "$target")"
+    if command -v envsubst >/dev/null 2>&1 \
+       && envsubst "$vars" < "$tmpl" > "$target" 2>/dev/null; then
+      ok "hermes: materialized ${target/#$HOME/\~} from $(basename "$tmpl") (empty keys written as blanks)"
+    else
+      cp "$tmpl" "$target" 2>/dev/null || true
+      warn "hermes: wrote ${target/#$HOME/\~} stub from template (no envsubst) — fill secrets.env + re-run."
+    fi
+  }
+  hermes_scaffold "$HERMES_HOME/config.yaml" "$REPO_DIR/hermes/config.yaml.example" \
+    '$HERMES_MODEL_API_KEY $AGENTMEMORY_SECRET'
+  hermes_scaffold "$HERMES_HOME/.env"        "$REPO_DIR/hermes/.env.example" \
+    '$TELEGRAM_BOT_TOKEN $TELEGRAM_ALLOWED_USERS $TELEGRAM_HOME_CHANNEL $TELEGRAM_HOME_CHANNEL_NAME'
+
+  hermes_missing=""
+  for v in HERMES_MODEL_API_KEY AGENTMEMORY_SECRET TELEGRAM_BOT_TOKEN; do
+    [ -z "${!v:-}" ] && hermes_missing="$hermes_missing $v"
+  done
+  [ -n "$hermes_missing" ] && warn "Hermes keys empty/unset:$hermes_missing — fill secrets.env; existing ~/.hermes files (if any) were left untouched."
+fi
+
+# ---------------------------------------------------------------------------
 # 6. Optional: reinstall Cursor extensions from snapshot
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--extensions" ]; then

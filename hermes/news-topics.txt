@@ -1,0 +1,5 @@
+AI research and open-source development — new models, tools, libraries, datasets, and techniques.
+Emphasis on open-weight / open-source releases and notable papers.
+Tracking the major labs and their moves: Anthropic, OpenAI, Google DeepMind, Meta AI, Mistral,
+xAI, DeepSeek, Qwen/Alibaba, and significant startups.
+Also: agent frameworks, inference/tooling, and developer-facing AI tooling.
