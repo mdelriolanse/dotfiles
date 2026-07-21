@@ -10,17 +10,23 @@ Resort to grep/glob ONLY when every backend fails or for non-code files.
 
 When a `.codegraph/` index exists in a repo, use CodeGraph as the **primary** code-exploration tool.
 
-- **One tool does it all**: `codegraph_explore` — ask a natural-language question, get back verbatim line-numbered source + call paths (including dynamic-dispatch: callbacks, React re-renders, JSX children)
+- **One tool does it all**: `codegraph explore` — ask a natural-language question, get back verbatim line-numbered source + call paths (including dynamic-dispatch: callbacks, React re-renders, JSX children)
 - **Best for**: "How does X work?", architecture questions, locating symbols, understanding flows, impact analysis
 - **Parser**: Tree-sitter AST (20+ languages)
 - **When to use**: ALMOST ALWAYS as the first code-discovery call. Usually zero file reads needed.
-- **Availability**: MCP tool + CLI (`codegraph explore "…"`)
-- **Setup**: Run `codegraph init` once per repo to build the `.codegraph/` index. Auto-syncs after.
-- **If missing index**: skip it, pick from the others below
+- **Availability**: CLI only (`codegraph explore "…"`). The `codegraph_explore` MCP tool exists but is anchored to the umbrella-root index — in this checkout the root has no indexable source (only stray scripts under `scripts/`, `integrations/`), so the MCP tool returns irrelevant results. **Use the CLI.**
+- **CRITICAL — per-repo indices, NOT one shared index**: each cloned repo (`app/`, `gateway/`, `operator/`, `helm/`) has its own `.codegraph/` directory and index. Indices are **not** cross-repo. To query a repo's code you MUST target that repo:
+  - From inside the repo: `cd ~/<provider>/app && codegraph explore "how does createSource enforce CHECK constraints"`
+  - From anywhere, with `-p`: `codegraph explore -p ~/<provider>/app "how does createSource enforce CHECK constraints"`
+  - Never run bare `codegraph explore` from `~/<provider>/` (umbrella root) expecting app/gateway results — it queries the root index, which has none of that code.
+- **Setup**: Run `codegraph init` once per repo (inside the repo dir) to build the `.codegraph/` index. Auto-syncs after via file watcher.
+- **If a repo has no `.codegraph/`**: skip CodeGraph for that repo, pick from the others below. Do NOT fall back to the umbrella-root index.
 
 Examples:
-- `codegraph_explore` with query: "how does JWT auth flow work in this repo?"
-- `codegraph_explore` with symbols: `["createRouter", "middleware.ts"]` — get sources + paths between them
+- `cd ~/<provider>/app && codegraph explore "how does JWT auth flow work?"`
+- `codegraph explore -p ~/<provider>/gateway "trace the BATCH worker shutdown drain path"`
+- `codegraph explore -p ~/<provider>/app createSource sharedUpload.ts` — get sources + paths between them
+
 
 ## 2. Semble (semantic code search — reach for this for "find where X is done" queries)
 
@@ -70,7 +76,7 @@ Keep this as the **fallback / detail** backend for scenarios none of the others 
 
 ```
 Need to understand code / architecture / call chain?
-  → codegraph_explore first (if .codegraph/ index exists)
+  → `codegraph explore` (CLI, from inside the repo or with `-p <repo>`) first (if that repo has a .codegraph/ index)
 
 Have a vague natural-language query ("where is auth done?") OR need similar code?
   → Semble first (semble_search / semble_find_related)
@@ -106,17 +112,66 @@ The following are the **only** legitimate reasons to use grep or glob instead of
 Plan reports: follow `skills/plan/` format.
 <!-- codebase-memory-mcp:end -->
 
+<!-- CODEBASE_INTELLIGENCE_START -->
+# Codebase Intelligence — Runbook (supersedes "Four-Backend Policy" below)
+
+This checkout has **six** code-intelligence backends, not four. The auto-managed block immediately below this one (lines `<!-- codebase-memory-mcp:start -->`→`<!-- codebase-memory-mcp:end -->`) predates graphify's semantic layer and the cross-repo distinction — read it for per-tool detail, but the decision matrix and inventory below are authoritative.
+
+## Inventory (state as of 2026-07-20)
+
+| Backend | Mechanism | Indexed in this checkout | Strength |
+|---|---|---|---|
+| **CodeGraph** (CLI) | Tree-sitter AST, per-repo SQLite `.codegraph/codegraph.db` | `app` (58M), `gateway` (3.4M), `operator` (3.4M), `helm` (2.3M) + root (132M, **stray scripts only — ignore**) | Verbatim source + call paths incl. dynamic dispatch (callbacks, JSX children). Fastest "read this symbol + how X calls Y" in one call. |
+| **Semble** (MCP) | Tree-sitter chunks + Model2Vec embeddings + BM25, indexes on first query | Nothing pre-indexed (caches on demand, watches files) | Natural-language "where is auth done?" / "find code similar to this location". ~98% fewer tokens than grep+read. |
+| **Serena** (MCP) | Language servers (LSP), type-aware | Auto-activates from cwd; `.serena/` at root | Safe cross-file renames, safe deletes, diagnostics, go-to-def, find-references. Correctness across files. |
+| **codebase-memory** (MCP) | LSP-style type-aware graph, Cypher-queryable | 7 projects: `app` (87.5k nodes, 306k edges), `helm` (6.8k), `app-backend` (6.4k), `app-client` (4.3k), `operator` (1.5k), `<provider>-python` (422), `e2e` (42) | Complexity metrics (`cyclomatic`, `transitive_loop_depth`, `linear_scan_in_loop`), Cypher queries, ADRs, **cross-repo-intelligence mode** (`CROSS_HTTP_CALLS`/`CROSS_ASYNC_CALLS`/`CROSS_CHANNEL` edges between services). |
+| **graphify** (CLI) | Tree-sitter AST + LLM semantic extraction (GLM 5.2 `reasoning_effort=off`) | 3 repos merged at root: `app` (58.9k), `gateway` (1.2k), `operator` (1k) → **61k nodes, 152k edges, 77 hyperedges** | Community detection, god nodes, surprising connections, **semantic doc↔code hyperedges** (architectural concepts spanning files), `GRAPH_REPORT.md`. Cheapest broad "what's in this codebase" map. |
+| **agentmemory** (MCP) | Persistent session memory (semantic+keyword search) | Running — saves across sessions | Past decisions, discoveries, patterns. Search before re-deriving. |
+
+## Decision matrix — which tool for which question
+
+| Question shape | Tool | Why |
+|---|---|---|
+| "How does X work?" / "show me Y's source" / "trace the call path A→B" | **`codegraph explore -p <repo>`** | One call returns verbatim source + call paths incl. dynamic dispatch. Cheapest source retrieval. Per-repo: target the specific repo, never root. |
+| "Where is authentication handled?" / "find code similar to this error pattern" | **`semble_search` / `semble_find_related`** | Embedding+BM25, fuzzy natural-language match. Zero setup, caches on demand. |
+| "Rename this function across the codebase" / "safe-delete this class" / "what breaks if I change this signature" | **Serena `rename_symbol` / `safe_delete_symbol` / `find_referencing_symbols`** | LSP guarantees all references updated. Text edits miss shadowed/re-exported callsites. |
+| "Which functions have high cyclomatic complexity / deep nested loops / O(n²) scans?" | **codebase-memory `query_graph`** | Only backend with complexity props. `MATCH (f:Function) WHERE f.transitive_loop_depth >= 3 RETURN ...` |
+| "How does gateway call app's routes?" / "trace data flow across services" | **codebase-memory `trace_path` mode `cross_service`** | Synthesizes real `CROSS_HTTP_CALLS`/`CROSS_ASYNC_CALLS` edges. Graphify merge is union-only, no cross-repo edges. |
+| "What are the main modules / god nodes / surprising connections in app?" | **graphify `query` / `GRAPH_REPORT.md`** | Community detection + god-node analysis + hyperedges. GLM's semantic layer surfaces architectural concepts (e.g. "Dream Mode v2 Lifecycle"). |
+| "Did we already decide/discover X in a prior session?" | **agentmemory `memory_smart_search`** | Persistent across sessions. Dedup rules: search before save. |
+
+## Key distinctions that trip people up
+
+1. **CodeGraph vs graphify** — both are Tree-sitter AST, both per-repo. CodeGraph is *fast source retrieval + call paths* (query → verbatim code). Graphify is *the map* (communities, god nodes, hyperedges, semantic doc↔code links). Use CodeGraph when you know what you're looking for; use graphify when you're surveying.
+2. **graphify merge ≠ cross-repo intelligence.** `graphify merge-graphs` is a union with `repo` tags — it does **not** infer gateway→app HTTP edges. For real cross-service edges, use codebase-memory's `cross-repo-intelligence` mode (`index_repository` with `mode: "cross-repo-intelligence"`, `target_projects: ["*"]`). That's the only backend that synthesizes cross-repo edges.
+3. **Serena vs grep/ast_edit for edits.** Cross-file rename with `ast_edit`/`sed` silently drops callsites. Serena's LSP follows shadowing and re-exports. Use Serena whenever a language server is available and correctness across files matters.
+4. **codebase-memory has app indexed twice** — full `app` project (87.5k nodes) and `app-backend`/`app-client` subdirs (older subsets). Query `home-mateo.delriolanse-<provider>-app` (the full one) unless you specifically need the subdir slice.
+5. **Root CodeGraph index is noise** — `~/<provider>/.codegraph/` (132M) indexes stray `scripts/`/`integrations/` only. **Never run bare `codegraph explore` from `~/<provider>/`** — always `-p ~/<provider>/<repo>` or `cd` into the repo. The MCP `codegraph_explore` tool is anchored to this root index and disabled; use the CLI.
+
+## Maintenance state
+
+- **graphify**: per-repo semantic graphs built 2026-07-20 via GLM 5.2 `reasoning_effort=off`. Maintenance rule in the `<!-- GRAPHIFY_START -->` block below: `graphify update ./<repo>/` after code changes (small repos), `--no-cluster` for app per-edit. Re-merge at root after any update.
+- **CodeGraph**: indices present for app/gateway/operator/helm; auto-sync via file watcher after `codegraph init`. No manual upkeep needed.
+- **codebase-memory**: indexes present but **stale relative to recent code changes** — no auto-sync. Re-index with `index_repository` (full or moderate mode) when queries return outdated structure. Run `detect_changes` to check drift.
+- **Semble / Serena / agentmemory**: stateless or self-maintaining, no upkeep.
+
+## When to fall back to grep/glob (LAST RESORT ONLY)
+
+Only for: string literals / error messages / config values; non-code files (Dockerfiles, shell scripts, YAML, SQL, markdown, data); or after every relevant backend above has been tried and returned insufficient results. If you reach for grep to find a function definition, class, import, or call chain — **stop** and use the appropriate backend above.
+<!-- CODEBASE_INTELLIGENCE_END -->
+
 <!-- CODEGRAPH_START -->
 ## CodeGraph
 
-Installed and ready. In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+Reach for it BEFORE grep/find or reading files when you need to understand or locate code, **in a repo that has a `.codegraph/` index**.
 
-- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
-- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+- **Shell (the path you use):** `codegraph explore "<symbol names or question>"` prints the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source.
+  - **Target the repo**: `cd <repo> && codegraph explore "…"` or `codegraph explore -p <repo> "…"`. Indices are per-repo, not shared.
+  - Never run bare `codegraph explore` from the umbrella root (`~/<provider>/`) expecting app/gateway results — the root index has none of that code.
+- **MCP tool (`codegraph_explore`): DO NOT USE in this checkout.** It is anchored to the umbrella-root index, which has no app/gateway/operator/helm source — only stray scripts. It will return irrelevant results. The server is disabled in `mcp.json`; use the CLI instead.
 
-If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+If a repo has no `.codegraph/` directory, skip CodeGraph for that repo — indexing is the user's decision. Do NOT fall back to the umbrella-root index.
 <!-- CODEGRAPH_END -->
-
 ---
 
 ## mcp-first
@@ -127,7 +182,7 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 
 Before any grep/glob/Read for code discovery, you MUST call one of these:
 
-1. **codegraph_explore** — for "how does X work", finding symbols, tracing flows
+1. **`codegraph explore`** (CLI, from inside the repo or `codegraph explore -p <repo>`) — for "how does X work", finding symbols, tracing flows. Do NOT use the `codegraph_explore` MCP tool — it queries the umbrella-root index, which has no app/gateway source.
 2. **semble_search** — for natural-language code search ("where is auth handled?")
 3. **Serena find_symbol / find_referencing_symbols** — for symbol lookup and references
 4. **codebase-memory search_graph / trace_path** — for structured graph queries
@@ -143,7 +198,7 @@ Before any grep/glob/Read for code discovery, you MUST call one of these:
 
 | Task | Tool |
 |---|---|
-| "How does X work?" | codegraph_explore |
+| "How does X work?" | `codegraph explore` (CLI, `-p <repo>`) |
 | "Where is X done?" | semble_search |
 | "Find class/function" | Serena find_symbol |
 | "Who calls this?" | Serena find_referencing_symbols |
@@ -231,6 +286,8 @@ When the user asks any question about the codebase — including project structu
 3. **Fall back to codebase exploration** only if no relevant memory exists, or if the memory is ambiguous, stale, or contradicts the current codebase state.
 
 Always respect the existing agentmemory save triggers and deduplication rules in `agentmemory-conventions.md`.
+For anything pertaining to the local dev workspace — spinning up the native backend + Vite frontend, inference/adapter setup, or the ports/env wiring — search agentmemory first (`memory_smart_search` "spin up local dev"); the strict runbook and its failure-mode memories live there. Do not re-derive the start sequence from READMEs or stale assumptions; the memory holds the verified, current ports and verification gate.
+
 
 ## discovery-protocol
 
@@ -244,9 +301,9 @@ tiers before descending.
 
 1. **Docs markdown files** — `CONTEXT.md`, ADRs in `docs/adr/`, project READMEs, and any
    markdown documentation in the repo. Use glob + read, not grep, to locate and consume these.
-2. **CodeGraph MCP** — `codegraph_explore` (when a `.codegraph/` index exists). Structural
-   code queries with zero brute-force scanning. One call typically answers the whole question.
-   See `AGENTS.md` for full decision flow between all backends.
+2. **CodeGraph CLI** — `codegraph explore -p <repo> "…"` (when that repo has a `.codegraph/` index).
+   Structural code queries with zero brute-force scanning. One call typically answers the whole question.
+   Per-repo indices only — target the specific repo, never the umbrella root. See `AGENTS.md` for full decision flow.
 3. **Semble MCP** — `semble_search` and `semble_find_related`. Semantic (embedding + BM25)
    code search for vague natural-language queries or finding similar code at a location.
    ~98% fewer tokens than grep+read. Use before grep when the query is descriptive or fuzzy.
@@ -287,6 +344,95 @@ Grep is ~10× more token-expensive than a structured memory lookup. Every time a
 greps for something that was already known, future agents pay the same cost again.
 Memory augmentation prevents this — each discovery pass leaves the knowledge surface
 richer for the next agent.
+
+<!-- GRAPHIFY_START -->
+## Graphify — knowledge graph maintenance
+
+This checkout has a merged graphify graph: `~/<provider>/graphify-out/graph.json` (union of per-repo `app/ gateway/ operator/ graphify-out/graph.json`). Each node carries a `repo` attribute. Keep it fresh after code changes so `graphify query` and `/graphify query` answers stay grounded.
+
+## When to run `graphify update`
+
+**After any code change** (edit, create, delete) to a repo that has a `graphify-out/graph.json`, run:
+
+```bash
+graphify update ./<repo>/          # from ~/<provider>/
+```
+
+Then re-merge so the root graph reflects the change:
+
+```bash
+graphify merge-graphs ./app/graphify-out/graph.json ./gateway/graphify-out/graph.json ./operator/graphify-out/graph.json --out graphify-out/graph.json
+```
+
+## Cost profile (measured 2026-07-20) — gate on repo size, NOT LoC
+
+Update cost scales with **graph node count** (re-clustering dominates), not lines changed. A 1-line edit costs the same as a 500-line edit. The AST is re-parsed only for changed files (manifest-hashed); `graph.json` is rewritten in place — **no linear memory growth across calls**, but each call re-pays the cluster cost.
+
+| Repo | Nodes (semantic) | `update` wall | RSS | Semantic extract wall/cost | Category |
+---|---|---|---|---|---|
+| gateway | 1,158 | ~1.5s | ~75 MB | ~75s / $0.01 (4 docs) | SMALL |
+| operator | 1,005 | ~2s | ~75 MB | ~3min / $0.11 (133 docs) | SMALL |
+| app | 58,881 | **~4m20s** | **~4.1 GB** | ~50min / $0.86 (790 docs) | LARGE |
+| helm | — | — | — | — | NOT GRAPHED (YAML only, no `graphify-out/`) |
+| app-db | — | — | — | — | NOT GRAPHED (SQL/YAML only, no `graphify-out/`) |
+| gateway-db | — | — | — | — | NOT GRAPHED (SQL/YAML only, no `graphify-out/`) |
+
+
+## Extraction tiers
+
+Graphify supports two extraction depths. Use the right one for the change:
+
+### `--code-only` (structural, default for updates)
+
+Pure Tree-sitter AST parsing. No LLM, no API key, no tokens, ~1.5s on gateway. Produces nodes for functions/classes/imports and edges for calls/imports/references. **This is what `graphify update` runs.** Sufficient for "how does X work" / "who calls Y" / call-path queries.
+
+### `--backend <provider> --mode deep` (semantic, for doc-rich repos)
+
+Adds LLM-inferred edges between docs and code (concept relations, shared data contracts, lifecycle coupling) plus hyperedges grouping 3+ nodes into architectural concepts. Uses GLM 5.2 via the `<provider>` custom provider (`~/.graphify/providers.json`) with `reasoning_effort: "off"` to disable thinking (see [<Provider> docs](https://docs.<provider>.com/chat-completions.html#reasoning-effort) — `reasoning_effort: "off"` is the canonical field, not `extra_body={"thinking":{"type":"disabled"}}` which the endpoint ignores).
+
+```bash
+# Full re-extract with semantic layer (AST + LLM-inferred edges). First run or after doc changes.
+graphify extract ./gateway/ --backend <provider> --mode deep --force
+graphify merge-graphs ./app/graphify-out/graph.json ./gateway/graphify-out/graph.json ./operator/graphify-out/graph.json --out graphify-out/graph.json
+```
+
+| Aspect | `--code-only` | `--backend <provider> --mode deep` |
+|---|---|---|
+| LLM | none | GLM 5.2 (`reasoning_effort=off`) |
+| Cost | free | gateway $0.01, operator $0.11, app $0.86 |
+| Wall | gateway ~1.5s, operator ~2s, app ~4m20s | gateway ~75s, operator ~3min, app ~50min |
+| Edges | AST calls/imports/references | + semantic concept relations, hyperedges |
+| Hyperedges | 0 | gateway 2, operator 11, app 64 |
+| When | every code change | first build, after doc changes, or when queries need doc↔code links |
+
+**Gotcha — incremental semantic runs lose AST nodes.** `graphify extract --backend ...` on an unchanged tree only re-extracts changed docs; cached code files are skipped and their AST nodes get pruned. Always pass `--force` for a semantic re-extract so all files (code + docs) are in the extraction. Do NOT run `--backend ...` incrementally without `--force`. `graphify update` (the `--code-only` path) is safe to run incrementally — it never prunes.
+
+**Gotcha — app shrink guard.** App's `worktrees/` dir has duplicated code paths; fuzzy dedup collapses same-named symbols, so a semantic re-extract yields fewer nodes (~58.9k) than the code-only graph (~63.3k). graphify's #479 shrink guard refuses the write. Pass `--allow-partial` to accept it — the reduction is dedup, not data loss, and the semantic edges are the value. `graphify extract ./app/ --backend <provider> --mode deep --force --allow-partial`.
+
+**Gotcha — large doc chunks truncate.** App has doc chunks (financial-toolkit, skills) large enough to exceed GLM's 16384 output cap mid-JSON. graphify's adaptive retry bisects them (33→16+17→...) until they fit; this adds ~10-15 min to app's semantic run. Not a bug — the chunks complete, just slowly.
+
+## Threshold rule
+
+- **No LoC threshold.** LoC doesn't predict cost; node count does.
+- **SMALL repos (gateway, operator — or any repo <~5k nodes):** run `graphify update ./<repo>/` after every code change to that repo. Cost is ~1.5–2s — cheaper than letting the graph go stale.
+- **LARGE repos (app — or any repo >~5k nodes):** do NOT run `graphify update ./app/` per-edit. Re-clustering is minutes + gigabytes. Instead:
+  1. After code edits, run `graphify update ./app/ --no-cluster` (~1.7s, ~70 MB — refreshes AST nodes/edges only, skips clustering). This keeps structure fresh for `graphify query` traversal.
+  2. Run full `graphify update ./app/` (with clustering) only when you need fresh communities / god-nodes / `GRAPH_REPORT.md` — typically at end of session, before a PR, or on explicit request. Warn the user it takes ~4 min and ~4 GB before kicking it off.
+- **After any `update`, re-merge** at the root so `graphify-out/graph.json` stays the union of fresh per-repo graphs.
+- **`check-update` is NOT a code gate.** It only flags pending semantic (doc/paper/image) re-extraction, not code. Skip it for code-only repos.
+
+## When NOT to run update
+
+- Docs-only, YAML, SQL, or config changes: `graphify update` (code-only) adds nothing — skip. BUT if the docs describe architecture (PRDs, ADRs, design docs), run `graphify extract ./<repo>/ --backend <provider> --mode deep --force` to refresh semantic doc↔code edges.
+- `helm/`, `app-db/`, `gateway-db/` — no `graphify-out/` exists for these repos (YAML/SQL only, see `AGENTS.md`).
+- After changes to `node_modules/`, `dist/`, build artifacts, or anything gitignored (graphify respects `.gitignore`).
+
+## Per-repo vs merged graph
+
+- Per-repo queries: `graphify query --graph ./<repo>/graphify-out/graph.json "<q>"`.
+- Cross-repo queries: `graphify query "<q>"` from `~/<provider>/` (hits merged `graphify-out/graph.json`).
+- The merged graph is a union with `repo` tags, NOT cross-repo edge inference. For real cross-service edges (gateway → app HTTP routes, operator → helm CRDs), use codebase-memory's `cross-repo-intelligence` mode — graphify does not synthesize those.
+<!-- GRAPHIFY_END -->
 
 ## never-push
 
@@ -469,9 +615,15 @@ These guidelines are working if:
 
 ## gh-cli-preference
 
-# BOUNDARY: gh = GITHUB.COM, git = LOCAL ONLY
+# gh = GitHub.com, git = LOCAL ONLY
 
-This system's `git` CLI is NOT authenticated to GitHub.com. Any command that hits the network (`fetch`, `pull`, `push`, `ls-remote`, etc.) will fail.
+`gh` is the ONLY client authenticated to github.com on this machine. Reach for it FIRST for any remote GitHub operation — before you ever reach for `git` against a remote. `git` is local-only under its own credentials.
+
+The single exception is `git push` (see THE ONE BRIDGE below).
+
+## Why gh-first
+
+`gh` holds the github.com token (account-scoped, full `repo` access). `git` has no token of its own; its credential helper for `https://github.com` is `!/usr/bin/gh auth git-credential`, so any `git` network command only succeeds by silently borrowing gh's token. That is a leaky implementation detail, not license to use `git` for remote reads. Treat `gh` as the source of truth for remote state and route remote operations through it.
 
 ## REMOTE — USE gh (DO NOT USE git)
 
@@ -491,11 +643,78 @@ This system's `git` CLI is NOT authenticated to GitHub.com. Any command that hit
 - log, diff, blame, show (local commits)
 - ANY operation that does not contact the remote
 
+## THE ONE BRIDGE — git push
+
+`git push` is the ONLY network `git` operation that is legitimate. It uploads your local commits to a remote branch and is authenticated through gh's credential helper. Use it when the user authorizes pushing (see never-push policy) and you have local commits to upload. There is no `gh push` — gh only commits individual files server-side.
+
+Do NOT use `gh` to push a branch of local commits:
+
+- `gh api` and the GitHub MCP `create_or_update_file` / `push_files` write files server-side; they do NOT upload your local commit history and will rewrite or squash it.
+- To push a branch of local commits, `git push` is the only correct tool.
+
 ## DO NOT
 
-- `git fetch`, `git pull`, `git push`, `git ls-remote` — unauthenticated, will fail.
+- `git fetch`, `git pull`, `git ls-remote` → use `gh repo sync` / `gh api` instead. They may succeed by borrowing gh's token, but remote reads are gh's job.
+- `git push` without explicit user authorization — see never-push policy.
 - GitHub MCP tools for read-only lookups — `gh` is faster and already authenticated.
 - Use `git` as a substitute for `gh` when reading PRs, issues, or remote state.
+
+## pr-issue-linkage
+
+# PR ↔ Issue Linkage Policy — HARD RULE
+
+Every PR that implements an issue MUST be linked to that issue on GitHub so the issue's timeline shows the PR as a `cross-referenced`/`connected` event (the same linkage the <Provider> Planner board renders). A bare `Refs #972` or `#972` in the PR body does **not** create the linkage when the PR and the issue live in different repos — only the **full cross-repo form** does.
+
+## The rule
+
+End the PR body with one line:
+
+```
+Closes <org>/<issue-repo>#<issue-number>
+
+```
+
+Use `Closes` (not `Refs`/`Fixes`/`Resolves` unless those are specifically intended — `Closes` auto-closes the issue on merge, which is usually what you want for an implementation PR; `Refs` only cross-references without auto-closing). The repo must be the **issue's repo**, fully qualified (`<org>/<provider>-app`), even when the PR is in a different repo (`<provider>-gateway`, `<provider>-gateway-db`). GitHub only links cross-repo when the org/repo prefix is present — a bare `#972` in a gateway PR silently links to gateway issue #972 (or nothing), not the app issue.
+
+## How to do it via `gh` CLI
+
+When creating the PR, append the line to the `--body`. When the PR already exists, edit the body in place:
+
+```bash
+# 1. Fetch the current PR body, append the full cross-repo Closes line.
+gh pr view <PR> --repo <org>/<pr-repo> --json body \
+  | python3 -c "
+import sys, json
+body = json.load(sys.stdin)['body'].rstrip()
+print(body + '\n\nCloses <org>/<issue-repo>#<issue-number>\n')
+" > /tmp/omp/pr_body.md
+
+# 2. Update the PR body from the file.
+gh pr edit <PR> --repo <org>/<pr-repo> --body-file /tmp/omp/pr_body.md
+
+# 3. Verify the linkage landed on the issue timeline (cross-referenced event).
+gh api repos/<org>/<issue-repo>/issues/<issue-number>/timeline --paginate \
+  | python3 -c "
+import sys, json
+for e in json.load(sys.stdin):
+    if e.get('event') == 'cross-referenced':
+        src = e.get('source', {}).get('issue', {})
+        print(f\"EVENT=cross-referenced  pr=#{src.get('number')}  repo={src.get('repository_url','').split('/')[-1]}\")
+"
+```
+
+The `cross-referenced` event appears within a few seconds of the body edit. If it doesn't, the most likely cause is a typo'd org/repo prefix or using `#972` instead of `<org>/<provider>-app#972`.
+
+## Multiple PRs, one issue
+
+If several PRs implement one issue (e.g. a gateway PR + a gateway-db migration PR), **each** PR body ends with the same `Closes <org>/<issue-repo>#<issue-number>` line. All appear as separate `cross-referenced` events on the issue timeline. Only the PR whose merge should close the issue should use `Closes`; companion/dependency PRs that shouldn't auto-close it should use `Refs` instead (still fully qualified cross-repo) so they link without closing.
+
+## Do NOT
+
+- Use a bare `#N` or `Refs #N` in a cross-repo PR body — it links to the wrong repo (or nothing) and the Planner board won't render the PR.
+- Use `gh issue edit <N> --add-label` or any label API to "link" a PR — labels are orthogonal to timeline linkage.
+- Edit the issue body to mention the PR — the linkage must originate from the PR side (the `Closes` keyword in the PR body), not the issue side.
+- Forget the `<org>/` org prefix — GitHub cross-repo linking requires the fully-qualified `org/repo#N` form.
 
 ## commit-message-style
 

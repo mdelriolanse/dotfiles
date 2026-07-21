@@ -1,7 +1,6 @@
 ---
 name: deep-review
 description: Run the adamsreview pipeline, optionally in parallel with a built-in code-review pass and a PRD-conformance check, then merge the findings. Use when the user types /deep-review, or wants a thorough multi-track review rather than a single-pass diff read.
-disable-model-invocation: true
 ---
 
 # deep-review
@@ -10,24 +9,11 @@ Orchestrates up to three independent review tracks, waits for all of them, and
 merges the results. Findings that two tracks found independently are the ones
 worth reading first.
 
-## opencode harness
-
-This copy runs in OpenCode. Map Claude Code terms as follows:
-
-| Claude Code | opencode |
-|---|---|
-| `Agent` tool | `Task` tool (`subagent_type: general`) |
-| `run_in_background: true` | Not available — parallelize B/C via shell-background `opencode run` (Step 2) |
-| `claude -p "/deep-review …"` fan-out | `opencode run --auto "/deep-review …"` |
-| `/code-review max` skill | `code-reviewer` skill |
-| `ponytail:ponytail` plugin skill | `ponytail` skill (ponytail plugin) |
-| `AskUserQuestion` | `question` tool |
-
 ## Invoke
 
 ```
 /deep-review                          # adamsreview only
-/deep-review --extra                  # + code-reviewer, in parallel
+/deep-review --extra                  # + built-in /code-review max, in parallel
 /deep-review --prd docs/spec.md       # + PRD conformance track
 /deep-review --prd 412                # PRD from GitHub issue #412
 /deep-review 1234 --extra --prd 412   # review PR 1234, all three tracks
@@ -44,20 +30,24 @@ judges trivial. If you wanted the fast path you would not have typed
 `/deep-review`.
 
 **Never pass `--ensemble`.** It dispatches the Codex CLI plus a GitHub bot-comment
-scrape — there is no opencode path through it. Track B is the native way to get
-a second independent reviewer.
+scrape — there is no Claude path through it. In this copy it is also broken:
+`review-prose.md` points at `fragments/02-ensemble-adapter.md`, which does not
+exist, and the smoke suite skips every ensemble assertion with *"external-review
+not ported (requires Codex CLI plugin runtime)."* Track B is the Claude-native
+way to get a second independent reviewer.
 
 ## The tracks
 
 | Track | Runs where | When |
 |---|---|---|
 | **A — adamsreview** | main thread | always |
-| **B — code-reviewer** | background `opencode run` | `--extra` |
-| **C — PRD conformance** | background `opencode run` | `--prd` given |
+| **B — `/code-review max`** | background agent | `--extra` |
+| **C — PRD conformance** | background agent | `--prd` given |
 
-**`adamsreview` cannot be backgrounded.** It uses interactive gates (`question`
-tool). It runs on the main thread and fans out internally. Parallelism for B and C
-comes from shell-background `opencode run` processes launched *before* starting A.
+**`adamsreview` cannot be backgrounded.** It says so itself, and it uses
+`AskUserQuestion`. It runs on the main thread and fans out internally. Parallelism
+comes from putting B and C in background agents *first*, then starting A while
+they run.
 
 ## Fan-out mode (`-n <k>`)
 
@@ -73,10 +63,10 @@ ignore `-n` entirely and run as a normal single review.**
 
 ### Step F1: Launch the k runs
 
-Each run is a fresh **root** `opencode run` process (not a subagent — subagents
-cannot spawn the pipeline's own agents; a new OS process can). Its final report is
-its stdout, so redirect stdout straight into the run's file — no need to tell it
-to write one.
+Each run is a fresh **root** `claude` process (not a subagent — subagents cannot
+spawn the pipeline's own agents; a new OS process can). Its final report is its
+stdout, so redirect stdout straight into the run's file — no need to tell it to
+write one.
 
 Pick a shared absolute output dir the orchestrator owns — **not** the session
 scratchpad, because each inner run has its own scratchpad. Use
@@ -84,16 +74,17 @@ scratchpad, because each inner run has its own scratchpad. Use
 
 ```bash
 for i in $(seq 1 "$K"); do
-  DEEP_REVIEW_INNER=1 opencode run --auto \
+  DEEP_REVIEW_INNER=1 claude --dangerously-skip-permissions -p \
     "/deep-review $FORWARDED_FLAGS" \
-    --dir "$PWD" \
     > "$OUT/dr-$i.md" 2>"$OUT/dr-$i.err" &
 done
 wait   # returns only when all k roots have exited
 echo "OUT=$OUT"
 ```
 
-Run that whole block as **one backgrounded Shell call**. Process exit is the only
+Run that whole block as **one backgrounded Bash call** (`run_in_background:
+true`). Rationale: k full pipelines blow past the 10-min foreground Bash cap, and
+backgrounding is the harness's notify-on-exit path. Process exit is the only
 reliable "done" signal — a `dr-$i.md` file can exist mid-write, so gate on the
 `wait` returning, never on the files appearing.
 
@@ -128,39 +119,23 @@ could not read; silently skipping it is worse than not asking for it.
 
 ## Step 2: Launch background tracks — before starting adamsreview
 
-OpenCode has no `run_in_background` on `Task`. Launch B (and C when `--prd` is
-set) as **shell-background `opencode run` jobs** in one block, then start track A
-while they run.
+Both `Agent` calls go in **one response block**, both `run_in_background: true`.
+Launch them first so they run while track A works.
 
-Pick `<run-dir>` (e.g. `$(mktemp -d)`). Write the track prompts to
-`<run-dir>/track-b-prompt.md` and `<run-dir>/track-c-prompt.md` if needed, then:
+**Track B — built-in code review.** `subagent_type: general-purpose`, `model: opus`.
 
-```bash
-opencode run --auto --dir "$PWD" \
-  "$(cat <run-dir>/track-b-prompt.md)" \
-  > "<run-dir>/track-b.log" 2>&1 &
-PID_B=$!
-# if --prd:
-opencode run --auto --dir "$PWD" \
-  "$(cat <run-dir>/track-c-prompt.md)" \
-  > "<run-dir>/track-c.log" 2>&1 &
-PID_C=$!
-```
-
-**Track B prompt — code-reviewer:**
-
-> Read and follow the `code-reviewer` skill on <target>. Write every finding to
+> Run the built-in `/code-review max` skill on <target>. Write every finding to
 > `<run-dir>/track-b.json` as `[{"file","line","severity","claim","confidence"}]`.
 > Return only a count.
 >
-> If you cannot invoke the `code-reviewer` skill, say so explicitly in your return
+> If you cannot invoke the `code-review` skill, say so explicitly in your return
 > message and instead review the diff directly for correctness bugs at the same
 > depth. Label the file `"source": "fallback"` so the orchestrator knows.
 >
 > [if PRD] The change is supposed to satisfy the requirements in
 > `<run-dir>/PRD.md`. Read it. Flag code that contradicts it.
 
-**Track C prompt — PRD conformance.** Only when `--prd` was given.
+**Track C — PRD conformance.** Only when `--prd` was given. Same settings.
 
 > Read `<run-dir>/PRD.md`, then read the diff under review and the current state
 > of the feature branch. Answer one question per requirement: **is it built?**
@@ -177,24 +152,20 @@ PID_C=$!
 > Do not report code quality, style, or bugs. Another track owns those. You own
 > one question: does the build match the spec.
 
-After launching, record `$PID_B` (and `$PID_C`). Do **not** `wait` yet — start
-track A first.
-
 Track C findings **have no file or line** when a requirement is missing. That is
 correct and must not be treated as a malformed finding.
 
 ## Step 3: Run track A
 
-Read and follow the `adamsreview` skill with the target, **always passing `--full`**
-and never `--ensemble`. If a PRD was resolved, tell it: findings that contradict `<run-dir>/PRD.md`
+Invoke the `adamsreview` skill with the target, **always passing `--full`** and
+never `--ensemble`. If a PRD was resolved, tell it: findings that contradict `<run-dir>/PRD.md`
 are in scope even when the contradiction is in untouched code, because the PRD
 defines what "correct" means for this change.
 
 ## Step 4: Join — output is contingent on every launched track
 
-**Do not report until every launched track has finished.** After track A, `wait`
-on `$PID_B` and `$PID_C` (if launched). Read `<run-dir>/track-b.json` and
-`<run-dir>/track-c.json` (or the `.log` files on failure).
+**Do not report until every launched track has returned.** You are notified as
+each background agent completes; do not poll, do not read their `.output` files.
 
 If a track fails or returns nothing:
 
@@ -226,12 +197,13 @@ the literature. Rank on it.
 
 Write the ranked, deduplicated findings to `<run-dir>/merged.md` (one finding per
 entry: file, line, claim, rank tier, which tracks/runs found it). Then dispatch
-**one** `Task` (`subagent_type: general`) to bucket them — the merge tells you what
-was found, this tells you what to actually do about it.
+**one** subagent to bucket them — the merge tells you what was found, this tells
+you what to actually do about it.
 
-Prompt:
+`subagent_type: general-purpose`, `run_in_background: false` (you need its answer
+to report). Prompt:
 
-> Read and follow the `ponytail` skill, then read `<run-dir>/merged.md`. These are
+> Invoke the `ponytail:ponytail` skill, then read `<run-dir>/merged.md`. These are
 > code-review findings already deduplicated and ranked. Do **not** add findings or
 > re-review the code. Sort every existing finding into exactly one bucket, judged
 > by the ponytail ladder:
@@ -297,8 +269,8 @@ concision does not apply — write out every finding in full: each FIX/SKIP/FALS
 POSITIVE with its file:line, the complete rationale, which tracks/runs found it and
 any disagreement, the verified-correct notes, the PRD-conformance section, and the
 bottom line. The goal is that nothing from the merge (Step 5) or triage (Step 5b) is
-lost when the chat scrolls away. If a detail is in the raw output, it belongs here
-in at least as much depth.
+lost when the chat scrolls away. If a detail is in the raw output, it belongs here in
+at least as much depth.
 
 **Back-reference.** After writing the file, the **last line** of the raw in-chat
 output must be the exact relative path just written, e.g.:
@@ -306,6 +278,13 @@ output must be the exact relative path just written, e.g.:
 ```
 → ./docs/deep-review/webhook-double-delivery-audit-2026-07-16-142530.md
 ```
+
+## Cost
+
+Tracks A, B, and C all run on your Claude subscription, not usage credits.
+`--extra` roughly doubles wall-clock token spend; it does not touch your usage
+credit balance. `/code-review ultra` is the one that bills separately, and this
+skill never invokes it.
 
 ## Honest caveat
 

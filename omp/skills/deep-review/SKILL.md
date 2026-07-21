@@ -17,8 +17,8 @@ This copy runs in omp (Oh My Pi). Map Claude Code terms as follows:
 | Claude Code | omp |
 |---|---|
 | `Agent` tool | `Task` tool (`subagent_type: general`) |
-| `run_in_background: true` | Not available — parallelize B/C via shell-background `omp -p` (Step 2) |
-| `claude -p "/deep-review …"` fan-out | `omp -p --no-session "/deep-review …"` |
+| `run_in_background: true` | `task` batch with `async.enabled=true` — background subagents (depth ≤ `task.maxRecursionDepth`, default 2) |
+| `claude -p "/deep-review …"` fan-out | `task` subagent batch (native, in-session) for `-n`; `omp -p --no-session` still for Step 2 B/C single-run multi-track |
 | `/code-review max` skill | `code-reviewer` skill |
 | `ponytail:ponytail` plugin skill | `ponytail` skill (ponytail extension) |
 | `AskUserQuestion` | `question` tool |
@@ -71,12 +71,86 @@ This mode only exists at the top. A nested run must not re-fan-out (fork bomb),
 so the guard is the `DEEP_REVIEW_INNER` env var: **if `DEEP_REVIEW_INNER` is set,
 ignore `-n` entirely and run as a normal single review.**
 
-### Step F1: Launch the k runs
+### Step F0: Check the recursion budget
 
-Each run is a fresh **root** `omp -p` process (not a subagent — subagents
-cannot spawn the pipeline's own agents; a new OS process can). Its final report is
-its stdout, so redirect stdout straight into the run's file — no need to tell it
-to write one.
+The in-session subagent path (F1-native below) relies on grandchild spawning:
+each of the k runners is a depth-1 subagent, and adamsreview's own
+lens/validation/audit agents dispatch at depth 2. omp's recursion ceiling is
+`task.maxRecursionDepth` (default `2`, confirm with `omp config get
+task.maxRecursionDepth`). At depth 2 omp strips the `task` tool from children,
+so the grandchildren are leaves — which is fine, because every adamsreview
+sub-agent only reads code and returns findings, it never spawns further.
+
+If `task.maxRecursionDepth < 2`, fall back to the `omp -p` process path (F1-shell)
+or raise the ceiling for this session: `omp config set task.maxRecursionDepth 2`.
+Do not raise it beyond 2 to "give the grandchildren room" — they need none.
+
+### Step F1-native: Launch k runner subagents (preferred path)
+
+Dispatch k runner subagents in **one `task` batch** with `async.enabled=true`
+(the default), so they run as background jobs and return `agent://<id>`
+artifacts when they yield. Each runner is a complete, self-contained
+deep-review (minus `-n`): it reads and follows the `adamsreview` skill,
+dispatches its own lens/validation agents at depth 2, and writes its full
+report to the `agent://<id>` artifact.
+
+The orchestrator owns the shared `context` string — include the forwarded
+flags, the repo working directory, and the `DEEP_REVIEW_INNER=1` marker so a
+runner never re-fan-outs even if it somehow sees an `-n`. Each runner's `task`
+text is identical; the `context` is shared. Forward every user flag *except*
+`-n` (e.g. `--extra`, `--prd <ref>`, a PR number, a comparison ref).
+
+Runner `task` body (per item, verbatim):
+
+> You are running an independent deep-review. `DEEP_REVIEW_INNER=1` is set, so
+> **do not re-fan-out**: ignore any `-n` flag as if it were absent. Read and
+> follow the `deep-review` and `adamsreview` skills in full, then execute a
+> single complete review of the target with these forwarded flags:
+> `<FORWARDED_FLAGS>`. Run adamsreview with `--full` always. Use the working
+> directory as the review cwd. Write the full final report (Step 6 + Step 7
+> content: every finding, file:line, rank tier, which tracks ran) to your
+> `agent://` artifact — that is the cross-run merge input. Do not call
+> `question`; if a preflight gate would fire, note it in the report and
+> proceed with the recommended option.
+
+Batch call shape:
+
+```jsonc
+// one task tool call, tasks[] has k identical items
+{
+  "context": "deep-review fan-out run. cwd=<repo>. DEEP_REVIEW_INNER=1. "
+           + "Forwarded flags: <FORWARDED_FLAGS>. adamsreview always --full.",
+  "tasks": [
+    { "name": "dr-1", "task": "<runner body above>" },
+    { "name": "dr-2", "task": "<runner body above>" }
+    // …k items
+  ]
+}
+```
+
+Notes:
+ - Each runner has `async.enabled=false` forced (subagents are synchronous),
+   so its internal tracks A/B/C run **sequentially**, not A‖B‖C. For `-n`
+   alone (track A only — the common case) no parallelism is lost. With
+   `--extra`/`--prd` each run is slower than a shell-background `omp -p` run
+   would be, but the k runs still parallelize across each other.
+ - `question` is unavailable inside a subagent (no user to answer). The runner
+   body tells it to proceed with the recommended option and record the gate.
+   Same assumption the `omp -p --no-session` path makes.
+ - `task` is stripped from grandchildren at depth 2, so adamsreview's own
+   `Task` dispatches still work (they're exactly the leaves the ceiling
+   allows). Do not raise `task.maxRecursionDepth` above 2.
+ - `todo` is stripped from subagents by default; adamsreview's phase tracking
+   degrades to inline fragment reads but every phase still executes.
+ - The `agent://<id>` artifact replaces `$OUT/dr-$i.md`; the `.err` signal is
+   the async job's `failed` state (surfaced in the delivery message).
+
+### Step F1-shell: `omp -p` process path (fallback)
+
+Use only when `task.maxRecursionDepth < 2` and you cannot raise it, or when a
+run needs true A‖B‖C parallelism that the synchronous-subagent path cannot
+give. Each run is a fresh **root** `omp -p` process; its final report is its
+stdout, so redirect stdout straight into the run's file.
 
 Pick a shared absolute output dir the orchestrator owns — **not** the session
 scratchpad, because each inner run has its own scratchpad. Use
@@ -99,18 +173,29 @@ reliable "done" signal — a `dr-$i.md` file can exist mid-write, so gate on the
 
 ### Step F2: Merge across runs
 
-You are notified when the backgrounded block exits. Then, **in this session**,
-read `$OUT/dr-1.md … dr-k.md` and merge:
+When all k runners have yielded (F1-native: every `agent://dr-i` delivered;
+F1-shell: the backgrounded `wait` returned), merge **in this session**.
 
-1. A run that produced an empty file or non-empty `dr-$i.err` **failed**. Say how
-   many of k succeeded; never present a partial ensemble as full.
+F1-native: read each runner's `agent://dr-i` artifact (the runner's full
+report). F1-shell: read `$OUT/dr-1.md … dr-k.md`.
+
+A run is **failed** if:
+ - F1-native: the async job landed `failed` (stated in the delivery message),
+   or the `agent://dr-i` artifact is empty.
+ - F1-shell: `dr-$i.md` is empty or `dr-$i.err` is non-empty.
+
+Then:
+
+1. Say how many of k succeeded; never present a partial ensemble as full.
 2. Deduplicate across runs exactly as Step 5 does across tracks: same file,
-   overlapping lines, same underlying claim → one finding. Wording alone does not
-   merge; two different bugs on one line stay two.
-3. Rank by **run agreement**: a finding k-of-k runs raised outranks k−1, outranks
-   a singleton. This is the Step 5 consensus signal, now across whole pipelines.
-4. Write the merged list to `$OUT/merged.md`, then run the **Step 5b** ponytail
-   triage on it exactly as the single-run path does.
+   overlapping lines, same underlying claim → one finding. Wording alone does
+   not merge; two different bugs on one line stay two.
+3. Rank by **run agreement**: a finding k-of-k runs raised outranks k−1,
+   outranks a singleton. This is the Step 5 consensus signal, now across whole
+   pipelines.
+4. Write the merged list to a local `merged.md` (F1-native: a `local://` file
+   or the session scratchpad; F1-shell: `$OUT/merged.md`), then run the
+   **Step 5b** ponytail triage on it exactly as the single-run path does.
 5. Report per Step 6, but also lead with "k of K runs completed" and the
    agreement histogram before the FIX bucket.
 
@@ -273,8 +358,19 @@ plainly which tracks ran and which did not.
 Always — single-run and fan-out both. The terse in-chat report is a distillation;
 this file is the archive, and it must lose **nothing**.
 
-**Path.** `./docs/deep-review/<title>-<timestamp>.md`, relative to the repo being
-reviewed (the target's working directory). `mkdir -p ./docs/deep-review` first.
+**Path.** `<reviewed-repo>/docs/deep-review/<title>-<timestamp>.md`, where
+`<reviewed-repo>` is the root of the repo whose diff was reviewed — **not** the
+session cwd. This checkout has umbrella repos (`~/<provider>/` contains
+`app/`, `gateway/`, etc. as independent git repos). When the session cwd is the
+umbrella root but the reviewed branch lives in a nested repo (e.g.
+`~/<provider>/app`), the report MUST land inside that nested repo
+(`~/<provider>/app/docs/deep-review/...`), never at the umbrella level
+(`~/<provider>/docs/deep-review/...`). Resolve the reviewed repo's root via
+`git -C <review-cwd> rev-parse --show-toplevel` (the `--cwd` passed to the
+review), then `mkdir -p <root>/docs/deep-review` (always create the directory
+if it does not exist — never skip the write because the path is absent) and
+write under `<root>/docs/deep-review/`. The back-reference path below is
+relative to that root.
 
 - `<title>` — three or four words describing the review, each word lowercase and
   hyphen-separated (e.g. `training-webhook-outbox` or `webhook-double-delivery-audit`).

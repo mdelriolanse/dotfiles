@@ -272,8 +272,19 @@ Severity bar (from Andrea's #94 audit):
 
 ### Step 9: Persist the full report to disk
 
-`~/<provider>/docs/andrea-review-reports/<title>-<timestamp>.md`,
-relative to the reviewed repo. `mkdir -p` first.
+`<reviewed-repo>/docs/andrea-review-reports/<title>-<timestamp>.md`, where
+`<reviewed-repo>` is the root of the repo whose diff was reviewed — **not** the
+session cwd. This checkout has umbrella repos (`~/<provider>/` contains
+`app/`, `gateway/`, etc. as independent git repos). When the session cwd is the
+umbrella root but the reviewed branch lives in a nested repo (e.g.
+`~/<provider>/app`), the report MUST land inside that nested repo
+(`~/<provider>/app/docs/andrea-review-reports/...`), never at the umbrella
+level (`~/<provider>/docs/andrea-review-reports/...`). Resolve the reviewed
+repo's root via `git -C <review-cwd> rev-parse --show-toplevel`, then
+`mkdir -p <root>/docs/andrea-review-reports` (always create the directory if
+it does not exist — never skip the write because the path is absent) and write
+under `<root>/docs/andrea-review-reports/`. The back-reference path below is
+relative to that root.
 
 - `<title>` — three/four lowercase hyphenated words describing the review.
 - `<timestamp>` — `date +%Y-%m-%d-%H%M%S`.
