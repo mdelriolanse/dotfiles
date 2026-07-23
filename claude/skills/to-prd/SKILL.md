@@ -1,12 +1,10 @@
 ---
 name: to-prd
-description: Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context.
+description: Turn the current conversation context into a PRD and write it to `./docs/PRD.md`. Use when user wants to create a PRD from the current context.
 disable-model-invocation: true
 ---
 
 This skill takes the current conversation context and codebase understanding and produces a PRD. Do NOT interview the user — just synthesize what you already know.
-
-The issue tracker and triage label vocabulary should have been provided to you — run `/setup-matt-pocock-skills` if not.
 
 ## Process
 
@@ -18,11 +16,9 @@ A deep module (as opposed to a shallow module) is one which encapsulates a lot o
 
 Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
 
-3. Write the PRD using the template below, then publish it to the project issue tracker, and apply the `ready-for-agent` triage label.
+3. Write the PRD using the template below to `./docs/PRD.md` (a `docs/` directory nested in the current working directory, i.e. the directory the chat is taking place in). Create the `docs/` directory if it does not already exist.
 
-   Pick whichever issue-tracker MCP is configured for this repo: use the **GitHub** MCP for GitHub-hosted repos, or the **Composio** MCP for trackers it fronts (Linear, Jira, etc.). If no issue-tracker MCP is available, write the PRD to a local markdown file and tell the user where it is so they can file it manually.
-
-   After publishing, `memory_save` the PRD's module boundaries and key decisions (type: `architecture`) so downstream `/to-issues` and `/tdd` recall them instead of re-deriving.
+   After writing the PRD, `memory_save` the PRD's module boundaries and key decisions (type: `architecture`) so downstream `/to-issues` and `/tdd` recall them instead of re-deriving.
 
 <prd-template>
 
