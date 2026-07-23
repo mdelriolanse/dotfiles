@@ -158,7 +158,15 @@ Build a `tasks[]` array of 12 items, one per sector. Each task:
     sector's lens (met/partial/missing/contradicted + evidence)."
   - The sector's paradigm list (copied from the playbook section — paradigms
     P-NN-K with anchors, backends, guardrails, fix-suggestion policy)
-  - The 6 cross-cutting rules (CR-1..CR-6, verbatim from the playbook)
+  - The 7 cross-cutting rules (CR-1..CR-7, verbatim from the playbook). CR-7
+    is the scope gate: every finding must carry `origin`
+    (`introduced_by_pr`|`pre_existing`|`unknown`) and `origin_confidence`
+    (`high`|`medium`|`low`). Default `introduced_by_pr`/`high` only when the
+    cited file is in `reviewed_files_all`; if the cited file is NOT modified
+    by this diff, mark `pre_existing` unless the PR's new code in another file
+    made the old code wrong (then `introduced_by_pr` — the PR is the cause).
+    Apply the paradigm only to code the diff touches; do not surface issues
+    on code that 20 cuts of history left behind and this PR never touched.
   - The output contract (below)
   - The hard constraints (read-only, never auto-commit, re-ground, worktree-aware)
 
@@ -208,12 +216,25 @@ stale anchor is a false-positive risk — either re-ground or drop.
 
 ### Step 7: Adversarial triage
 
-Apply the playbook's 6 cross-cutting guardrails (CR-1..CR-6) and the
+Apply the playbook's 7 cross-cutting guardrails (CR-1..CR-7) and the
 adversarial synthesis's per-paradigm scores
 (`sectors/_synthesis-adversarial.md`, bundled — 77 paradigms scored on 4
 axes: false-positive risk, over-application risk, grounding fragility,
 sector confusion). Bucket every finding:
 
+- **PRE-EXISTING** (CR-7, highest priority) — `origin: pre_existing` with
+  `origin_confidence: high`: the implicated code is unchanged by this diff
+  and the bug exists independently of the PR. Route here **before** any
+  severity triage. Override: a finding that contradicts the PRD
+  (`prd_contradiction: true`) stays in scope regardless of origin — the PRD
+  defines correctness for this change. Also override: pre-existing-looking
+  code that became wrong because of new code this PR adds elsewhere stays
+  `introduced_by_pr` (the PR is the cause) — do not route it here.
+  **File-membership check:** if a finding's `file` is NOT in
+  `reviewed_files_all` and the agent marked it `introduced_by_pr`, downgrade
+  to `pre_existing` unless you can name the PR-added code that made it wrong.
+  A finding routed here is not actionable in this PR; report it so the
+  author knows it exists, but do not block on it.
 - **FIX** — a real defect worth addressing now. One line on what breaks.
 - **SKIP-NOW** — real but not worth fixing now (YAGNI, cosmetic,
   speculative edge). One line naming when it *would* be worth revisiting.
@@ -223,7 +244,9 @@ sector confusion). Bucket every finding:
 **Hard rule from the adversarial pass**: a finding on a security,
 data-loss, input-validation, or money path is **never** SKIP-NOW or
 FALSE-POSITIVE unless you can show concretely it doesn't apply. When
-unsure, FIX.
+unsure, FIX. (A pre-existing security/data-loss finding is still routed to
+PRE-EXISTING — the hard rule governs the FIX-vs-SKIP-vs-FALSE choice for
+in-scope findings, not the scope classification itself.)
 
 **CR-4 reminder**: a deferral with a recorded rationale (e.g. MINOR-4
 clock injection — DECIDED-NOT-ACTIONED) is a decision, not a finding. Do
@@ -231,14 +254,17 @@ not re-raise unless the rationale no longer holds.
 
 ### Step 8: Report
 
-Lead with the **FIX** bucket, then SKIP-NOW, then FALSE-POSITIVES. Within
-each bucket keep the sector rank order. State plainly which sectors ran
-and which did not.
+Lead with the **FIX** bucket, then SKIP-NOW, then PRE-EXISTING, then
+FALSE-POSITIVES. Within each bucket keep the sector rank order. State
+plainly which sectors ran and which did not. The PRE-EXISTING bucket is
+informational — real issues, but not this PR's job to fix; the author can
+file them separately or ignore them.
 
 Report shape per finding:
 ```
 [SECTOR NN] P-NN-K: <paradigm name>
   file:line (anchor_verified: yes/no/stale)
+  origin: introduced_by_pr | pre_existing | unknown  (confidence: high|medium|low)
   claim: <what breaks, one line>
   severity: BLOCKER | MAJOR | MINOR | NIT  (boosted one band if prd_contradiction)
   suggested_fix: <patch shape, not the patch>  (omitted if --no-fix-suggest)
@@ -314,6 +340,8 @@ paradigm that fires on the diff):
       "paradigm_name": "<imperative title>",
       "file": "<path>",
       "line": "<line or range>",
+      "origin": "introduced_by_pr|pre_existing|unknown",
+      "origin_confidence": "high|medium|low",
       "claim": "<what breaks, one line>",
       "severity": "BLOCKER|MAJOR|MINOR|NIT",
       "suggested_fix": "<patch shape>",

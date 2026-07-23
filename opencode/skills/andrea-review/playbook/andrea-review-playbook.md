@@ -146,6 +146,45 @@ even when the fix is one line; the one-line judgment is the author's, and a
 "one-line fix" that is actually 15 lines across 3 files (MAJOR-7's 403
 reclassification) is a sign the reviewer under-estimated the diff.
 
+### CR-7: Findings must be scoped to the PR — class out pre-existing code
+
+Andrea's #94 audit reviewed a diff, not the whole codebase. The sector
+paradigms carry **infra anchors** baked from a prior review (the batch-API
+audit); re-grounding them via `semble_search` / `find_symbol` / `read` (CR-1)
+pulls the agent into surrounding code that may be 20 cuts old. A finding on
+code the PR did not touch is out of scope and must be routed to the
+PRE-EXISTING bucket, not the FIX bucket, regardless of severity.
+
+Every finding carries an `origin` classification:
+- **`introduced_by_pr`** (default) — the implicated code is modified by this
+  diff, OR pre-existing-looking code became wrong because of new code this
+  PR adds elsewhere (a stale comment now contradicted by a new code path; a
+  function missing a field a new caller needs; a guard a new route lacks).
+  The PR is causally responsible, even when the cited lines are old. These
+  are in scope.
+- **`pre_existing`** — the implicated code is **unchanged by this diff AND**
+  the bug exists independently of this PR: reverting this PR would not close
+  the finding. These go to the PRE-EXISTING bucket, not FIX.
+- **`unknown`** — the agent cannot tell. Default to `introduced_by_pr` only
+  if the cited file appears in `reviewed_files_all`; otherwise mark
+  `pre_existing` and let the orchestrator adjudicate (Step 7).
+
+**The file-membership test is the fast filter.** If the finding's `file` is
+NOT in `reviewed_files_all` (the `git diff --name-only $comparison_ref` list
+captured at Step 1), the cited code was not modified by this PR — it is
+`pre_existing` unless the PR's new code in *another* file made it wrong
+(the "became wrong because of new code" case above, which keeps
+`introduced_by_pr` because the PR is the cause).
+
+**This is the rule deep-review does not have trouble with** because
+adamsreview (its track A) tags every candidate with `origin` and
+force-routes `pre_existing`/`high` to a non-actionable footnote regardless
+of score. Andrea-review lacked that gate; CR-7 adds it. The PRD exception
+from Step 1.5 still holds: a finding that contradicts the PRD is in scope
+even in untouched code, because the PRD defines what "correct" means for
+this change — such a finding keeps `introduced_by_pr` and carries
+`prd_contradiction: true`.
+
 ---
 
 ## Drift table — 8 stale v1 anchors, corrected
