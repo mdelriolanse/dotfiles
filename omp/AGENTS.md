@@ -809,6 +809,28 @@ For those, always follow:
 
 Ponytail output rules (telegraphic chat, "code first then three lines", output-concision caps) must not shorten commits or PRs. Chat concision and commit/PR prose are separate policies.
 
+## commit-hygiene
+
+# Commit & PR Hygiene — keep internal tooling and review process out
+
+Commit messages, PR titles, and PR bodies are permanent public artifacts. They must read like the project's own commits, not leak the internal tooling or review process that produced them.
+
+## Never include
+
+- **`ponytail:` code-comment markers.** The `ponytail:` prefix marks deliberate simplifications *in source code*. It must never appear in a commit message or PR body. A commit describes the change, not the mode it was written in.
+- **Review-skill lingo.** Never name or reference the review skills ("adamsreview", "andrea review") or their terminology (sectors, lenses, waves, passes, finding IDs, confidence scores, etc.) in any commit message or PR body. The words "adamsreview" and "andrea review" never appear in a commit message — not even to say a review was run.
+- **Review attribution.** When shipping fixes requested by a PR review, do NOT write "per Jane's review", "addressing feedback from Sarah", "requested by X", or any other attribution to the reviewer. Once a commit merges, the only thing that matters is what changed and why — not who asked for it. Write a normal conventional commit that stands on its own, as if the change were self-evident.
+
+## Why
+
+A merged commit is read months later by people who never saw the review, the tooling, or the chat. "ponytail: ..." or "adamsreview pass 3 found..." or "per Josh's request" adds zero signal and leaks private process into public history. The commit-message-style rule governs format; this rule governs content that must stay out regardless of format.
+
+## Self-check
+
+- Does the message contain `ponytail:`? Remove it.
+- Does it name a review skill, sector, lens, wave, pass, or finding? Remove it.
+- Does it attribute a change to a reviewer ("per X", "requested by", "addressing X's feedback")? Rewrite as a standalone conventional commit.
+
 ## output-concision
 
 # CONCISION LAW — OVERRIDES ALL DEFAULT BEHAVIOR

@@ -117,6 +117,7 @@
     "instructions/context-efficiency.md",
     "instructions/gh-cli-preference.md",
     "instructions/commit-message-style.md",
+    "instructions/commit-hygiene.md",
     "instructions/ponytail-scope.md",
     "instructions/output-concision.md"
   ],
