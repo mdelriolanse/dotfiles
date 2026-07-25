@@ -15,17 +15,17 @@ When a `.codegraph/` index exists in a repo, use CodeGraph as the **primary** co
 - **Parser**: Tree-sitter AST (20+ languages)
 - **When to use**: ALMOST ALWAYS as the first code-discovery call. Usually zero file reads needed.
 - **Availability**: CLI only (`codegraph explore "…"`). The `codegraph_explore` MCP tool exists but is anchored to the umbrella-root index — in this checkout the root has no indexable source (only stray scripts under `scripts/`, `integrations/`), so the MCP tool returns irrelevant results. **Use the CLI.**
-- **CRITICAL — per-repo indices, NOT one shared index**: each cloned repo (`app/`, `gateway/`, `operator/`, `helm/`) has its own `.codegraph/` directory and index. Indices are **not** cross-repo. To query a repo's code you MUST target that repo:
-  - From inside the repo: `cd ~/<umbrella>/app && codegraph explore "how does createSource enforce CHECK constraints"`
-  - From anywhere, with `-p`: `codegraph explore -p ~/<umbrella>/app "how does createSource enforce CHECK constraints"`
-  - Never run bare `codegraph explore` from `~/<umbrella>/` (umbrella root) expecting app/gateway results — it queries the root index, which has none of that code.
+- **CRITICAL — per-repo indices, NOT one shared index**: each cloned repo (`<repo-a>/`, `<repo-b>/`, …) has its own `.codegraph/` directory and index. Indices are **not** cross-repo. To query a repo's code you MUST target that repo:
+  - From inside the repo: `cd ~/<umbrella>/<repo> && codegraph explore "how does the auth middleware enforce role checks"`
+  - From anywhere, with `-p`: `codegraph explore -p ~/<umbrella>/<repo> "how does the auth middleware enforce role checks"`
+  - Never run bare `codegraph explore` from `~/<umbrella>/` (umbrella root) expecting nested-repo results — it queries the root index, which has none of that code.
 - **Setup**: Run `codegraph init` once per repo (inside the repo dir) to build the `.codegraph/` index. Auto-syncs after via file watcher.
 - **If a repo has no `.codegraph/`**: skip CodeGraph for that repo, pick from the others below. Do NOT fall back to the umbrella-root index.
 
 Examples:
-- `cd ~/<umbrella>/app && codegraph explore "how does JWT auth flow work?"`
-- `codegraph explore -p ~/<umbrella>/gateway "trace the BATCH worker shutdown drain path"`
-- `codegraph explore -p ~/<umbrella>/app createSource sharedUpload.ts` — get sources + paths between them
+- `cd ~/<umbrella>/<repo> && codegraph explore "how does the JWT auth flow work?"`
+- `codegraph explore -p ~/<umbrella>/<repo> "trace the batch worker shutdown drain path"`
+- `codegraph explore -p ~/<umbrella>/<repo> createRouter middleware.ts` — get sources + paths between them
 
 
 ## 2. Semble (semantic code search — reach for this for "find where X is done" queries)
@@ -182,7 +182,7 @@ If a repo has no `.codegraph/` directory, skip CodeGraph for that repo — index
 
 Before any grep/glob/Read for code discovery, you MUST call one of these:
 
-1. **`codegraph explore`** (CLI, from inside the repo or `codegraph explore -p <repo>`) — for "how does X work", finding symbols, tracing flows. Do NOT use the `codegraph_explore` MCP tool — it queries the umbrella-root index, which has no app/gateway source.
+1. **`codegraph explore`** (CLI, from inside the repo or `codegraph explore -p <repo>`) — for "how does X work", finding symbols, tracing flows. Do NOT use the `codegraph_explore` MCP tool — it queries the umbrella-root index, which has no nested-repo source.
 2. **semble_search** — for natural-language code search ("where is auth handled?")
 3. **Serena find_symbol / find_referencing_symbols** — for symbol lookup and references
 4. **codebase-memory search_graph / trace_path** — for structured graph queries
@@ -672,7 +672,7 @@ Closes <org>/<issue-repo>#<issue-number>
 
 ```
 
-Use `Closes` (not `Refs`/`Fixes`/`Resolves` unless those are specifically intended — `Closes` auto-closes the issue on merge, which is usually what you want for an implementation PR; `Refs` only cross-references without auto-closing). The repo must be the **issue's repo**, fully qualified (`<org>/<app-repo>`), even when the PR is in a different repo (`<gateway-repo>`, `<gateway-db-repo>`). GitHub only links cross-repo when the org/repo prefix is present — a bare `#100` in a service-a PR silently links to service-a issue #100 (or nothing), not the app issue.
+Use `Closes` (not `Refs`/`Fixes`/`Resolves` unless those are specifically intended — `Closes` auto-closes the issue on merge, which is usually what you want for an implementation PR; `Refs` only cross-references without auto-closing). The repo must be the **issue's repo**, fully qualified (`<org>/<issue-repo>`), even when the PR is in a different repo (`<org>/<pr-repo>`). GitHub only links cross-repo when the org/repo prefix is present — a bare `#100` in a service-a PR silently links to service-a issue #100 (or nothing), not the issue in the issue's repo.
 
 ## How to do it via `gh` CLI
 
@@ -701,15 +701,15 @@ for e in json.load(sys.stdin):
 "
 ```
 
-The `cross-referenced` event appears within a few seconds of the body edit. If it doesn't, the most likely cause is a typo'd org/repo prefix or using `#100` instead of `<org>/<app-repo>#100`.
+The `cross-referenced` event appears within a few seconds of the body edit. If it doesn't, the most likely cause is a typo'd org/repo prefix or using `#100` instead of `<org>/<issue-repo>#100`.
 
 ## Multiple PRs, one issue
 
-If several PRs implement one issue (e.g. a gateway PR + a gateway-db migration PR), **each** PR body ends with the same `Closes <org>/<issue-repo>#<issue-number>` line. All appear as separate `cross-referenced` events on the issue timeline. Only the PR whose merge should close the issue should use `Closes`; companion/dependency PRs that shouldn't auto-close it should use `Refs` instead (still fully qualified cross-repo) so they link without closing.
+If several PRs implement one issue (e.g. a service PR + a companion migration PR), **each** PR body ends with the same `Closes <org>/<issue-repo>#<issue-number>` line. All appear as separate `cross-referenced` events on the issue timeline. Only the PR whose merge should close the issue should use `Closes`; companion/dependency PRs that shouldn't auto-close it should use `Refs` instead (still fully qualified cross-repo) so they link without closing.
 
 ## Do NOT
 
-- Use a bare `#N` or `Refs #N` in a cross-repo PR body — it links to the wrong repo (or nothing) and the Planner board won't render the PR.
+- Use a bare `#N` or `Refs #N` in a cross-repo PR body — it links to the wrong repo (or nothing) and the project board won't render the PR.
 - Use `gh issue edit <N> --add-label` or any label API to "link" a PR — labels are orthogonal to timeline linkage.
 - Edit the issue body to mention the PR — the linkage must originate from the PR side (the `Closes` keyword in the PR body), not the issue side.
 - Forget the `<org>/` org prefix — GitHub cross-repo linking requires the fully-qualified `org/repo#N` form.
