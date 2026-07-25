@@ -142,6 +142,27 @@ fi
 link "$HOME/.cursor/mcp.json" "$MCP_REAL"
 
 # ---------------------------------------------------------------------------
+# 4b. Kimi real config.toml (gitignored) — generate from example + secrets.
+#     kimi-code reads api_key as a literal (no shell-env expansion), so we
+#     materialize ${<PROVIDER>_API_KEY} into kimi/config.toml via envsubst,
+#     mirroring the Cursor mcp.json pattern. ~/.kimi-code/config.toml is a
+#     pre-existing manual symlink into this repo; install.sh does not manage
+#     that link, only regenerates the target. Never overwrites an existing
+#     config.toml.
+# ---------------------------------------------------------------------------
+KIMI_REAL="$REPO_DIR/kimi/config.toml"
+KIMI_EX="$REPO_DIR/kimi/config.toml.example"
+if [ ! -e "$KIMI_REAL" ]; then
+  if command -v envsubst >/dev/null 2>&1 \
+     && envsubst '$<PROVIDER>_API_KEY' < "$KIMI_EX" > "$KIMI_REAL" 2>/dev/null; then
+    ok "generated kimi/config.toml"
+  else
+    cp "$KIMI_EX" "$KIMI_REAL" 2>/dev/null || true
+    warn "wrote kimi/config.toml stub from example (no envsubst, or substitution failed) — fill secrets.env + re-run."
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # 5. Regenerate derived Cursor skills (symlinks into opencode/skills)
 # ---------------------------------------------------------------------------
 if [ -x "$REPO_DIR/opencode/scripts/link-cursor-skills.sh" ]; then
