@@ -117,15 +117,15 @@ Plan reports: follow `skills/plan/` format.
 
 This checkout has **six** code-intelligence backends, not four. The auto-managed block immediately below this one (lines `<!-- codebase-memory-mcp:start -->`→`<!-- codebase-memory-mcp:end -->`) predates graphify's semantic layer and the cross-repo distinction — read it for per-tool detail, but the decision matrix and inventory below are authoritative.
 
-## Inventory (state as of 2026-07-20)
+## Inventory
 
 | Backend | Mechanism | Indexed in this checkout | Strength |
 |---|---|---|---|
-| **CodeGraph** (CLI) | Tree-sitter AST, per-repo SQLite `.codegraph/codegraph.db` | `app` (58M), `gateway` (3.4M), `operator` (3.4M), `helm` (2.3M) + root (132M, **stray scripts only — ignore**) | Verbatim source + call paths incl. dynamic dispatch (callbacks, JSX children). Fastest "read this symbol + how X calls Y" in one call. |
+| **CodeGraph** (CLI) | Tree-sitter AST, per-repo SQLite `.codegraph/codegraph.db` | Per-repo indices where you ran `codegraph init` | Verbatim source + call paths incl. dynamic dispatch (callbacks, JSX children). Fastest "read this symbol + how X calls Y" in one call. |
 | **Semble** (MCP) | Tree-sitter chunks + Model2Vec embeddings + BM25, indexes on first query | Nothing pre-indexed (caches on demand, watches files) | Natural-language "where is auth done?" / "find code similar to this location". ~98% fewer tokens than grep+read. |
 | **Serena** (MCP) | Language servers (LSP), type-aware | Auto-activates from cwd; `.serena/` at root | Safe cross-file renames, safe deletes, diagnostics, go-to-def, find-references. Correctness across files. |
-| **codebase-memory** (MCP) | LSP-style type-aware graph, Cypher-queryable | 7 projects: `app` (87.5k nodes, 306k edges), `helm` (6.8k), `app-backend` (6.4k), `app-client` (4.3k), `operator` (1.5k), `<org>-python` (422), `e2e` (42) | Complexity metrics (`cyclomatic`, `transitive_loop_depth`, `linear_scan_in_loop`), Cypher queries, ADRs, **cross-repo-intelligence mode** (`CROSS_HTTP_CALLS`/`CROSS_ASYNC_CALLS`/`CROSS_CHANNEL` edges between services). |
-| **graphify** (CLI) | Tree-sitter AST + LLM semantic extraction (GLM 5.2 `reasoning_effort=off`) | 3 repos merged at root: `app` (58.9k), `gateway` (1.2k), `operator` (1k) → **61k nodes, 152k edges, 77 hyperedges** | Community detection, god nodes, surprising connections, **semantic doc↔code hyperedges** (architectural concepts spanning files), `GRAPH_REPORT.md`. Cheapest broad "what's in this codebase" map. |
+| **codebase-memory** (MCP) | LSP-style type-aware graph, Cypher-queryable | Per-project where you ran `index_repository` | Complexity metrics (`cyclomatic`, `transitive_loop_depth`, `linear_scan_in_loop`), Cypher queries, ADRs, **cross-repo-intelligence mode** (`CROSS_HTTP_CALLS`/`CROSS_ASYNC_CALLS`/`CROSS_CHANNEL` edges between services). |
+| **graphify** (CLI) | Tree-sitter AST + LLM semantic extraction | Per-repo where you ran `graphify extract`; merge at root | Community detection, god nodes, surprising connections, **semantic doc↔code hyperedges** (architectural concepts spanning files), `GRAPH_REPORT.md`. Cheapest broad "what's in this codebase" map. |
 | **agentmemory** (MCP) | Persistent session memory (semantic+keyword search) | Running — saves across sessions | Past decisions, discoveries, patterns. Search before re-deriving. |
 
 ## Decision matrix — which tool for which question
@@ -137,7 +137,7 @@ This checkout has **six** code-intelligence backends, not four. The auto-managed
 | "Rename this function across the codebase" / "safe-delete this class" / "what breaks if I change this signature" | **Serena `rename_symbol` / `safe_delete_symbol` / `find_referencing_symbols`** | LSP guarantees all references updated. Text edits miss shadowed/re-exported callsites. |
 | "Which functions have high cyclomatic complexity / deep nested loops / O(n²) scans?" | **codebase-memory `query_graph`** | Only backend with complexity props. `MATCH (f:Function) WHERE f.transitive_loop_depth >= 3 RETURN ...` |
 | "How does gateway call app's routes?" / "trace data flow across services" | **codebase-memory `trace_path` mode `cross_service`** | Synthesizes real `CROSS_HTTP_CALLS`/`CROSS_ASYNC_CALLS` edges. Graphify merge is union-only, no cross-repo edges. |
-| "What are the main modules / god nodes / surprising connections in app?" | **graphify `query` / `GRAPH_REPORT.md`** | Community detection + god-node analysis + hyperedges. GLM's semantic layer surfaces architectural concepts (e.g. "Dream Mode v2 Lifecycle"). |
+| "What are the main modules / god nodes / surprising connections in a repo?" | **graphify `query` / `GRAPH_REPORT.md`** | Community detection + god-node analysis + hyperedges. The semantic layer surfaces architectural concepts spanning files. |
 | "Did we already decide/discover X in a prior session?" | **agentmemory `memory_smart_search`** | Persistent across sessions. Dedup rules: search before save. |
 
 ## Key distinctions that trip people up
@@ -145,14 +145,14 @@ This checkout has **six** code-intelligence backends, not four. The auto-managed
 1. **CodeGraph vs graphify** — both are Tree-sitter AST, both per-repo. CodeGraph is *fast source retrieval + call paths* (query → verbatim code). Graphify is *the map* (communities, god nodes, hyperedges, semantic doc↔code links). Use CodeGraph when you know what you're looking for; use graphify when you're surveying.
 2. **graphify merge ≠ cross-repo intelligence.** `graphify merge-graphs` is a union with `repo` tags — it does **not** infer gateway→app HTTP edges. For real cross-service edges, use codebase-memory's `cross-repo-intelligence` mode (`index_repository` with `mode: "cross-repo-intelligence"`, `target_projects: ["*"]`). That's the only backend that synthesizes cross-repo edges.
 3. **Serena vs grep/ast_edit for edits.** Cross-file rename with `ast_edit`/`sed` silently drops callsites. Serena's LSP follows shadowing and re-exports. Use Serena whenever a language server is available and correctness across files matters.
-4. **codebase-memory has app indexed twice** — full `app` project (87.5k nodes) and `app-backend`/`app-client` subdirs (older subsets). Query `<umbrella>-app` (the full one) unless you specifically need the subdir slice.
-5. **Root CodeGraph index is noise** — `~/<umbrella>/.codegraph/` (132M) indexes stray `scripts/`/`integrations/` only. **Never run bare `codegraph explore` from `~/<umbrella>/`** — always `-p ~/<umbrella>/<repo>` or `cd` into the repo. The MCP `codegraph_explore` tool is anchored to this root index and disabled; use the CLI.
+4. **codebase-memory can index a project twice** — a full project and subdir subsets. Query the full project unless you specifically need the subdir slice.
+5. **Root CodeGraph index is noise** — a root-level `~/<umbrella>/.codegraph/` may index stray scripts only. **Never run bare `codegraph explore` from the umbrella root** — always `-p ~/<umbrella>/<repo>` or `cd` into the repo. The MCP `codegraph_explore` tool is anchored to the root index and may be disabled; use the CLI.
 
 ## Maintenance state
 
-- **graphify**: per-repo semantic graphs built 2026-07-20 via GLM 5.2 `reasoning_effort=off`. Maintenance rule in the `<!-- GRAPHIFY_START -->` block below: `graphify update ./<repo>/` after code changes (small repos), `--no-cluster` for app per-edit. Re-merge at root after any update.
-- **CodeGraph**: indices present for app/gateway/operator/helm; auto-sync via file watcher after `codegraph init`. No manual upkeep needed.
-- **codebase-memory**: indexes present but **stale relative to recent code changes** — no auto-sync. Re-index with `index_repository` (full or moderate mode) when queries return outdated structure. Run `detect_changes` to check drift.
+- **graphify**: per-repo semantic graphs built via `graphify extract --backend <llm-provider> --mode deep`. Maintenance rule in the `<!-- GRAPHIFY_START -->` block below: `graphify update ./<repo>/` after code changes (small repos), `--no-cluster` for large repos per-edit. Re-merge at root after any update.
+- **CodeGraph**: indices auto-sync via file watcher after `codegraph init`. No manual upkeep needed.
+- **codebase-memory**: indexes can drift relative to recent code changes — no auto-sync. Re-index with `index_repository` (full or moderate mode) when queries return outdated structure. Run `detect_changes` to check drift.
 - **Semble / Serena / agentmemory**: stateless or self-maintaining, no upkeep.
 
 ## When to fall back to grep/glob (LAST RESORT ONLY)
@@ -167,8 +167,8 @@ Reach for it BEFORE grep/find or reading files when you need to understand or lo
 
 - **Shell (the path you use):** `codegraph explore "<symbol names or question>"` prints the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source.
   - **Target the repo**: `cd <repo> && codegraph explore "…"` or `codegraph explore -p <repo> "…"`. Indices are per-repo, not shared.
-  - Never run bare `codegraph explore` from the umbrella root (`~/<umbrella>/`) expecting app/gateway results — the root index has none of that code.
-- **MCP tool (`codegraph_explore`): DO NOT USE in this checkout.** It is anchored to the umbrella-root index, which has no app/gateway/operator/helm source — only stray scripts. It will return irrelevant results. The server is disabled in `mcp.json`; use the CLI instead.
+  - Never run bare `codegraph explore` from the umbrella root (`~/<umbrella>/`) expecting nested-repo results — the root index has none of that code.
+- **MCP tool (`codegraph_explore`): DO NOT USE in this checkout.** It is anchored to the umbrella-root index, which has no nested-repo source — only stray scripts. It will return irrelevant results. The server is disabled in `mcp.json`; use the CLI instead.
 
 If a repo has no `.codegraph/` directory, skip CodeGraph for that repo — indexing is the user's decision. Do NOT fall back to the umbrella-root index.
 <!-- CODEGRAPH_END -->
@@ -348,7 +348,7 @@ richer for the next agent.
 <!-- GRAPHIFY_START -->
 ## Graphify — knowledge graph maintenance
 
-This checkout has a merged graphify graph: `~/<umbrella>/graphify-out/graph.json` (union of per-repo `app/ gateway/ operator/ graphify-out/graph.json`). Each node carries a `repo` attribute. Keep it fresh after code changes so `graphify query` and `/graphify query` answers stay grounded.
+This checkout may have a merged graphify graph: `~/<umbrella>/graphify-out/graph.json` (union of per-repo `<repo>/graphify-out/graph.json`). Each node carries a `repo` attribute. Keep it fresh after code changes so `graphify query` and `/graphify query` answers stay grounded.
 
 ## When to run `graphify update`
 
@@ -361,22 +361,20 @@ graphify update ./<repo>/          # from ~/<umbrella>/
 Then re-merge so the root graph reflects the change:
 
 ```bash
-graphify merge-graphs ./app/graphify-out/graph.json ./gateway/graphify-out/graph.json ./operator/graphify-out/graph.json --out graphify-out/graph.json
+graphify merge-graphs ./<repo-a>/graphify-out/graph.json ./<repo-b>/graphify-out/graph.json ./<repo-c>/graphify-out/graph.json --out graphify-out/graph.json
 ```
 
-## Cost profile (measured 2026-07-20) — gate on repo size, NOT LoC
+## Cost profile — gate on repo size, NOT LoC
 
 Update cost scales with **graph node count** (re-clustering dominates), not lines changed. A 1-line edit costs the same as a 500-line edit. The AST is re-parsed only for changed files (manifest-hashed); `graph.json` is rewritten in place — **no linear memory growth across calls**, but each call re-pays the cluster cost.
 
-| Repo | Nodes (semantic) | `update` wall | RSS | Semantic extract wall/cost | Category |
----|---|---|---|---|---|
-| gateway | 1,158 | ~1.5s | ~75 MB | ~75s / $0.01 (4 docs) | SMALL |
-| operator | 1,005 | ~2s | ~75 MB | ~3min / $0.11 (133 docs) | SMALL |
-| app | 58,881 | **~4m20s** | **~4.1 GB** | ~50min / $0.86 (790 docs) | LARGE |
-| helm | — | — | — | — | NOT GRAPHED (YAML only, no `graphify-out/`) |
-| app-db | — | — | — | — | NOT GRAPHED (SQL/YAML only, no `graphify-out/`) |
-| gateway-db | — | — | — | — | NOT GRAPHED (SQL/YAML only, no `graphify-out/`) |
+Repos fall into two buckets by node count:
 
+| Category | Nodes | `update` wall | RSS | Semantic extract | Guidance |
+|---|---|---|---|---|---|
+| SMALL | <~5k | ~1.5–2s | ~75 MB | seconds–minutes | `update` after every code change |
+| LARGE | >~5k | minutes | gigabytes | tens of minutes | `update --no-cluster` per-edit; full `update` only when you need fresh communities |
+| NOT GRAPHED | — | — | — | — | YAML/SQL/config-only repos (no `graphify-out/`) |
 
 ## Extraction tiers
 
@@ -384,7 +382,7 @@ Graphify supports two extraction depths. Use the right one for the change:
 
 ### `--code-only` (structural, default for updates)
 
-Pure Tree-sitter AST parsing. No LLM, no API key, no tokens, ~1.5s on gateway. Produces nodes for functions/classes/imports and edges for calls/imports/references. **This is what `graphify update` runs.** Sufficient for "how does X work" / "who calls Y" / call-path queries.
+Pure Tree-sitter AST parsing. No LLM, no API key, no tokens. Produces nodes for functions/classes/imports and edges for calls/imports/references. **This is what `graphify update` runs.** Sufficient for "how does X work" / "who calls Y" / call-path queries.
 
 ### `--backend <llm-provider> --mode deep` (semantic, for doc-rich repos)
 
@@ -392,46 +390,46 @@ Adds LLM-inferred edges between docs and code (concept relations, shared data co
 
 ```bash
 # Full re-extract with semantic layer (AST + LLM-inferred edges). First run or after doc changes.
-graphify extract ./gateway/ --backend <llm-provider> --mode deep --force
-graphify merge-graphs ./app/graphify-out/graph.json ./gateway/graphify-out/graph.json ./operator/graphify-out/graph.json --out graphify-out/graph.json
+graphify extract ./<repo>/ --backend <llm-provider> --mode deep --force
+graphify merge-graphs ./<repo-a>/graphify-out/graph.json ./<repo-b>/graphify-out/graph.json ./<repo-c>/graphify-out/graph.json --out graphify-out/graph.json
 ```
 
 | Aspect | `--code-only` | `--backend <llm-provider> --mode deep` |
 |---|---|---|
-| LLM | none | GLM 5.2 (`reasoning_effort=off`) |
-| Cost | free | gateway $0.01, operator $0.11, app $0.86 |
-| Wall | gateway ~1.5s, operator ~2s, app ~4m20s | gateway ~75s, operator ~3min, app ~50min |
+| LLM | none | `<llm-provider>` (`reasoning_effort=off` recommended) |
+| Cost | free | per your provider's pricing |
+| Wall | seconds (small) / minutes (large) | seconds–tens of minutes |
 | Edges | AST calls/imports/references | + semantic concept relations, hyperedges |
-| Hyperedges | 0 | gateway 2, operator 11, app 64 |
+| Hyperedges | 0 | varies by repo |
 | When | every code change | first build, after doc changes, or when queries need doc↔code links |
 
 **Gotcha — incremental semantic runs lose AST nodes.** `graphify extract --backend ...` on an unchanged tree only re-extracts changed docs; cached code files are skipped and their AST nodes get pruned. Always pass `--force` for a semantic re-extract so all files (code + docs) are in the extraction. Do NOT run `--backend ...` incrementally without `--force`. `graphify update` (the `--code-only` path) is safe to run incrementally — it never prunes.
 
-**Gotcha — app shrink guard.** App's `worktrees/` dir has duplicated code paths; fuzzy dedup collapses same-named symbols, so a semantic re-extract yields fewer nodes (~58.9k) than the code-only graph (~63.3k). graphify's #479 shrink guard refuses the write. Pass `--allow-partial` to accept it — the reduction is dedup, not data loss, and the semantic edges are the value. `graphify extract ./app/ --backend <llm-provider> --mode deep --force --allow-partial`.
+**Gotcha — large-repo shrink guard.** A repo with duplicated code paths (e.g. `worktrees/`) makes fuzzy dedup collapse same-named symbols, so a semantic re-extract yields fewer nodes than the code-only graph. graphify's shrink guard may refuse the write. Pass `--allow-partial` to accept it — the reduction is dedup, not data loss, and the semantic edges are the value. `graphify extract ./<repo>/ --backend <llm-provider> --mode deep --force --allow-partial`.
 
-**Gotcha — large doc chunks truncate.** App has doc chunks (financial-toolkit, skills) large enough to exceed GLM's 16384 output cap mid-JSON. graphify's adaptive retry bisects them (33→16+17→...) until they fit; this adds ~10-15 min to app's semantic run. Not a bug — the chunks complete, just slowly.
+**Gotcha — large doc chunks truncate.** Large doc chunks can exceed your LLM's output cap mid-JSON. graphify's adaptive retry bisects them until they fit; this adds time to the semantic run. Not a bug — the chunks complete, just slowly.
 
 ## Threshold rule
 
 - **No LoC threshold.** LoC doesn't predict cost; node count does.
-- **SMALL repos (gateway, operator — or any repo <~5k nodes):** run `graphify update ./<repo>/` after every code change to that repo. Cost is ~1.5–2s — cheaper than letting the graph go stale.
-- **LARGE repos (app — or any repo >~5k nodes):** do NOT run `graphify update ./app/` per-edit. Re-clustering is minutes + gigabytes. Instead:
-  1. After code edits, run `graphify update ./app/ --no-cluster` (~1.7s, ~70 MB — refreshes AST nodes/edges only, skips clustering). This keeps structure fresh for `graphify query` traversal.
-  2. Run full `graphify update ./app/` (with clustering) only when you need fresh communities / god-nodes / `GRAPH_REPORT.md` — typically at end of session, before a PR, or on explicit request. Warn the user it takes ~4 min and ~4 GB before kicking it off.
+- **SMALL repos (or any repo <~5k nodes):** run `graphify update ./<repo>/` after every code change to that repo. Cost is ~1.5–2s — cheaper than letting the graph go stale.
+- **LARGE repos (or any repo >~5k nodes):** do NOT run `graphify update ./<large-repo>/` per-edit. Re-clustering is minutes + gigabytes. Instead:
+  1. After code edits, run `graphify update ./<large-repo>/ --no-cluster` (refreshes AST nodes/edges only, skips clustering). This keeps structure fresh for `graphify query` traversal.
+  2. Run full `graphify update ./<large-repo>/` (with clustering) only when you need fresh communities / god-nodes / `GRAPH_REPORT.md` — typically at end of session, before a PR, or on explicit request. Warn the user it is slow before kicking it off.
 - **After any `update`, re-merge** at the root so `graphify-out/graph.json` stays the union of fresh per-repo graphs.
 - **`check-update` is NOT a code gate.** It only flags pending semantic (doc/paper/image) re-extraction, not code. Skip it for code-only repos.
 
 ## When NOT to run update
 
 - Docs-only, YAML, SQL, or config changes: `graphify update` (code-only) adds nothing — skip. BUT if the docs describe architecture (PRDs, ADRs, design docs), run `graphify extract ./<repo>/ --backend <llm-provider> --mode deep --force` to refresh semantic doc↔code edges.
-- `helm/`, `app-db/`, `gateway-db/` — no `graphify-out/` exists for these repos (YAML/SQL only, see `AGENTS.md`).
+- YAML/SQL/config-only repos — no `graphify-out/` exists (no code to graph).
 - After changes to `node_modules/`, `dist/`, build artifacts, or anything gitignored (graphify respects `.gitignore`).
 
 ## Per-repo vs merged graph
 
 - Per-repo queries: `graphify query --graph ./<repo>/graphify-out/graph.json "<q>"`.
 - Cross-repo queries: `graphify query "<q>"` from `~/<umbrella>/` (hits merged `graphify-out/graph.json`).
-- The merged graph is a union with `repo` tags, NOT cross-repo edge inference. For real cross-service edges (gateway → app HTTP routes, operator → helm CRDs), use codebase-memory's `cross-repo-intelligence` mode — graphify does not synthesize those.
+- The merged graph is a union with `repo` tags, NOT cross-repo edge inference. For real cross-service edges (e.g. service-a → service-b HTTP routes), use codebase-memory's `cross-repo-intelligence` mode — graphify does not synthesize those.
 <!-- GRAPHIFY_END -->
 
 ## never-push
@@ -469,7 +467,7 @@ graphify merge-graphs ./app/graphify-out/graph.json ./gateway/graphify-out/graph
 
 ## Filesystem
 
-- **Stay within your home directory** (`$HOME`) unless explicitly directed elsewhere.
+- **Stay within your home directory** (your home directory, e.g. ~) unless explicitly directed elsewhere.
 - **Never read, modify, or delete files owned by other users** or in their home directories.
 - **Never change permissions or ownership of shared directories** (`/tmp`, `/opt`, `/usr/local`) unless instructed.
 - **Never delete or modify files under `/var`, `/etc`, or `/dev`** without explicit request.
@@ -483,7 +481,7 @@ graphify merge-graphs ./app/graphify-out/graph.json ./gateway/graphify-out/graph
 
 ## What IS allowed
 
-- Creating, modifying, and deleting files within `$HOME`.
+- Creating, modifying, and deleting files within your home directory.
 - Starting processes and containers scoped to your user, on non-conflicting ports, cleaned up after use.
 - Installing packages in user-local contexts (user pip, user npm, npx, local venvs).
 - Running `git` operations on your own repositories (never push — see never-push policy).
@@ -663,7 +661,7 @@ Do NOT use `gh` to push a branch of local commits:
 
 # PR ↔ Issue Linkage Policy — HARD RULE
 
-Every PR that implements an issue MUST be linked to that issue on GitHub so the issue's timeline shows the PR as a `cross-referenced`/`connected` event (the same linkage a GitHub project board renders). A bare `Refs #972` or `#972` in the PR body does **not** create the linkage when the PR and the issue live in different repos — only the **full cross-repo form** does.
+Every PR that implements an issue MUST be linked to that issue on GitHub so the issue's timeline shows the PR as a `cross-referenced`/`connected` event (the same linkage a GitHub project board renders). A bare `Refs #100` or `#100` in the PR body does **not** create the linkage when the PR and the issue live in different repos — only the **full cross-repo form** does.
 
 ## The rule
 
@@ -674,7 +672,7 @@ Closes <org>/<issue-repo>#<issue-number>
 
 ```
 
-Use `Closes` (not `Refs`/`Fixes`/`Resolves` unless those are specifically intended — `Closes` auto-closes the issue on merge, which is usually what you want for an implementation PR; `Refs` only cross-references without auto-closing). The repo must be the **issue's repo**, fully qualified (`<org>/<app-repo>`), even when the PR is in a different repo (`<gateway-repo>`, `<gateway-db-repo>`). GitHub only links cross-repo when the org/repo prefix is present — a bare `#972` in a gateway PR silently links to gateway issue #972 (or nothing), not the app issue.
+Use `Closes` (not `Refs`/`Fixes`/`Resolves` unless those are specifically intended — `Closes` auto-closes the issue on merge, which is usually what you want for an implementation PR; `Refs` only cross-references without auto-closing). The repo must be the **issue's repo**, fully qualified (`<org>/<app-repo>`), even when the PR is in a different repo (`<gateway-repo>`, `<gateway-db-repo>`). GitHub only links cross-repo when the org/repo prefix is present — a bare `#100` in a service-a PR silently links to service-a issue #100 (or nothing), not the app issue.
 
 ## How to do it via `gh` CLI
 
@@ -703,7 +701,7 @@ for e in json.load(sys.stdin):
 "
 ```
 
-The `cross-referenced` event appears within a few seconds of the body edit. If it doesn't, the most likely cause is a typo'd org/repo prefix or using `#972` instead of `<org>/<app-repo>#972`.
+The `cross-referenced` event appears within a few seconds of the body edit. If it doesn't, the most likely cause is a typo'd org/repo prefix or using `#100` instead of `<org>/<app-repo>#100`.
 
 ## Multiple PRs, one issue
 
@@ -732,29 +730,23 @@ type(scope): imperative description up to ~80 chars (#PR)
 - `scope` — the subsystem / page / module (e.g. `usage`, `api-keys`, `auth`, `settings`, `billing`)
 - **Imperative mood**: "make", "fix", "add", "remove", "rename" — NOT "made", "fixed", "adding"
 - **Specific, not vague**: "make admin dashboard breakdowns exact and period-driven" — NOT "update dashboard"
-- Include PR number in parens if known: `(#953)`
+- Include PR number in parens if known: `(#42)`
 - One blank line after title.
 
 ## Body
 
 ```
-The #925 page-wide period selector drove the headline KPIs and trend but
-not the breakdown tiles or the Model Usage / Users & Budgets tabs, so
-those stayed frozen on whatever the newest 10k raw rows held regardless
-of the selected period (Josh, 25 Jun).
+The #123 page-wide date selector drove the headline chart but not the
+breakdown tiles, so those stayed frozen on the newest raw rows
+regardless of the selected period (Alex, 1 Feb).
 
-Source the breakdowns from the gateway's server-side GROUP BY
-(/v1/usage/summary), which sums the whole window with no row cap:
+Source the breakdowns from the server-side GROUP BY (/v1/stats/summary),
+which sums the whole window with no row cap:
 
-- Model donut + Model Usage tab use group_by=model. Cross-org Model Usage
-  was hardcoded zeros (#212); it now shows real aggregated usage.
-- Top Users by Volume uses group_by=user_id (also the exact Active-Users
-  count).
-- Usage by surface uses group_by=workspace.
-- Users & Budgets tab now honours the page period for its spend/usage
-  columns; budget % stays month-to-date vs the monthly cap. Per-user
-  spend moves to group_by=user_id (exact, replaces the per-user fetch
-  fan-out).
+- Donut chart uses group_by=category. Cross-tenant breakdown was
+  hardcoded zeros (#45); it now shows real aggregated values.
+- Top items by volume uses group_by=item_id (also the exact active count).
+- Breakdown by source uses group_by=workspace.
 
 Headline totals + daily series stay rollup-sourced. Breakdowns fall back
 to the raw aggregation if the grouped call fails. The 12-month window
@@ -762,18 +754,18 @@ clamps the breakdown start to 365 days (the summary endpoint caps at
 366), so the 12m tiles can trail the rollup headline by a few days at
 the far edge.
 
-Budgets tab clarity: the spend/usage columns are now period-scoped while
-budget % is monthly, so the tab states the split in plain text. A "Usage
-window" chip scopes the period columns, the two monthly columns carry
-"the cap" / "this month" sub-headers (Budget used gets an info tooltip),
-the summary badges read "Total monthly budget" / "Spend this window" /
-"over monthly budget", over-budget rows show a warning icon (not colour
-alone), and "Current Spend" is renamed "Spend".
+Breakdowns tab clarity: the value columns are now period-scoped while the
+cap column is monthly, so the tab states the split in plain text. A
+"window" chip scopes the period columns, the two monthly columns carry
+"the cap" / "this month" sub-headers (cap used gets an info tooltip),
+the summary badges read "Total monthly cap" / "Value this window" /
+"over monthly cap", over-cap rows show a warning icon (not colour alone),
+and "Current Value" is renamed "Value".
 ```
-- **Lead paragraph**: why the change exists, what was broken. Reference related PRs/issues (`#925`). Name requester if they asked.
+- **Lead paragraph**: why the change exists, what was broken. Reference related PRs/issues (`#123`). Name requester if they asked.
 - **Blank line** between every paragraph.
 - **Blank line before bullets**. Bullet items explain one change each. Wrap at ~72 chars with a 2-space indent for continuation lines.
-- **Cross-reference issue numbers** in bullets: `was hardcoded zeros (#212); it now shows...`
+- **Cross-reference issue numbers** in bullets: `was hardcoded zeros (#45); it now shows...`
 - **Edge cases / fallbacks**: state non-obvious consequences after a blank line.
 - **UI/UX specifics**: exact copy, badge names, tooltip text, accessibility notes.
 
@@ -823,7 +815,7 @@ Commit messages, PR titles, and PR bodies are permanent public artifacts. They m
 
 ## Why
 
-A merged commit is read months later by people who never saw the review, the tooling, or the chat. "ponytail: ..." or "adamsreview pass 3 found..." or "per Josh's request" adds zero signal and leaks private process into public history. The commit-message-style rule governs format; this rule governs content that must stay out regardless of format.
+A merged commit is read months later by people who never saw the review, the tooling, or the chat. "ponytail: ..." or "adamsreview pass 3 found..." or "per a reviewer's request" adds zero signal and leaks private process into public history. The commit-message-style rule governs format; this rule governs content that must stay out regardless of format.
 
 ## Self-check
 

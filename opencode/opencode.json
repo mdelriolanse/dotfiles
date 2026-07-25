@@ -68,7 +68,7 @@
     "codebase-memory": {
       "type": "local",
       "command": [
-        "$HOME/.local/bin/codebase-memory-mcp"
+        "codebase-memory-mcp"
       ],
       "enabled": true
     },
@@ -104,9 +104,9 @@
     }
   },
   "instructions": [
-    "$HOME/.config/opencode/instructions/mcp-first.md",
-    "$HOME/.config/opencode/instructions/tool-names.md",
-    "$HOME/.config/opencode/AGENTS.md",
+    "instructions/mcp-first.md",
+    "instructions/tool-names.md",
+    "AGENTS.md",
     "instructions/agentmemory-conventions.md",
     "instructions/memory-first-codebase.md",
     "instructions/discovery-protocol.md",

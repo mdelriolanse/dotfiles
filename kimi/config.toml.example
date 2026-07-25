@@ -14,8 +14,8 @@ default_thinking = true
 default_permission_mode = "yolo"
 merge_all_available_skills = true
 extra_skill_dirs = [
-  "$HOME/dotfiles/kimi/skills",
-  "$HOME/dotfiles/kimi/instructions",
+  "~/dotfiles/kimi/skills",
+  "~/dotfiles/kimi/instructions",
 ]
 
 [providers.<provider>]

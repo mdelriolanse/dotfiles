@@ -17,29 +17,23 @@ type(scope): imperative description up to ~80 chars (#PR)
 - `scope` — the subsystem / page / module (e.g. `usage`, `api-keys`, `auth`, `settings`, `billing`)
 - **Imperative mood**: "make", "fix", "add", "remove", "rename" — NOT "made", "fixed", "adding"
 - **Specific, not vague**: "make admin dashboard breakdowns exact and period-driven" — NOT "update dashboard"
-- Include PR number in parens if known: `(#953)`
+- Include PR number in parens if known: `(#42)`
 - One blank line after title.
 
 ## Body
 
 ```
-The #925 page-wide period selector drove the headline KPIs and trend but
-not the breakdown tiles or the Model Usage / Users & Budgets tabs, so
-those stayed frozen on whatever the newest 10k raw rows held regardless
-of the selected period (Josh, 25 Jun).
+The #123 page-wide date selector drove the headline chart but not the
+breakdown tiles, so those stayed frozen on the newest raw rows
+regardless of the selected period (Alex, 1 Feb).
 
-Source the breakdowns from the gateway's server-side GROUP BY
-(/v1/usage/summary), which sums the whole window with no row cap:
+Source the breakdowns from the server-side GROUP BY (/v1/stats/summary),
+which sums the whole window with no row cap:
 
-- Model donut + Model Usage tab use group_by=model. Cross-org Model Usage
-  was hardcoded zeros (#212); it now shows real aggregated usage.
-- Top Users by Volume uses group_by=user_id (also the exact Active-Users
-  count).
-- Usage by surface uses group_by=workspace.
-- Users & Budgets tab now honours the page period for its spend/usage
-  columns; budget % stays month-to-date vs the monthly cap. Per-user
-  spend moves to group_by=user_id (exact, replaces the per-user fetch
-  fan-out).
+- Donut chart uses group_by=category. Cross-tenant breakdown was
+  hardcoded zeros (#45); it now shows real aggregated values.
+- Top items by volume uses group_by=item_id (also the exact active count).
+- Breakdown by source uses group_by=workspace.
 
 Headline totals + daily series stay rollup-sourced. Breakdowns fall back
 to the raw aggregation if the grouped call fails. The 12-month window
@@ -47,18 +41,18 @@ clamps the breakdown start to 365 days (the summary endpoint caps at
 366), so the 12m tiles can trail the rollup headline by a few days at
 the far edge.
 
-Budgets tab clarity: the spend/usage columns are now period-scoped while
-budget % is monthly, so the tab states the split in plain text. A "Usage
-window" chip scopes the period columns, the two monthly columns carry
-"the cap" / "this month" sub-headers (Budget used gets an info tooltip),
-the summary badges read "Total monthly budget" / "Spend this window" /
-"over monthly budget", over-budget rows show a warning icon (not colour
-alone), and "Current Spend" is renamed "Spend".
+Breakdowns tab clarity: the value columns are now period-scoped while the
+cap column is monthly, so the tab states the split in plain text. A
+"window" chip scopes the period columns, the two monthly columns carry
+"the cap" / "this month" sub-headers (cap used gets an info tooltip),
+the summary badges read "Total monthly cap" / "Value this window" /
+"over monthly cap", over-cap rows show a warning icon (not colour alone),
+and "Current Value" is renamed "Value".
 ```
-- **Lead paragraph**: why the change exists, what was broken. Reference related PRs/issues (`#925`). Name requester if they asked.
+- **Lead paragraph**: why the change exists, what was broken. Reference related PRs/issues (`#123`). Name requester if they asked.
 - **Blank line** between every paragraph.
 - **Blank line before bullets**. Bullet items explain one change each. Wrap at ~72 chars with a 2-space indent for continuation lines.
-- **Cross-reference issue numbers** in bullets: `was hardcoded zeros (#212); it now shows...`
+- **Cross-reference issue numbers** in bullets: `was hardcoded zeros (#45); it now shows...`
 - **Edge cases / fallbacks**: state non-obvious consequences after a blank line.
 - **UI/UX specifics**: exact copy, badge names, tooltip text, accessibility notes.
 

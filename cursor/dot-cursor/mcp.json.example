@@ -29,20 +29,20 @@
       }
     },
     "codebase-memory": {
-      "command": "$HOME/.local/bin/codebase-memory-mcp"
+      "command": "${HOME}/.local/bin/codebase-memory-mcp"
     },
     "codegraph": {
       "command": "codegraph",
       "args": ["serve", "--mcp"],
       "env": {
-        "PATH": "$HOME/.local/bin:/usr/bin:/bin"
+        "PATH": "${HOME}/.local/bin:/usr/bin:/bin"
       }
     },
     "serena": {
       "command": "serena",
       "args": ["start-mcp-server", "--context", "ide", "--project-from-cwd"],
       "env": {
-        "PATH": "$HOME/.local/bin:/usr/bin:/bin"
+        "PATH": "${HOME}/.local/bin:/usr/bin:/bin"
       }
     },
     "semble": {

@@ -24,7 +24,7 @@ disable-model-invocation: true
 
 ## Filesystem
 
-- **Stay within your home directory** (`$HOME`) unless explicitly directed elsewhere.
+- **Stay within your home directory** (your home directory, e.g. ~) unless explicitly directed elsewhere.
 - **Never read, modify, or delete files owned by other users** or in their home directories.
 - **Never change permissions or ownership of shared directories** (`/tmp`, `/opt`, `/usr/local`) unless instructed.
 - **Never delete or modify files under `/var`, `/etc`, or `/dev`** without explicit request.
@@ -38,7 +38,7 @@ disable-model-invocation: true
 
 ## What IS allowed
 
-- Creating, modifying, and deleting files within `$HOME`.
+- Creating, modifying, and deleting files within your home directory.
 - Starting processes and containers scoped to your user, on non-conflicting ports, cleaned up after use.
 - Installing packages in user-local contexts (user pip, user npm, npx, local venvs).
 - Running `git` operations on your own repositories (never push — see never-push policy).

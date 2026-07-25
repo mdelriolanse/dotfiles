@@ -10,7 +10,7 @@ Commit messages, PR titles, and PR bodies are permanent public artifacts. They m
 
 ## Why
 
-A merged commit is read months later by people who never saw the review, the tooling, or the chat. "ponytail: ..." or "adamsreview pass 3 found..." or "per Josh's request" adds zero signal and leaks private process into public history. The commit-message-style rule governs format; this rule governs content that must stay out regardless of format.
+A merged commit is read months later by people who never saw the review, the tooling, or the chat. "ponytail: ..." or "adamsreview pass 3 found..." or "per a reviewer's request" adds zero signal and leaks private process into public history. The commit-message-style rule governs format; this rule governs content that must stay out regardless of format.
 
 ## Self-check
 

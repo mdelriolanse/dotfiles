@@ -28,7 +28,7 @@
     },
     "codebase-memory": {
       "type": "stdio",
-      "command": "$HOME/.local/bin/codebase-memory-mcp",
+      "command": "${HOME}/.local/bin/codebase-memory-mcp",
       "args": []
     },
     "codegraph": {

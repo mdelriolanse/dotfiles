@@ -12,13 +12,13 @@
     "ponytail": {
       "source": {
         "source": "directory",
-        "path": "$HOME/dotfiles/opencode/ponytail"
+        "path": "~/dotfiles/opencode/ponytail"
       }
     },
     "claude-hud": {
       "source": {
         "source": "directory",
-        "path": "$HOME/dotfiles/opencode/claude-hud"
+        "path": "~/dotfiles/opencode/claude-hud"
       }
     }
   },
