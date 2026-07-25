@@ -360,12 +360,12 @@ this file is the archive, and it must lose **nothing**.
 
 **Path.** `<reviewed-repo>/docs/deep-review/<title>-<timestamp>.md`, where
 `<reviewed-repo>` is the root of the repo whose diff was reviewed — **not** the
-session cwd. This checkout has umbrella repos (`~/<provider>/` contains
-`app/`, `gateway/`, etc. as independent git repos). When the session cwd is the
-umbrella root but the reviewed branch lives in a nested repo (e.g.
-`~/<provider>/app`), the report MUST land inside that nested repo
-(`~/<provider>/app/docs/deep-review/...`), never at the umbrella level
-(`~/<provider>/docs/deep-review/...`). Resolve the reviewed repo's root via
+session cwd. This checkout may use umbrella repos (a root dir that contains
+`app/`, `gateway/`, etc. as independent nested git repos). When the session cwd is
+an umbrella root but the reviewed branch lives in a nested repo (e.g.
+`<root>/app`), the report MUST land inside that nested repo
+(`<root>/app/docs/deep-review/...`), never at the umbrella level
+(`<root>/docs/deep-review/...`). Resolve the reviewed repo's root via
 `git -C <review-cwd> rev-parse --show-toplevel` (the `--cwd` passed to the
 review), then `mkdir -p <root>/docs/deep-review` (always create the directory
 if it does not exist — never skip the write because the path is absent) and
