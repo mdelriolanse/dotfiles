@@ -663,7 +663,7 @@ Do NOT use `gh` to push a branch of local commits:
 
 # PR ↔ Issue Linkage Policy — HARD RULE
 
-Every PR that implements an issue MUST be linked to that issue on GitHub so the issue's timeline shows the PR as a `cross-referenced`/`connected` event (the same linkage the <Provider> Planner board renders). A bare `Refs #972` or `#972` in the PR body does **not** create the linkage when the PR and the issue live in different repos — only the **full cross-repo form** does.
+Every PR that implements an issue MUST be linked to that issue on GitHub so the issue's timeline shows the PR as a `cross-referenced`/`connected` event (the same linkage a GitHub project board renders). A bare `Refs #972` or `#972` in the PR body does **not** create the linkage when the PR and the issue live in different repos — only the **full cross-repo form** does.
 
 ## The rule
 
