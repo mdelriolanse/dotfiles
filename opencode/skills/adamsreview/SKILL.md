@@ -5,7 +5,7 @@ argument-hint: "[review|fix|add|walkthrough|promote] [options...]"
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, question, Task, todowrite
 compatibility: opencode
 metadata:
-  author: "Adam Miller (ported by mateo.delriolanse)"
+  author: "<org>-team"
   version: "0.5.0-opencode"
   domain: quality
   triggers: code review, PR review, review, adamsreview

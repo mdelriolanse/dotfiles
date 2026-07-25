@@ -5,7 +5,7 @@ argument-hint: "[<PR-number> | <diff-ref>] [--prd <path|issue|url>] [--no-fix-su
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, Task, todowrite
 compatibility: omp
 metadata:
-  author: "mateo.delriolanse"
+  author: "<your-handle>"
   version: "2.0.0"
   domain: quality
   triggers: andrea-review, /andrea-review, andrea review, pr review, code review

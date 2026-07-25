@@ -4,7 +4,7 @@ description: Answer a question by read-only inspection — investigate as deeply
 allowed-tools: Bash, Read, Grep, Glob, question, Task
 disable-model-invocation: true
 metadata:
-  author: mateo.delriolanse
+  author: <your-handle>
   domain: analysis
   triggers: inspect, read-only, just tell me, don't change anything, what do you think
   role: specialist
