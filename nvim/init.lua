@@ -80,6 +80,7 @@ require 'core.options'
 require 'core.snippets'
 require 'core.keymaps'
 require 'core.autocmds'
+require('core.autosave').setup()
 require 'core.c-cpp'
 require 'colors'
 

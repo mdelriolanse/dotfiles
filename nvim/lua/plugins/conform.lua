@@ -16,6 +16,12 @@ return {
 		opts = {
 			notify_on_error = false,
 			format_on_save = function(bufnr)
+				-- Skip the writes core/autosave.lua makes while you type: reformatting
+				-- half-written code every 800ms moves the cursor out from under you.
+				-- An explicit :w (or <leader>f) still formats.
+				if vim.b[bufnr].autosaving then
+					return nil
+				end
 				-- Don't format on save for c/cpp by default (it can fight with WIP code).
 				-- Use <leader>f for explicit format, or set vim.b.format_on_save=true per buffer.
 				local disable_filetypes = { c = true, cpp = true }
