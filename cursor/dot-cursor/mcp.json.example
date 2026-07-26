@@ -54,6 +54,12 @@
       "env": {
         "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin"
       }
+    },
+    "quiverai": {
+      "url": "https://app.quiver.ai/mcp",
+      "env": {
+        "QUIVERAI_API_KEY": "${QUIVERAI_API_KEY}"
+      }
     }
   }
 }
