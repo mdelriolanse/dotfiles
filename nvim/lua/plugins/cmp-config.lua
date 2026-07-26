@@ -8,6 +8,9 @@ return {
     'hrsh7th/cmp-path',
     'L3MON4D3/LuaSnip',
     'saadparwaiz1/cmp_luasnip',
+    -- Must load before cmp: autopairs maps <CR> for block-opening, and cmp's
+    -- confirm fallback only reaches a <CR> mapping that already existed.
+    'windwp/nvim-autopairs',
   },
   config = function()
     local cmp = require 'cmp'
@@ -110,5 +113,11 @@ return {
         }),
       },
     }
+
+    -- Confirming a function completion adds its `()` and puts the cursor inside.
+    local ok, cmp_autopairs = pcall(require, 'nvim-autopairs.completion.cmp')
+    if ok then
+      cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done())
+    end
   end,
 }

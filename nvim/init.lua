@@ -24,6 +24,7 @@ require('lazy').setup({
   require 'plugins.diffview',
   require 'plugins.lua-rocks',
   require 'plugins.guess-indent',
+  require 'plugins.autopairs',
   require 'plugins.catppuccin',
   require 'plugins.gruvbox',
   require 'plugins.drop',
