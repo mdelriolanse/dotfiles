@@ -298,6 +298,21 @@ vim.keymap.set('n', '<leader>br', function()
   require('core.buffer-refresh').refresh()
 end, { desc = '[B]uffer [R]efresh (warn if unsaved)' })
 
+-- Lumen diff viewer. The base branch is resolved automatically (see core/lumen-diff.lua);
+-- these keys pick the *scope* — what question you're asking — so each one is predictable.
+for key, spec in pairs {
+  jl = { 'branch', '[L]umen diff: branch vs base' },
+  ju = { 'worktree', 'Lumen diff: [U]ncommitted changes' },
+  jc = { 'last', 'Lumen diff: last [C]ommit' },
+  jk = { 'stacked', 'Lumen diff: wal[K] branch commits' },
+  jw = { 'watch', 'Lumen diff: [W]atch uncommitted (live)' },
+  jp = { 'pr', 'Lumen diff: [P]ull request for branch' },
+} do
+  vim.keymap.set('n', '<leader>' .. key, function()
+    require('core.lumen-diff').open(spec[1])
+  end, { desc = spec[2] })
+end
+
 -- Line notes: Google-Docs-style local comments attached to lines (core/notes.lua).
 local notes = require('core.notes')
 notes.setup()

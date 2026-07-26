@@ -67,7 +67,7 @@ return {
 				{ '<leader>t', group = '[T]oggle' },
 				{ '<leader>o', desc = '[O]utline (toggle popup)' },
 				{ '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
-				{ '<leader>j', group = '[J]Git diff' },
+				{ '<leader>j', group = '[J] Lumen diff' },
 				{ '<leader>r', group = '[R]emote' },
 			},
 		},
