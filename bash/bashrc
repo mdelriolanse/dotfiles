@@ -168,10 +168,6 @@ alias synonyms='python3 $HOME/projects/words_command/synonyms_cli.py'
 alias py='python3'
 alias c='clear'
 
-# Composio CLI
-export COMPOSIO_INSTALL_DIR="$HOME/.composio"
-export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
-
 alias cldsp='claude --dangerously-skip-permissions'
 
 # bun

@@ -20,7 +20,7 @@ Check with the user that these modules match their expectations. Check with the 
 
 3. Write the PRD using the template below, then publish it to the project issue tracker, and apply the `ready-for-agent` triage label.
 
-   Pick whichever issue-tracker MCP is configured for this repo: use the **GitHub** MCP for GitHub-hosted repos, or the **Composio** MCP for trackers it fronts (Linear, Jira, etc.). If no issue-tracker MCP is available, write the PRD to a local markdown file and tell the user where it is so they can file it manually.
+   Pick whichever issue-tracker MCP is configured for this repo — e.g. the **GitHub** MCP for GitHub-hosted repos, or a Linear/Jira MCP if one is wired up. If no issue-tracker MCP is available, write the PRD to a local markdown file and tell the user where it is so they can file it manually.
 
    After publishing, `memory_save` the PRD's module boundaries and key decisions (type: `architecture`) so downstream `/to-issues` and `/tdd` recall them instead of re-deriving.
 

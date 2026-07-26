@@ -1,8 +1,5 @@
 {
   "mcpServers": {
-    "composio": {
-      "url": "https://connect.composio.dev/mcp"
-    },
     "context7": {
       "url": "https://mcp.context7.com/mcp"
     },

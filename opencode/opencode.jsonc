@@ -42,11 +42,6 @@
   // MCP server configurations (also loaded from mcp/*.json files)
 
   "mcp": {
-    "composio": {
-      "type": "remote",
-      "url": "https://connect.composio.dev/mcp",
-      "enabled": true
-    },
     "context7": {
     "type": "remote",
     "url": "https://mcp.context7.com/mcp",
