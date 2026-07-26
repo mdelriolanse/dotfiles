@@ -1,9 +1,5 @@
 local M = {}
 
-local LUMEN = '/home/linuxbrew/.linuxbrew/bin/lumen'
-
-M._temp_files = {}
-
 function M.get_dirty_bufs()
   local dirty = {}
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -62,7 +58,11 @@ function M.force_reload_all()
   vim.notify('All buffers force-reloaded (unsaved changes discarded)', vim.log.levels.WARN)
 end
 
-function M.show_lumen_diff(buf)
+-- Side-by-side diff of the unsaved buffer against the file on disk, in a scratch tab.
+-- Left is disk (read-only), right is the live buffer — so you can edit and :w straight
+-- from the diff, then :tabclose. Everything here is window-local, so closing the tab
+-- leaves no diff state behind on the real buffer.
+function M.show_disk_diff(buf)
   local disk_path = vim.api.nvim_buf_get_name(buf)
   if disk_path == '' then
     vim.notify('Buffer has no file path', vim.log.levels.WARN)
@@ -73,46 +73,42 @@ function M.show_lumen_diff(buf)
     return
   end
 
-  local tmp = vim.fn.tempname()
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  vim.fn.writefile(lines, tmp)
-  M._temp_files[tmp] = true
-
-  local diff_base = string.format('diff -u %s %s', vim.fn.shellescape(disk_path), vim.fn.shellescape(tmp))
-  local cmd
-  if vim.fn.executable(LUMEN) == 1 then
-    cmd = diff_base .. ' | ' .. vim.fn.shellescape(LUMEN) .. ' show'
-  else
-    cmd = diff_base
+  -- Read disk BEFORE opening the tab, and keep it that way: core/autosave.lua writes
+  -- on BufLeave, so switching windows first would save the buffer over the very file
+  -- we're trying to compare against and the diff would come up empty.
+  local disk_lines = vim.fn.readfile(disk_path)
+  -- readfile keeps the CR on dos-format files but the live buffer has it stripped;
+  -- without this every line reads as changed.
+  if vim.bo[buf].fileformat == 'dos' then
+    for i, line in ipairs(disk_lines) do
+      disk_lines[i] = (line:gsub('\r$', ''))
+    end
   end
-  -- diff exits 1 when files differ (expected); append pause so output stays readable
-  local full_cmd = cmd .. '; echo; echo "--- press q or <C-w>c to close ---"; read -r _'
 
-  vim.cmd('botright split')
-  vim.cmd('resize 20')
+  local scratch = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(scratch, 0, -1, false, disk_lines)
+  vim.bo[scratch].buftype = 'nofile'
+  vim.bo[scratch].bufhidden = 'wipe'
+  vim.bo[scratch].swapfile = false
+  vim.bo[scratch].filetype = vim.bo[buf].filetype
+  vim.bo[scratch].modifiable = false
+  -- Names can collide if two diff tabs are open at once; the name is cosmetic.
+  pcall(vim.api.nvim_buf_set_name, scratch, vim.fn.fnamemodify(disk_path, ':t') .. ' [disk]')
 
-  local term_buf = vim.api.nvim_get_current_buf()
+  vim.cmd 'tabnew'
+  vim.bo.bufhidden = 'wipe' -- discard the throwaway buffer :tabnew created
+  vim.api.nvim_win_set_buf(0, scratch)
+  vim.cmd 'diffthis'
 
-  vim.fn.termopen(full_cmd, {
-    on_exit = function()
-      if M._temp_files[tmp] then
-        vim.fn.delete(tmp)
-        M._temp_files[tmp] = nil
-      end
-    end,
-  })
+  vim.cmd 'rightbelow vsplit'
+  vim.api.nvim_win_set_buf(0, buf)
+  vim.cmd 'diffthis'
 
-  vim.cmd('startinsert')
-
-  vim.api.nvim_create_autocmd('BufDelete', {
-    buffer = term_buf,
-    once = true,
-    callback = function()
-      if M._temp_files[tmp] then
-        vim.fn.delete(tmp)
-        M._temp_files[tmp] = nil
-      end
-    end,
+  vim.keymap.set('n', 'q', '<cmd>tabclose<cr>', {
+    buffer = scratch,
+    nowait = true,
+    silent = true,
+    desc = 'Close disk diff',
   })
 end
 
@@ -190,7 +186,7 @@ function M.open_warning_float(dirty_bufs)
     local buf = get_cursor_buf()
     if buf then
       close_float()
-      M.show_lumen_diff(buf)
+      M.show_disk_diff(buf)
     end
   end, opts)
 

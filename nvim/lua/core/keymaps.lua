@@ -292,7 +292,8 @@ end, { desc = '[D]rop [T]oggle (manual)' })
 vim.keymap.set('n', '<leader>pv', '<cmd>SwenvPick<CR>', { desc = '[P]ick Python [V]env' })
 vim.keymap.set('n', '<leader>pV', '<cmd>SwenvCurrent<CR>', { desc = 'Show current Python [V]env' })
 
--- Buffer refresh: reload all from disk, or show unsaved-changes warning with lumen diff
+-- Buffer refresh: reload all from disk, or warn about unsaved buffers (Enter diffs
+-- the buffer against its on-disk copy in a scratch tab)
 vim.keymap.set('n', '<leader>br', function()
   require('core.buffer-refresh').refresh()
 end, { desc = '[B]uffer [R]efresh (warn if unsaved)' })
