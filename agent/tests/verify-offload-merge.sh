@@ -84,7 +84,7 @@ done
 refute "opencode/opencode.jsonc removed" test -e opencode/opencode.jsonc
 refute "nvim/nvim/ nested duplicate removed" test -e nvim/nvim
 
-count_is "claude/skills count"   37 "$(ls -A claude/skills | wc -l)"
+count_is "claude/skills count"   38 "$(ls -A claude/skills | wc -l)"
 count_is "omp/skills count"      39 "$(ls -A omp/skills | wc -l)"
 count_is "opencode/skills count" 38 "$(ls -A opencode/skills | wc -l)"
 # 21 shipped by the remote + master's env-setup, kept per plan T3.4
