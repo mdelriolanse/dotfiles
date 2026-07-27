@@ -102,6 +102,31 @@ Exceptions where the gate does not apply (the finding is not `file:line`-bound):
 If **every** in-scope finding is `RESOLVED-PRE-DISPATCH`, stop — say so, list
 them, and do not dispatch or surface anything further.
 
+## Step 2b: Origin gate (pre-existing-finding checker)
+
+After the staleness gate, drop findings that are pre-existing — not introduced
+by the current PR's diff. This gate runs **before** the trivial/HITL split
+(Step 4). Dropped findings never reach dispatch or HITL.
+
+For each OPEN/DRIFTED finding, determine its origin. The deep-review and
+andrea-review reports both emit an `origin` field:
+`introduced_by_pr | pre_existing | unknown`.
+
+- `origin: pre_existing` + `origin_confidence: high` → **DROP** (irrelevant to
+  this PR). Record under "Dropped as pre-existing" in the Step 7 report and the
+  Step 8 `RR-#.md`, with `file:line` + one-line evidence.
+- `origin: introduced_by_pr` → keep (in scope).
+- `origin: unknown` or missing → keep (conservative — don't drop what you
+  can't confirm).
+
+Additionally, verify via file membership when the report omits an origin: run
+`git diff --name-only $MB` per worktree. If the finding's `file` is NOT in any
+worktree's diff, and the report didn't mark it `introduced_by_pr` with named
+PR-added code that made it wrong, downgrade to pre-existing and drop.
+
+If **every** remaining finding is dropped by this gate, stop — say so, list the
+dropped findings, and do not dispatch or surface anything further.
+
 ## Step 3: Select the in-scope findings
 
 Extract the **OPEN** and **DRIFTED** findings (Step 2 dropped the
@@ -181,3 +206,39 @@ Present it as a plain `Recommended:` line under the finding.
 When you `wait $PID` and the background agent has finished, relay what it
 changed per finding — read `/tmp/resolve-review-result.out` and summarize the
 per-finding changes to the user.
+
+## Step 8: Persist to `docs/resolve-review/RR-#.md`
+
+After the Step 7 report, write the full results to
+`docs/resolve-review/RR-#.md` so the next session can read them as input. The
+iteration index increments per run:
+
+```bash
+RR_DIR="$CONTAINER/docs/resolve-review"
+mkdir -p "$RR_DIR"
+NEXT=$(($(ls "$RR_DIR"/RR-*.md 2>/dev/null | wc -l) + 1))
+RR_FILE="$RR_DIR/RR-${NEXT}.md"
+```
+
+When invoked standalone (not inside a dev-graph container), `$CONTAINER` is
+the cwd; write to `./docs/resolve-review/RR-#.md` relative to it.
+
+The `RR-#.md` file contains:
+
+- **Reports consumed**: which reports fed this run (deep-review merged +
+  andrea-review merged), and the scope.
+- **Round**: the review round number (from `docs/.review-round` when inside a
+  dev-graph run; omit if standalone).
+- **Dropped as pre-existing**: list of findings dropped by the Step 2b origin
+  gate, with `file:line` + one-line evidence.
+- **Resolved before dispatch**: the `RESOLVED-PRE-DISPATCH` findings from the
+  Step 2 staleness gate (file:line + one-line evidence).
+- **Fixed (trivial)**: what the background subagent changed, per finding, once
+  `wait $PID` returns and the result is read.
+- **HITL decisions**: each HITL finding, the user's decision, and whether it
+  was implemented or deferred.
+- **Deferred**: findings deliberately not actioned (NIT/MINOR in rounds 2+ of
+  a dev-graph run, or user-deferred), with rationale.
+
+This file is the input to a subsequent `/plan` step that implements the HITL
+decisions and the deferred-and-now-actionable findings.

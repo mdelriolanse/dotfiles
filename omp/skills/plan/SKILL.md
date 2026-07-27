@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Human-readable plan format for user review. Caveman style: dense bullets, file IDs, precedent checks, zero code blocks.
+description: Human-readable plan format for user review. Caveman style: dense bullets, file IDs, precedent checks, zero code blocks. Persists the report to ./docs/plans/<slug>.md.
 argument-hint: "<goal-description-or-plan-request>"
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, question, Task, todowrite
 compatibility: opencode
@@ -110,3 +110,15 @@ Whenever suggesting an approach (execution strategy, implementation pattern, lib
 4. **If none found.** State "no precedent found — proposing new pattern."
 
 This answers "How does the codebase generally resolve this issue?" before the user asks.
+
+## Persist
+
+After emitting the report to the conversation, write it to
+`./docs/plans/<slug>.md` (create `./docs/plans/` if missing). `<slug>` is a
+short kebab-case name derived from the plan goal (e.g. `add-input-validation`,
+`resolve-review-round-1`). If a file with that name already exists, suffix
+`-2`, `-3`, etc. to avoid clobbering.
+
+The persisted file is the canonical plan record — downstream steps (build,
+review, resolve) read it from there. The in-conversation emission is for the
+human reviewer to read inline; the file is for the workflow.
