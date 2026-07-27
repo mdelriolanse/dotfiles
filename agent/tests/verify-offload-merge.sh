@@ -84,9 +84,18 @@ done
 refute "opencode/opencode.jsonc removed" test -e opencode/opencode.jsonc
 refute "nvim/nvim/ nested duplicate removed" test -e nvim/nvim
 
-count_is "claude/skills count"   38 "$(ls -A claude/skills | wc -l)"
+count_is "claude/skills count"   39 "$(ls -A claude/skills | wc -l)"
 count_is "omp/skills count"      39 "$(ls -A omp/skills | wc -l)"
-count_is "opencode/skills count" 38 "$(ls -A opencode/skills | wc -l)"
+count_is "opencode/skills count" 39 "$(ls -A opencode/skills | wc -l)"
+# claude, omp and opencode carry the same skill family; drift means a skill was
+# added to one harness and never ported to the others.
+for h in claude opencode; do
+  if diff -q <(ls omp/skills | sort) <(ls "$h/skills" | sort) >/dev/null 2>&1; then
+    ok "skill set parity: omp == $h"
+  else
+    no "skill set parity: omp != $h ($(diff <(ls omp/skills|sort) <(ls "$h/skills"|sort) | grep -cE '^[<>]') differing)"
+  fi
+done
 # 21 shipped by the remote + master's env-setup, kept per plan T3.4
 count_is "skills-cursor count"   22 "$(ls -A cursor/dot-cursor/skills-cursor | wc -l)"
 count_is "cursor rules/*.mdc"    15 "$(ls cursor/dot-cursor/rules/*.mdc 2>/dev/null | wc -l)"
