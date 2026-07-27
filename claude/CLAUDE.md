@@ -599,3 +599,15 @@ Ponytail output rules (telegraphic chat, "code first then three lines", output-c
 
 ---
 
+# Knowledge base
+
+- The Obsidian vault is `$OBSIDIAN_VAULT_PATH` — start at its `INDEX.md`
+  and walk `[[links]]`/Grep from there; never sweep whole folders.
+- Before making decisions about my tools, projects, or preferences, check whether the vault already
+  has a page on it, and cite the page when you use it.
+- When we make a durable decision or learn a lesson worth keeping, note it — a SessionEnd hook and
+  nightly compile pass will fold it into the vault; only write vault pages directly when working
+  inside the vault (its own CLAUDE.md has the rules).
+
+---
+
