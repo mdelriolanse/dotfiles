@@ -65,6 +65,12 @@ link "$HOME/.cursor/skills-cursor"                 "$REPO_DIR/cursor/dot-cursor/
 link "$HOME/.claude/settings.json"                 "$REPO_DIR/claude/settings.json"
 link "$HOME/.claude/skills"                        "$REPO_DIR/claude/skills"
 link "$HOME/.claude/CLAUDE.md"                      "$REPO_DIR/claude/CLAUDE.md"
+link "$HOME/.config/herdr/config.toml"             "$REPO_DIR/herdr/config.toml"
+# herdr scripts (rename-agent, scroll) are referenced by config.toml key commands.
+link "$HOME/.config/herdr/scripts"                  "$REPO_DIR/herdr/scripts"
+# herdr's omp/opencode agent-state plugins are NOT symlinked here — herdr owns
+# them via `herdr integration install <omp|opencode>` (version-managed, can
+# self-update). Symlinking would fight herdr's version stamp.
 # NOTE: ~/.cursor/commands is NOT centralized. opencode/skills is the single
 # source of truth; those skills are deployed to ~/.cursor/skills by
 # link-cursor-skills.sh (step 5). A skill behaves as a /slash command in Cursor
