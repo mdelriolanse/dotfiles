@@ -1,23 +1,33 @@
 providers:
-  <provider>:
-    baseUrl: https://<provider-host>/v1
+  deepinfra:
+    baseUrl: https://api.deepinfra.com/v1/openai
     api: openai-completions
     authHeader: true
-    apiKey: <PROVIDER>_API_KEY
+    # Resolved by bare env-var name at runtime — never materialized into this
+    # file, so it stays safe to track. Set the value in secrets/secrets.env.
+    apiKey: DEEPINFRA_API_KEY
     models:
-      - id: glm-5-2-nvfp4
+      - id: moonshotai/Kimi-K2.7-Code
+        name: Kimi K2.7 Code
+        contextWindow: 262144
+        maxTokens: 262144
+        reasoning: true
+        input:
+          - text
+          - image
+      - id: moonshotai/Kimi-K2.6
+        name: Kimi K2.6
+        contextWindow: 262144
+        maxTokens: 262144
+        reasoning: true
+        input:
+          - text
+          - image
+      # No vision tag on DeepInfra for this one, so text-only input.
+      - id: zai-org/GLM-5.2
         name: GLM 5.2
-        contextWindow: 262144
-        maxTokens: 262144
+        contextWindow: 1048576
+        maxTokens: 1048576
         reasoning: true
         input:
           - text
-          - image
-      - id: nvidia-kimi-k2-6-nvfp4
-        name: Kimi 2.6
-        contextWindow: 262144
-        maxTokens: 262144
-        reasoning: true
-        input:
-          - text
-          - image

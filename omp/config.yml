@@ -1,6 +1,6 @@
 setupVersion: 1
 modelRoles:
-  default: <provider>/glm-5-2-nvfp4
+  default: deepinfra/moonshotai/Kimi-K2.7-Code
 disabledProviders:
   - opencode
 tools:

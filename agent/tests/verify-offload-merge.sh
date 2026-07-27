@@ -140,7 +140,7 @@ else
   no "install.sh section numbering broken"
 fi
 
-for v in PROVIDER_API_KEY HERMES_MODEL_API_KEY TELEGRAM_BOT_TOKEN; do
+for v in DEEPINFRA_API_KEY HERMES_MODEL_API_KEY TELEGRAM_BOT_TOKEN; do
   check "secrets.env.example exports $v" grep -q "export $v=" secrets/secrets.env.example
 done
 for v in FIRECRAWL_API_KEY LINEAR_API_KEY; do
@@ -157,6 +157,11 @@ refute "install.sh does NOT whole-dir link ~/.omp" grep -qE 'link "\$HOME/\.omp"
 refute "omp/mcp.json NOT gitignored" grep -q 'omp/mcp.json' .gitignore
 check  "omp/mcp.json is tracked" git ls-files --error-unmatch omp/mcp.json
 check  "omp/mcp.json uses bare GITHUB_TOKEN name" grep -q '"GITHUB_TOKEN": *"GITHUB_TOKEN"' omp/mcp.json
+# omp resolves credentials by env-var NAME; a real key must never land here.
+check  "omp/models.yml references the key by name only" grep -q '^ *apiKey: DEEPINFRA_API_KEY$' omp/models.yml
+refute "omp/models.yml holds no literal secret" grep -qE 'apiKey: *[A-Za-z0-9]{24,}' omp/models.yml
+check  "omp default model is set and concrete" grep -q '^  default: deepinfra/' omp/config.yml
+refute "omp config has no leftover <provider> placeholders" grep -q '<provider' omp/config.yml omp/models.yml
 
 # ---------------------------------------------------------------------------
 group "G5c. CLAUDE SKILLS PRECEDENCE (remote-only)"
@@ -173,10 +178,12 @@ count_is "no kimi/ files tracked" 0 "$(git ls-files kimi/ | wc -l)"
 refute ".gitignore has no kimi/config.toml" grep -q 'kimi/config.toml' .gitignore
 refute "install.sh has no KIMI block" grep -qi 'KIMI' install.sh
 refute "secrets.env.example header drops kimi" grep -qi 'kimi' secrets/secrets.env.example
-check  "secrets.env.example STILL exports PROVIDER_API_KEY" grep -q 'export PROVIDER_API_KEY=' secrets/secrets.env.example
+# omp was since repointed at DeepInfra, so its credential slot is the concrete
+# DEEPINFRA_API_KEY rather than the scrub's generic PROVIDER_API_KEY.
+check  "secrets.env.example exports DEEPINFRA_API_KEY" grep -q 'export DEEPINFRA_API_KEY=' secrets/secrets.env.example
 # KEEP bucket — the model and the prose must survive the CLI deletion
 check "opencode.json keeps Kimi-K2.6 model" grep -q 'nvidia-kimi-k2-6-nvfp4' opencode/opencode.json
-check "omp/models.yml keeps Kimi-K2.6 model" grep -q 'nvidia-kimi-k2-6-nvfp4' omp/models.yml
+check "omp/models.yml still defines a Kimi model" grep -qi 'Kimi-K2' omp/models.yml
 for f in claude/CLAUDE.md cursor/dot-cursor/USER_RULES.md omp/AGENTS.md \
          cursor/dot-cursor/rules/chinese-model-english.mdc \
          opencode/instructions/chinese-model-english.md; do
