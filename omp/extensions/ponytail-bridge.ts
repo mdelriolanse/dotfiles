@@ -78,10 +78,13 @@ function getEffectiveMode(): PonytailMode {
 // Detect /ponytail commands in user messages, update mode flag
 function parsePonytailCommand(text: string): { type: "mode"; mode: PonytailMode } | { type: "ignore" } {
   const normalized = text.trim().toLowerCase();
-  const match = normalized.match(/^\/ponytail\s*(.*)/);
+  // Only match /ponytail as a mode toggle when followed by end-of-string or
+  // whitespace + mode arg. A hyphen (e.g. /ponytail-audit) is a sub-command
+  // owned by the ponytail-* skills, not a mode toggle — let it fall through.
+  const match = normalized.match(/^\/ponytail(?:\s+(.*))?$/);
   if (!match) return { type: "ignore" };
 
-  const arg = match[1].trim();
+  const arg = (match[1] ?? "").trim();
   if (VALID_MODES.includes(arg as PonytailMode)) {
     return { type: "mode", mode: arg as PonytailMode };
   }
