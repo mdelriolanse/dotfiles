@@ -92,6 +92,7 @@ require('lazy').setup({
   require 'plugins.oil',
   require 'plugins.ssh-remote',
   require 'plugins.tmux-navigator',
+  require 'plugins.pretty-ts-errors',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
