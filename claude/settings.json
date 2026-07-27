@@ -11,7 +11,7 @@
     "ponytail": {
       "source": {
         "source": "directory",
-        "path": "~/dotfiles/opencode/ponytail"
+        "path": "$HOME/dotfiles/opencode/ponytail"
       }
     }
   },
