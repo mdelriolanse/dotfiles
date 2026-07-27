@@ -49,10 +49,16 @@ else — same headings, code fences, tables, and checklists the author wrote. Th
 is the frozen spec of record; the chunks in step 4 are the restructured breakdown of
 the same content.
 
+When invoked inside a dev-graph container (cwd is a `worktrees/<name>/` directory with
+a `docs/` subdir), write the spec to `./docs/<slug>-spec.md` — the container's
+top-level docs, not a per-repo `docs/` path.
+
 ## 4. Write chunked docs
 
-Target dir: `./docs/issues/<repo>-<N>-<title-slug>/` (create if missing; if there is
-no `docs/` in cwd, ask before creating one).
+Target dir: `./docs/<repo>-<N>/` (create if missing; if there is no `docs/` in
+cwd, ask before creating one). Inside a dev-graph container, the `issues/`
+nesting is unnecessary — the container is already named for the issue, so the
+chunks live one level down at `./docs/<repo>-<N>/`, not under `docs/issues/`.
 
 - `00-index.md` — title, `owner/repo#N`, url, state, labels, one-line summary, and a
   linked list of the chunk files.

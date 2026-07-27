@@ -72,6 +72,7 @@ link "$HOME/.claude/skills"                        "$REPO_DIR/claude/skills"
 link "$HOME/.claude/CLAUDE.md"                      "$REPO_DIR/claude/CLAUDE.md"
 link "$HOME/.claude/agents"                        "$REPO_DIR/claude/agents"
 link "$HOME/.claude/commands"                      "$REPO_DIR/claude/commands"
+# NOTE: herdr is wired in section 6c, not here.
 # NOTE: ~/.cursor/commands is NOT centralized. opencode/skills is the single
 # source of truth; those skills are deployed to ~/.cursor/skills by
 # link-cursor-skills.sh (step 5). A skill behaves as a /slash command in Cursor
@@ -290,6 +291,9 @@ fi
 #     Note: herdr/config.toml hardcodes ~/dotfiles/herdr/scripts/rename-agent.sh
 #     for its rename popup, so the repo must live at ~/dotfiles for that keybind
 #     to resolve. The scripts symlink below is what makes it reachable.
+#     The omp/opencode agent-state plugins are deliberately NOT linked here.
+#     herdr owns them via `herdr integration install <omp|opencode>`, which
+#     version-stamps each one, so symlinking would fight its updater.
 # ---------------------------------------------------------------------------
 if [ -d "$REPO_DIR/herdr" ]; then
   link "$HOME/.config/herdr/config.toml" "$REPO_DIR/herdr/config.toml"
