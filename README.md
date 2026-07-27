@@ -113,8 +113,41 @@ and are consumed two ways:
 - `opencode/ponytail` is a git submodule — run
   `git submodule update --init --recursive` after cloning, or `install.sh`
   will skip the ponytail Claude Code plugin.
-- `omp/models.yml` and `omp/config.yml` ship with `<provider>` /
-  `<provider-host>` / `<PROVIDER>_API_KEY` placeholders. Fill them in locally
-  before omp can resolve a model, and do **not** commit the hydrated values.
 - `install.sh` needs `jq` to register MCP servers into Claude Code's user
   scope; without it that step is skipped with a warning.
+- `install.sh` links config but does **not** install the apps. Two of them are
+  not in any distro repo:
+
+  ```bash
+  curl -fsSL https://omp.sh/install | sh        # omp (oh-my-pi) -> ~/.bun/bin
+  curl -fsSL https://herdr.dev/install.sh | sh  # herdr          -> ~/.local/bin
+  ```
+
+  omp routes through DeepInfra — set `DEEPINFRA_API_KEY` in `secrets.env`.
+  Validate herdr's config with `herdr config check`, and confirm the omp and
+  opencode agent-state plugins are recognized with `herdr integration status`.
+
+- The MCP configs invoke backends **by binary name**, so they must be on PATH
+  or the server just fails to connect. `context7` is HTTP and `fetch`,
+  `github` and `semble` are fetched on demand by `npx`/`uvx`; the rest need
+  installing:
+
+  ```bash
+  uv tool install -p 3.13 serena-agent      # -> serena
+  npm i -g codebase-memory-mcp              # -> codebase-memory-mcp
+  npm i -g @agentmemory/mcp                 # -> agentmemory-mcp (the npx shim
+                                            #    re-execs this name from PATH)
+  ```
+
+  `codebase-memory` is configured at `${HOME}/.local/bin/codebase-memory-mcp`,
+  so symlink it there if npm puts it elsewhere. `agentmemory` additionally
+  needs its server on `AGENTMEMORY_URL` (default `http://localhost:3111`).
+
+  **`codegraph` is not publicly installable.** Every `mcp.json` registers
+  `codegraph serve --mcp` and `omp/AGENTS.md` documents it heavily, but the
+  `codegraph` names on npm and PyPI are unrelated projects — the npm one is an
+  empty 2024 placeholder with no `bin`. Do not install either. Until the real
+  tool is available, that one server stays disconnected and the CodeGraph
+  guidance in `AGENTS.md` / `CLAUDE.md` does not apply; use Semble or Serena.
+
+Verify the whole setup with `./agent/tests/verify-offload-merge.sh`.

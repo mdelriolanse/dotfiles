@@ -317,7 +317,8 @@ done
 command -v opencode >/dev/null 2>&1 && ok "found opencode" || warn "opencode not on PATH — see https://opencode.ai"
 command -v cursor   >/dev/null 2>&1 && ok "found cursor CLI" || warn "cursor CLI not on PATH"
 command -v claude   >/dev/null 2>&1 && ok "found claude CLI" || warn "claude CLI not on PATH — see https://claude.com/claude-code"
-command -v herdr    >/dev/null 2>&1 && ok "found herdr" || warn "herdr not on PATH — ~/.config/herdr links are staged but inert until it is installed"
+command -v omp      >/dev/null 2>&1 && ok "found omp" || warn "omp not on PATH — install with: curl -fsSL https://omp.sh/install | sh"
+command -v herdr    >/dev/null 2>&1 && ok "found herdr" || warn "herdr not on PATH — install with: curl -fsSL https://herdr.dev/install.sh | sh"
 
 # ---------------------------------------------------------------------------
 # 9. Summary / next steps
@@ -338,10 +339,10 @@ Next steps:
   7) Hermes: ~/.hermes/{SOUL.md,news-topics.txt,scripts} are symlinks; config.yaml
      and .env were materialized from templates only if absent — fill in real keys.
   8) omp: ~/.omp/agent/* are symlinks into omp/ (runtime state stays real).
-     models.yml/config.yml ship with <provider> placeholders from the security
-     scrub — edit them with your real provider host/name before omp can resolve
-     a model. Do NOT commit the hydrated values.
+     Provider is DeepInfra; put your key in DEEPINFRA_API_KEY in secrets.env.
+     Install omp itself with: curl -fsSL https://omp.sh/install | sh
   9) herdr: ~/.config/herdr/{config.toml,scripts} are symlinks into herdr/.
+     Install herdr with: curl -fsSL https://herdr.dev/install.sh | sh
 
 Backups of anything replaced (if any) are under: $BACKUP_DIR
 EOF
