@@ -1,9 +1,9 @@
 providers:
   <provider>:
-    baseUrl: https://api.example.com/v1
+    baseUrl: https://<provider-host>/v1
     api: openai-completions
     authHeader: true
-    apiKey: PROVIDER_API_KEY
+    apiKey: <PROVIDER>_API_KEY
     models:
       - id: glm-5-2-nvfp4
         name: GLM 5.2
