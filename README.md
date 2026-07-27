@@ -1,7 +1,8 @@
 # dotfiles
 
-Centralized configuration for **Neovim**, **opencode**, and **Cursor**. The real
-config locations are symlinks into this repo, so editing here == editing live.
+Centralized configuration for **Neovim**, **opencode**, **Cursor**, **Claude
+Code**, **omp**, **tmux**, and **herdr**. The real config locations are symlinks
+into this repo, so editing here == editing live.
 
 ## Quickstart
 
@@ -40,6 +41,17 @@ cursor/User/*            -> ~/.config/Cursor/User/*    (settings, keybindings, s
 cursor/dot-cursor/*      -> ~/.cursor/*                (argv, cli-config, commands,
                                                         skills-cursor, USER_RULES,
                                                         mcp.json)
+claude/settings.json     -> ~/.claude/settings.json    (individual items only —
+claude/skills/           -> ~/.claude/skills            ~/.claude holds runtime
+claude/CLAUDE.md         -> ~/.claude/CLAUDE.md         state, never whole-dir)
+claude/mcp.json.example  materialized -> claude/mcp.json (gitignored), then
+                         registered into Claude's user scope by install.sh
+omp/*                    -> ~/.omp/agent/*             (7 individual items;
+                                                        agent.db, sessions/ and
+                                                        history.db stay real)
+tmux/tmux.conf           -> ~/.tmux.conf               (ctrl+hjkl pane nav)
+herdr/config.toml        -> ~/.config/herdr/config.toml
+herdr/scripts/           -> ~/.config/herdr/scripts
 hermes/SOUL.md           -> ~/.hermes/SOUL.md          (persona / system prompt)
 hermes/news-topics.txt   -> ~/.hermes/news-topics.txt  (digest topics)
 
@@ -73,8 +85,10 @@ No API keys are committed. They live only in `secrets/secrets.env` (gitignored)
 and are consumed two ways:
 
 - **opencode** resolves `{env:VAR}` from the shell environment at runtime, so
-  `secrets.env` (sourced by `~/.bashrc`) is enough — `opencode/opencode.jsonc`
+  `secrets.env` (sourced by `~/.bashrc`) is enough — `opencode/opencode.json`
   is committed verbatim with `{env:...}` references.
+- **omp** resolves credentials by bare env-var name, so `omp/mcp.json` is
+  committed as-is and symlinked — nothing is ever materialized into it.
 - **Cursor** does not reliably expand `${VAR}` in `mcp.json`, so the real
   `cursor/dot-cursor/mcp.json` is **gitignored** and `install.sh` regenerates it
   from `mcp.json.example` + `secrets.env` (via `envsubst`). Only the redacted
@@ -95,6 +109,12 @@ and are consumed two ways:
 
 ## Notes
 
-- `nvim/nvim/` is a pre-existing tracked duplicate of an older config kept for
-  history; safe to prune later.
 - opencode auth lives in `~/.local/share/opencode/` (not in this repo).
+- `opencode/ponytail` is a git submodule — run
+  `git submodule update --init --recursive` after cloning, or `install.sh`
+  will skip the ponytail Claude Code plugin.
+- `omp/models.yml` and `omp/config.yml` ship with `<provider>` /
+  `<provider-host>` / `<PROVIDER>_API_KEY` placeholders. Fill them in locally
+  before omp can resolve a model, and do **not** commit the hydrated values.
+- `install.sh` needs `jq` to register MCP servers into Claude Code's user
+  scope; without it that step is skipped with a warning.
