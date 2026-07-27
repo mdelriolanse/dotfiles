@@ -106,9 +106,12 @@ for s in composio firecrawl browserbase excalidraw quiverai; do
   refute "cursor mcp.json.example dropped $s" grep -q "$s" cursor/dot-cursor/mcp.json.example
 done
 if command -v jq >/dev/null 2>&1; then
+  # Cursor/VS Code ship JSONC (full-line // comments) for some configs, so
+  # strip those before validating. Anything still unparseable is real breakage.
   bad=0
   while IFS= read -r f; do
-    jq -e . "$f" >/dev/null 2>&1 || { bad=$((bad+1)); printf "       invalid JSON: %s\n" "$f"; }
+    sed 's|^[[:space:]]*//.*||' "$f" | jq -e . >/dev/null 2>&1 \
+      || { bad=$((bad+1)); printf "       invalid JSON: %s\n" "$f"; }
   done < <(git ls-files '*.json' '*.json.example')
   count_is "all tracked JSON parses" 0 "$bad"
 else
@@ -294,6 +297,29 @@ if [ -L "$HOME/.omp/agent/AGENTS.md" ]; then
   check "ponytail submodule populated" test -f opencode/ponytail/.claude-plugin/marketplace.json
 else
   sk "install.sh has not run yet (no ~/.omp/agent symlinks)"
+fi
+
+# ---------------------------------------------------------------------------
+group "G9. CONFIGURED APPS ARE ACTUALLY INSTALLED"
+# ---------------------------------------------------------------------------
+# Every app this repo configures should exist on the machine, otherwise the
+# symlinks are inert. Checked against PATH plus the two user-local bin dirs
+# that omp (bun) and herdr/serena (~/.local/bin) install into.
+have() { command -v "$1" >/dev/null 2>&1 || [ -x "$HOME/.local/bin/$1" ] || [ -x "$HOME/.bun/bin/$1" ]; }
+for app in nvim tmux kitty starship opencode cursor claude omp herdr jq node envsubst git; do
+  check "installed: $app" have "$app"
+done
+# MCP backends are separate binaries the configs invoke by name.
+for b in serena codebase-memory-mcp agentmemory-mcp uvx; do
+  check "MCP backend installed: $b" have "$b"
+done
+# codegraph is referenced by every mcp.json and by omp/AGENTS.md, but no public
+# package provides it — the npm and PyPI names are unrelated projects. Treat as
+# a known gap so the suite stays honest instead of silently green.
+if have codegraph; then
+  ok "MCP backend installed: codegraph"
+else
+  sk "codegraph not installed — no public package provides it (see README)"
 fi
 
 # ---------------------------------------------------------------------------
