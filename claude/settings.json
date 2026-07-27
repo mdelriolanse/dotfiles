@@ -2,23 +2,16 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
-  "model": "sonnet",
+  "model": "opus",
   "enabledPlugins": {
     "ponytail@ponytail": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
-    "claude-hud@claude-hud": true
+    "rust-analyzer-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
       "source": {
         "source": "directory",
         "path": "~/dotfiles/opencode/ponytail"
-      }
-    },
-    "claude-hud": {
-      "source": {
-        "source": "directory",
-        "path": "~/dotfiles/opencode/claude-hud"
       }
     }
   },
