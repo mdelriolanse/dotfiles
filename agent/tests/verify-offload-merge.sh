@@ -96,8 +96,24 @@ for h in claude opencode; do
     no "skill set parity: omp != $h ($(diff <(ls omp/skills|sort) <(ls "$h/skills"|sort) | grep -cE '^[<>]') differing)"
   fi
 done
-# 21 shipped by the remote + master's env-setup, kept per plan T3.4
-count_is "skills-cursor count"   22 "$(ls -A cursor/dot-cursor/skills-cursor | wc -l)"
+# Cursor-specific skills only. deep-review and issue-to-docs were removed from
+# here: Cursor reserves ~/.cursor/skills-cursor for its own built-ins and prunes
+# the rest, and both are served from ~/.cursor/skills instead.
+count_is "skills-cursor count"   20 "$(ls -A cursor/dot-cursor/skills-cursor | wc -l)"
+for s in deep-review issue-to-docs best-of-n bg-subagent resolve-review second-opinion; do
+  refute "family skill not in Cursor's reserved dir: $s" test -e "cursor/dot-cursor/skills-cursor/$s"
+done
+
+# Cursor override layer: skills whose instructions name harness machinery ship a
+# Cursor copy that beats the opencode one, which would otherwise tell the agent
+# it is running in OpenCode.
+for s in best-of-n bg-subagent deep-review resolve-review second-opinion; do
+  check "cursor override exists: $s" test -f "cursor/dot-cursor/skills/$s/SKILL.md"
+  check "cursor override maps the harness: $s" grep -q '^## Cursor harness' "cursor/dot-cursor/skills/$s/SKILL.md"
+  refute "cursor override drops opencode wording: $s" grep -q 'runs in OpenCode' "cursor/dot-cursor/skills/$s/SKILL.md"
+done
+check "link script overlays the cursor tree" grep -q 'link_tree "\$CURSOR_SKILLS"' opencode/scripts/link-cursor-skills.sh
+refute "link script never targets the reserved dir" grep -q 'DEST=.*skills-cursor' opencode/scripts/link-cursor-skills.sh
 count_is "cursor rules/*.mdc"    15 "$(ls cursor/dot-cursor/rules/*.mdc 2>/dev/null | wc -l)"
 count_is "omp ponytail commands"  5 "$(ls omp/commands/ponytail*.md 2>/dev/null | wc -l)"
 
@@ -303,7 +319,17 @@ if [ -L "$HOME/.omp/agent/AGENTS.md" ]; then
   done
   refute "~/.config/herdr is NOT a symlink" test -L "$HOME/.config/herdr"
   count_is "no dangling skill symlinks" 0 \
-    "$(find -L "$HOME/.claude/skills" "$HOME/.cursor/skills-cursor" "$HOME/.omp/agent" -type l 2>/dev/null | wc -l)"
+    "$(find -L "$HOME/.claude/skills" "$HOME/.cursor/skills" "$HOME/.cursor/skills-cursor" "$HOME/.omp/agent" -type l 2>/dev/null | wc -l)"
+  # Cursor sees the whole skill family, with the 5 adapted ones overridden.
+  if diff -q <(ls -A opencode/skills | sort) <(ls -A "$HOME/.cursor/skills" | sort) >/dev/null 2>&1; then
+    ok "~/.cursor/skills carries the full skill family"
+  else
+    no "~/.cursor/skills is missing family skills (run link-cursor-skills.sh)"
+  fi
+  for s in best-of-n bg-subagent deep-review resolve-review second-opinion; do
+    check "~/.cursor/skills/$s resolves to the cursor override" \
+      [ "$(readlink -f "$HOME/.cursor/skills/$s")" = "$REPO_DIR/cursor/dot-cursor/skills/$s" ]
+  done
   check "ponytail submodule populated" test -f opencode/ponytail/.claude-plugin/marketplace.json
 else
   sk "install.sh has not run yet (no ~/.omp/agent symlinks)"
