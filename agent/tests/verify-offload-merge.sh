@@ -84,16 +84,16 @@ done
 refute "opencode/opencode.jsonc removed" test -e opencode/opencode.jsonc
 refute "nvim/nvim/ nested duplicate removed" test -e nvim/nvim
 
-count_is "claude/skills count"   39 "$(ls -A claude/skills | wc -l)"
-count_is "omp/skills count"      39 "$(ls -A omp/skills | wc -l)"
-count_is "opencode/skills count" 39 "$(ls -A opencode/skills | wc -l)"
+count_is "claude/skills count"   40 "$(ls -A claude/skills | wc -l)"
+count_is "omp/skills count"      44 "$(ls -A omp/skills | wc -l)"
+count_is "opencode/skills count" 40 "$(ls -A opencode/skills | wc -l)"
 # claude, omp and opencode carry the same skill family; drift means a skill was
 # added to one harness and never ported to the others.
 for h in claude opencode; do
-  if diff -q <(ls omp/skills | sort) <(ls "$h/skills" | sort) >/dev/null 2>&1; then
+  if diff -q <(ls -A omp/skills | grep -v '^ponytail-' | sort) <(ls -A "$h/skills" | sort) >/dev/null 2>&1; then
     ok "skill set parity: omp == $h"
   else
-    no "skill set parity: omp != $h ($(diff <(ls omp/skills|sort) <(ls "$h/skills"|sort) | grep -cE '^[<>]') differing)"
+    no "skill set parity: omp != $h ($(diff <(ls -A omp/skills|grep -v '^ponytail-'|sort) <(ls -A "$h/skills"|sort) | grep -cE '^[<>]') differing)"
   fi
 done
 # Cursor-specific skills only. deep-review and issue-to-docs were removed from
@@ -107,12 +107,12 @@ done
 # Cursor override layer: skills whose instructions name harness machinery ship a
 # Cursor copy that beats the opencode one, which would otherwise tell the agent
 # it is running in OpenCode.
-for s in adamsreview best-of-n bg-subagent deep-review resolve-review second-opinion skill-catalyst tdd; do
+for s in adamsreview best-of-n bg-subagent deep-review dev-graph resolve-review second-opinion skill-catalyst tdd; do
   check "cursor override exists: $s" test -f "cursor/dot-cursor/skills/$s/SKILL.md"
   check "cursor override maps the harness: $s" grep -q '^## Cursor harness' "cursor/dot-cursor/skills/$s/SKILL.md"
   refute "cursor override drops opencode wording: $s" grep -q 'runs in OpenCode' "cursor/dot-cursor/skills/$s/SKILL.md"
 done
-for s in adamsreview tdd skill-catalyst; do
+for s in adamsreview tdd skill-catalyst dev-graph; do
   check "opencode harness section: $s" grep -q '^## opencode harness' "opencode/skills/$s/SKILL.md"
   check "omp harness section: $s"      grep -q '^## omp harness'      "omp/skills/$s/SKILL.md"
   refute "claude copy is the baseline: $s" grep -q '^## .* harness'   "claude/skills/$s/SKILL.md"
@@ -332,7 +332,7 @@ if [ -L "$HOME/.omp/agent/AGENTS.md" ]; then
   else
     no "~/.cursor/skills is missing family skills (run link-cursor-skills.sh)"
   fi
-  for s in adamsreview best-of-n bg-subagent deep-review resolve-review second-opinion skill-catalyst tdd; do
+  for s in adamsreview best-of-n bg-subagent deep-review dev-graph resolve-review second-opinion skill-catalyst tdd; do
     check "~/.cursor/skills/$s resolves to the cursor override" \
       [ "$(readlink -f "$HOME/.cursor/skills/$s")" = "$REPO_DIR/cursor/dot-cursor/skills/$s" ]
   done
