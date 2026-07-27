@@ -7,7 +7,6 @@ secrets/secrets.env
 # Generated from the .example + secrets.env via envsubst (see install.sh).
 cursor/dot-cursor/mcp.json
 claude/mcp.json
-kimi/config.toml
 # Hermes real config/.env hold live keys; only the *.example templates are tracked.
 # install.sh materializes these from the examples + secrets.env, then symlinks them.
 hermes/config.yaml
