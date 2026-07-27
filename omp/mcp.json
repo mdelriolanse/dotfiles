@@ -30,11 +30,6 @@
       "command": "codebase-memory-mcp",
       "enabled": true
     },
-    "codegraph": {
-      "command": "codegraph",
-      "args": ["serve", "--mcp"],
-      "enabled": true
-    },
     "serena": {
       "command": "serena",
       "args": ["start-mcp-server", "--context", "ide", "--project-from-cwd"],

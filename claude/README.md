@@ -17,7 +17,7 @@ symlinked as a whole — it holds runtime state — so only individual items are
 - `CLAUDE.md` → symlinked to `~/.claude/CLAUDE.md`. Concatenation of
   `opencode/AGENTS.md` + `opencode/instructions/*.md` at migration time.
 - `mcp.json.example` → template for the 8 MCP servers (context7, agentmemory,
-  fetch, github, codebase-memory, codegraph, serena, semble), converted to
+  fetch, github, codebase-memory, serena, semble), converted to
   Claude's schema. Secrets are `${VAR}` placeholders.
 
 ## What `install.sh` derives (not committed)

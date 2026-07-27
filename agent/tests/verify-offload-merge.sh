@@ -99,7 +99,7 @@ done
 # ---------------------------------------------------------------------------
 group "G4. HARNESS PRECEDENCE (remote content won)"
 # ---------------------------------------------------------------------------
-for s in serena codegraph codebase-memory semble; do
+for s in serena codebase-memory semble; do
   check "cursor mcp.json.example has $s" grep -q "$s" cursor/dot-cursor/mcp.json.example
 done
 for s in composio firecrawl browserbase excalidraw quiverai; do
@@ -214,7 +214,8 @@ for f in cursor/dot-cursor/mcp.json.example claude/mcp.json.example omp/mcp.json
   refute "no graphify MCP entry in $f" grep -q 'graphify' "$f"
 done
 check "omp/AGENTS.md keeps the graphify runbook" grep -q 'GRAPHIFY_START' omp/AGENTS.md
-count_is "USER_RULES.md is the rewritten version" 592 "$(wc -l < cursor/dot-cursor/USER_RULES.md)"
+# 592 as the remote shipped it, minus the 32 lines of codegraph guidance purged.
+count_is "USER_RULES.md is the rewritten version" 560 "$(wc -l < cursor/dot-cursor/USER_RULES.md)"
 
 # ---------------------------------------------------------------------------
 group "G6. NVIM RESOLUTION (C4 hybrid / C5)"
@@ -313,14 +314,13 @@ done
 for b in serena codebase-memory-mcp agentmemory-mcp uvx; do
   check "MCP backend installed: $b" have "$b"
 done
-# codegraph is referenced by every mcp.json and by omp/AGENTS.md, but no public
-# package provides it — the npm and PyPI names are unrelated projects. Treat as
-# a known gap so the suite stays honest instead of silently green.
-if have codegraph; then
-  ok "MCP backend installed: codegraph"
-else
-  sk "codegraph not installed — no public package provides it (see README)"
-fi
+# codegraph was purged: no public package provides it, so a registered server
+# could never connect. Guard against it creeping back into any config or doc.
+for f in claude/mcp.json.example omp/mcp.json cursor/dot-cursor/mcp.json.example opencode/opencode.json; do
+  refute "no codegraph server in $f" grep -q 'codegraph' "$f"
+done
+count_is "no codegraph references anywhere" 0 \
+  "$(git grep -lic 'codegraph' -- . ':(exclude)agent/' ':(exclude)README.md' | wc -l)"
 
 # ---------------------------------------------------------------------------
 printf "\n${c_hd}RESULT${c_off}  ${c_ok}%d passed${c_off}  ${c_no}%d failed${c_off}  ${c_sk}%d skipped${c_off}\n" \

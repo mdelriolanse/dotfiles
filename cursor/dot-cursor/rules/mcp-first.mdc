@@ -9,10 +9,9 @@ alwaysApply: true
 
 Before any grep/glob/Read for code discovery, you MUST call one of these:
 
-1. **codegraph_explore** — for "how does X work", finding symbols, tracing flows
-2. **semble_search** — for natural-language code search ("where is auth handled?")
-3. **Serena find_symbol / find_referencing_symbols** — for symbol lookup and references
-4. **codebase-memory search_graph / trace_path** — for structured graph queries
+1. **semble_search** — for natural-language code search ("where is auth handled?"), "how does X work", tracing flows
+2. **Serena find_symbol / find_referencing_symbols** — for symbol lookup and references
+3. **codebase-memory search_graph / trace_path** — for structured graph queries
 
 ## RULE
 
@@ -25,7 +24,7 @@ Before any grep/glob/Read for code discovery, you MUST call one of these:
 
 | Task | Tool |
 |---|---|
-| "How does X work?" | codegraph_explore |
+| "How does X work?" | semble_search |
 | "Where is X done?" | semble_search |
 | "Find class/function" | Serena find_symbol |
 | "Who calls this?" | Serena find_referencing_symbols |

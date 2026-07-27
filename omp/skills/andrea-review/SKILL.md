@@ -301,7 +301,7 @@ paradigm that fires on the diff):
       "claim": "<what breaks, one line>",
       "severity": "BLOCKER|MAJOR|MINOR|NIT",
       "suggested_fix": "<patch shape>",
-      "backend_used": "<codegraph|semble|serena|codebase-memory|graphify|agentmemory> + query",
+      "backend_used": "<semble|serena|codebase-memory|graphify|agentmemory> + query",
       "anchor_verified": "yes|no|stale",
       "anchor_evidence": "<the byte-confirmed text at file:line>",
       "prd_contradiction": "true|false",
@@ -328,7 +328,6 @@ Name the backend and the query used.
 
 | Backend | When | Canonical query | Worktree caveat |
 |---|---|---|---|
-| **CodeGraph** (CLI) | Verbatim source + call paths | `codegraph explore -p <repo> "<q>"` | Main-branch index may lack feature-branch code; use `read`/`semble` for worktree symbols (CR-3) |
 | **Semble** (MCP) | Vague natural-language lookup | `semble_search "<desc>"` or `semble_find_related` | For worktree code, `semble_search repo=<worktree>` |
 | **Serena** (MCP) | Symbol confirm, references, rename | `find_symbol` (scope with `relative_path`), `find_referencing_symbols` | Unscoped `find_symbol` on a large tree may time out |
 | **codebase-memory** (MCP) | Multi-hop chains, cross-service HTTP, Cypher, complexity | `search_graph`, `trace_path` (calls/data_flow/**cross_service**), `query_graph` | Not every repo is indexed; check `list_projects`. `cross_service` is the only real cross-repo edge source |

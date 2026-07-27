@@ -143,11 +143,13 @@ and are consumed two ways:
   so symlink it there if npm puts it elsewhere. `agentmemory` additionally
   needs its server on `AGENTMEMORY_URL` (default `http://localhost:3111`).
 
-  **`codegraph` is not publicly installable.** Every `mcp.json` registers
-  `codegraph serve --mcp` and `omp/AGENTS.md` documents it heavily, but the
-  `codegraph` names on npm and PyPI are unrelated projects — the npm one is an
-  empty 2024 placeholder with no `bin`. Do not install either. Until the real
-  tool is available, that one server stays disconnected and the CodeGraph
-  guidance in `AGENTS.md` / `CLAUDE.md` does not apply; use Semble or Serena.
+  **`codegraph` has been removed.** It used to be registered in every
+  `mcp.json` and documented as the primary code-discovery backend, but no
+  public package provides it — the `codegraph` names on npm and PyPI are
+  unrelated projects, the npm one being an empty 2024 placeholder with no
+  `bin`. Rather than ship a server that could never connect and guidance that
+  told agents to reach for it first, both are gone. Semble covers the
+  natural-language queries it used to answer. Do not re-add it from npm or
+  PyPI; those are not the same tool.
 
 Verify the whole setup with `./agent/tests/verify-offload-merge.sh`.

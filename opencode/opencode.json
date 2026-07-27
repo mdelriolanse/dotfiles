@@ -72,15 +72,6 @@
       ],
       "enabled": true
     },
-    "codegraph": {
-      "type": "local",
-      "command": [
-        "codegraph",
-        "serve",
-        "--mcp"
-      ],
-      "enabled": true
-    },
     "serena": {
       "type": "local",
       "command": [

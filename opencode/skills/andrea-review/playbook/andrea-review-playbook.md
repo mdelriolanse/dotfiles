@@ -89,7 +89,7 @@ double-claiming, lost updates, or count races?
   re-read, re-assert, and re-write — and must cap the loop.
 
 **Backend grounding:** trace the claim path via
-`codegraph explore -p <repo> "claim FOR UPDATE SKIP LOCKED path"`; confirm
+`semble_search "claim FOR UPDATE SKIP LOCKED path"`; confirm
 the xact-lock is inside `tx.commit()` by reading the call site; for the
 optimistic guard, `semble_search "expected_version conflict retry"` and
 Serena `find_referencing_symbols` on the update to check every caller
@@ -147,7 +147,7 @@ a new public surface enforce a limit, and is the limit fair across tenants?
   with no retry-after, or a 200 with a queue-full body, misleads the
   client.
 
-**Backend grounding:** `codegraph explore -p <repo> "resolve before
+**Backend grounding:** `semble_search "resolve before
 semaphore concurrency gate"` to confirm resolve precedes `try_acquire`;
 `semble_search "queue depth cap 429 retry-after"` to locate the limiter.
 
@@ -201,7 +201,7 @@ lifecycle?
   not own is an IDOR; check ownership before delete/discard.
 
 **Backend grounding:** `semble_search "encryption SSE-S3 app crypto
-retention sweep"`; `codegraph explore -p <repo> "delete ownership check
+retention sweep"`; `semble_search "delete ownership check
 discard"`; `read` the storage ADR if one exists.
 
 **Failure modes:**
@@ -254,7 +254,7 @@ recoverability. Does the contract match what clients expect?
   window + constant-time compare. The security properties matter; the
   exact header naming is secondary as long as it's consistent.
 
-**Backend grounding:** `codegraph explore -p <repo> "webhook signature
+**Backend grounding:** `semble_search "webhook signature
 verify HMAC raw body constant time"`; `semble_search "total completed
 failed canceled"`; `read` the response serializer.
 
@@ -403,7 +403,6 @@ verification; the backend is the means.
 
 | Backend | When | Canonical query |
 |---|---|---|
-| CodeGraph (CLI) | Verbatim source + call paths | `codegraph explore -p <repo> "<q>"` |
 | Semble (MCP) | Vague natural-language lookup | `semble_search "<desc>"` / `semble_find_related` |
 | Serena (MCP) | Symbol confirm, references | `find_symbol` (scoped), `find_referencing_symbols` |
 | codebase-memory (MCP) | Multi-hop, cross-service, Cypher, complexity | `search_graph`, `trace_path`, `query_graph` |

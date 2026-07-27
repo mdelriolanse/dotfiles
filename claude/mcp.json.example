@@ -31,11 +31,6 @@
       "command": "${HOME}/.local/bin/codebase-memory-mcp",
       "args": []
     },
-    "codegraph": {
-      "type": "stdio",
-      "command": "codegraph",
-      "args": ["serve", "--mcp"]
-    },
     "serena": {
       "type": "stdio",
       "command": "serena",

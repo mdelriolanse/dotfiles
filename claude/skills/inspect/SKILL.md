@@ -1,7 +1,7 @@
 ---
 name: inspect
 description: Answer a question by read-only inspection — investigate as deeply as needed, change nothing, report back CONCISELY with a ponytail recommendation. Use when the user asks a question ("what do you think", "is X a problem", "how does Y work", "should we Z") and wants an answer, not edits. Triggers on "inspect", "read-only", "just tell me", "don't change anything", "what do you think".
-allowed-tools: Read, Grep, Glob, Bash, WebFetch, mcp__codegraph__codegraph_explore, mcp__semble__search, mcp__semble__find_related, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview, mcp__agentmemory__memory_recall, mcp__agentmemory__memory_smart_search
+allowed-tools: Read, Grep, Glob, Bash, WebFetch, mcp__semble__search, mcp__semble__find_related, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview, mcp__agentmemory__memory_recall, mcp__agentmemory__memory_smart_search
 metadata:
   author: <your-handle>
   domain: analysis

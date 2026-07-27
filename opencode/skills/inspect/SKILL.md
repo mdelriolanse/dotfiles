@@ -20,7 +20,7 @@ recommendation shaped by the `ponytail` skill.
 **Read-only. No exceptions.** No `Edit`, `Write`. No shell command that mutates
 state — no writes, installs, migrations, `git commit/push`, `docker`, service
 restarts, `psql` DDL/DML. Permitted: reading files, `grep`, code-intelligence
-queries (codegraph, semble, serena, codebase-memory), `SELECT` / `\d` / logs /
+queries (semble, serena, codebase-memory), `SELECT` / `\d` / logs /
 health checks, `git status/diff/log`, `gh` **read** calls, web fetches. If
 answering *seems* to require a change, describe the change — don't make it.
 
@@ -33,7 +33,7 @@ around it; touch nothing it depends on.
    no length cap: chase the call chain, read the PRD, check the schema, follow
    the git history. Verify claims against the source of truth (repo, PRD, code)
    rather than from memory — cite `file:line`. Use the MCP code-intelligence
-   tools (codegraph_explore, semble_search, serena find_symbol /
+   tools (semble_search, serena find_symbol /
    find_referencing_symbols, agentmemory recall / smart_search) before
    falling back to grep.
 2. **Distil.** A short answer is the *output* of thorough work, not a substitute

@@ -52,10 +52,9 @@ Count your sentences before sending. If >4 and user ASKED for nothing extra, cut
 
 Before any grep/glob/Read for code discovery, you MUST call one of these:
 
-1. **codegraph_explore** — for "how does X work", finding symbols, tracing flows
-2. **semble_search** — for natural-language code search ("where is auth handled?")
-3. **Serena find_symbol / find_referencing_symbols** — for symbol lookup and references
-4. **codebase-memory search_graph / trace_path** — for structured graph queries
+1. **semble_search** — for natural-language code search ("where is auth handled?"), "how does X work", tracing flows
+2. **Serena find_symbol / find_referencing_symbols** — for symbol lookup and references
+3. **codebase-memory search_graph / trace_path** — for structured graph queries
 
 ## RULE
 
@@ -68,7 +67,7 @@ Before any grep/glob/Read for code discovery, you MUST call one of these:
 
 | Task | Tool |
 |---|---|
-| "How does X work?" | codegraph_explore |
+| "How does X work?" | semble_search |
 | "Where is X done?" | semble_search |
 | "Find class/function" | Serena find_symbol |
 | "Who calls this?" | Serena find_referencing_symbols |
@@ -80,30 +79,15 @@ Before any grep/glob/Read for code discovery, you MUST call one of these:
 ---
 
 <!-- codebase-memory-mcp:start -->
-# Codebase Knowledge Graph — Four-Backend Policy
+# Codebase Knowledge Graph — Three-Backend Policy
 
-This project has FOUR complementary code-intelligence backends. Pick the right one for the task.
+This project has THREE complementary code-intelligence backends. Pick the right one for the task.
 **ALWAYS prefer these MCP backends over grep/glob/file-search for code discovery.**
 These tools are purpose-built to understand code structure, relationships, and semantics.
 Resort to grep/glob ONLY when every backend fails or for non-code files.
 
-## 1. CodeGraph (default — reach for this first for "How does X work?" questions)
 
-When a `.codegraph/` index exists in a repo, use CodeGraph as the **primary** code-exploration tool.
-
-- **One tool does it all**: `codegraph_explore` — ask a natural-language question, get back verbatim line-numbered source + call paths (including dynamic-dispatch: callbacks, React re-renders, JSX children)
-- **Best for**: "How does X work?", architecture questions, locating symbols, understanding flows, impact analysis
-- **Parser**: Tree-sitter AST (20+ languages)
-- **When to use**: ALMOST ALWAYS as the first code-discovery call. Usually zero file reads needed.
-- **Availability**: MCP tool + CLI (`codegraph explore "…"`)
-- **Setup**: Run `codegraph init` once per repo to build the `.codegraph/` index. Auto-syncs after.
-- **If missing index**: skip it, pick from the others below
-
-Examples:
-- `codegraph_explore` with query: "how does JWT auth flow work in this repo?"
-- `codegraph_explore` with symbols: `["createRouter", "middleware.ts"]` — get sources + paths between them
-
-## 2. Semble (semantic code search — reach for this for "find where X is done" queries)
+## 1. Semble (semantic code search — reach for this for "find where X is done" queries)
 
 When you need to **find code by natural-language description** or **find similar code** to a known location, use Semble. Semantic (embedding + BM25) search retrieves relevant code snippets using ~98% fewer tokens than grep+read. CPU-only, no API keys.
 
@@ -111,12 +95,11 @@ When you need to **find code by natural-language description** or **find similar
 - **Best for**:
   - "Where is authentication handled?", "how do we save models?" — vague natural-language queries where you don't know the exact symbol names
   - Finding related code at a specific line — "find code similar to this error handling pattern"
-  - Quick semantic lookup when CodeGraph hasn't been indexed yet
 - **Parser**: Tree-sitter chunking + Model2Vec embeddings + BM25 lexical matching
 - **When to use**: Before grep, when the query is descriptive or fuzzy. Also useful for finding patterns across languages or when you only have a partial description.
 - **Setup**: None. Indexes on first search, caches automatically, watches for file changes.
 
-## 3. Serena (symbol-level IDE operations — use when editing or refactoring)
+## 2. Serena (symbol-level IDE operations — use when editing or refactoring)
 
 When **refactoring code** or needing **language-server precision** (cross-file renames, safe deletes, diagnostics, type navigation), use Serena first.
 
@@ -132,7 +115,7 @@ When **refactoring code** or needing **language-server precision** (cross-file r
 - **When to use**: Whenever correctness across files matters. Serena prevents text-level errors that grep-based edits miss.
 - **Setup**: `serena init` (done once globally). Auto-activates the project from cwd — no per-repo setup needed.
 
-## 4. codebase-memory (specialised — use when CodeGraph + Semble + Serena are insufficient)
+## 3. codebase-memory (specialised — use when Semble + Serena are insufficient)
 
 Keep this as the **fallback / detail** backend for scenarios none of the others cover.
 
@@ -145,15 +128,13 @@ Keep this as the **fallback / detail** backend for scenarios none of the others 
   - Cross-repo intelligence mode (`index_repository` with `cross-repo-intelligence`)
   - Engineering metrics (bottleneck detection, dead-code analysis via graph queries)
 - **Parser**: LSP-style type-aware resolution
-- **When to use**: When CodeGraph returns nothing, or when the task specifically needs complexity props, ADRs, traces, or custom Cypher
+- **When to use**: When Semble and Serena return nothing, or when the task specifically needs complexity props, ADRs, traces, or custom Cypher
 
 ## Decision Flow
 
 ```
-Need to understand code / architecture / call chain?
-  → codegraph_explore first (if .codegraph/ index exists)
-
-Have a vague natural-language query ("where is auth done?") OR need similar code?
+Need to understand code / architecture / call chain, have a vague
+natural-language query ("where is auth done?"), or need similar code?
   → Semble first (semble_search / semble_find_related)
 
 Need to refactor, rename, delete, or edit symbols safely?
@@ -162,7 +143,7 @@ Need to refactor, rename, delete, or edit symbols safely?
 Need type errors / diagnostics / hover info?
   → Serena diagnostics tools
 
-No .codegraph/ index AND query is specific enough for symbol names?
+Query is specific enough for symbol names?
   → codebase-memory search_graph / trace_path
 
 Need loop-depth / complexity?
@@ -171,7 +152,7 @@ Need loop-depth / complexity?
 Need ADR / traces / cross-repo?
   → codebase-memory specific tool
 
-All four backends return nothing?
+All three backends return nothing?
   → grep / glob fallback (last resort)
 ```
 
@@ -180,23 +161,13 @@ All four backends return nothing?
 The following are the **only** legitimate reasons to use grep or glob instead of the MCP backends:
 - String literals, error messages, config values
 - Non-code files (Dockerfiles, shell scripts, configs, markdown, data files)
-- All four backends return insufficient results after a genuine attempt
+- All three backends return insufficient results after a genuine attempt
 
 **Rule**: If you are grepping for functions, classes, imports, call chains, or architecture, stop. Use the appropriate MCP backend. Grep is ~10× more token-expensive and produces noisier results.
 
 Plan reports: follow `skills/plan/` format.
 <!-- codebase-memory-mcp:end -->
 
-<!-- CODEGRAPH_START -->
-## CodeGraph
-
-Installed and ready. In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
-
-- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
-- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
-
-If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
-<!-- CODEGRAPH_END -->
 
 ---
 
@@ -257,21 +228,18 @@ tiers before descending.
 
 1. **Docs markdown files** — `CONTEXT.md`, ADRs in `docs/adr/`, project READMEs, and any
    markdown documentation in the repo. Use glob + read, not grep, to locate and consume these.
-2. **CodeGraph MCP** — `codegraph_explore` (when a `.codegraph/` index exists). Structural
-   code queries with zero brute-force scanning. One call typically answers the whole question.
-   See `AGENTS.md` for full decision flow between all backends.
-3. **Semble MCP** — `semble_search` and `semble_find_related`. Semantic (embedding + BM25)
+2. **Semble MCP** — `semble_search` and `semble_find_related`. Semantic (embedding + BM25)
    code search for vague natural-language queries or finding similar code at a location.
    ~98% fewer tokens than grep+read. Use before grep when the query is descriptive or fuzzy.
-4. **Serena MCP** — `find_declaration`, `find_referencing_symbols`, `get_symbols_overview`.
+3. **Serena MCP** — `find_declaration`, `find_referencing_symbols`, `get_symbols_overview`.
    Symbol-level navigation and diagnostics. Use when editing/refactoring or needing language-server
    precision. See `AGENTS.md` for when to prefer Serena over the others.
-5. **codebase-memory MCP** — `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`,
-   `get_architecture`. Use when CodeGraph is unavailable and the task needs complexity metrics,
+4. **codebase-memory MCP** — `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`,
+   `get_architecture`. Use when the task needs complexity metrics,
    ADRs, runtime traces, or custom Cypher queries.
-6. **Agent Memory MCP** — `memory_smart_search` (preferred) then `memory_recall`. Past sessions'
+5. **Agent Memory MCP** — `memory_smart_search` (preferred) then `memory_recall`. Past sessions'
    discoveries, decisions, patterns, and lessons.
-7. **Grep / glob / file search** — Fallback ONLY when tiers 1–6 yield insufficient context
+6. **Grep / glob / file search** — Fallback ONLY when tiers 1–5 yield insufficient context
    or when the question is strictly file-level (string literals, config values, non-code files).
    These are the least token-efficient methods; never start here.
 
