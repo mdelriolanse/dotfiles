@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "./hooks/ponytail-session-start"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "./hooks/ponytail-before-submit",
+        "matcher": "UserPromptSubmit"
+      }
+    ]
+  }
+}

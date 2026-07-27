@@ -1,0 +1,66 @@
+# Commit Message Style — USE EXACTLY THIS FORMAT
+
+When committing, write commit messages that match the style of the project's `main` branch.
+
+## Title (single line)
+
+```
+type(scope): imperative description up to ~80 chars (#PR)
+```
+
+- `type` — `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`
+- `scope` — the subsystem / page / module (e.g. `usage`, `api-keys`, `auth`, `settings`, `billing`)
+- **Imperative mood**: "make", "fix", "add", "remove", "rename" — NOT "made", "fixed", "adding"
+- **Specific, not vague**: "make admin dashboard breakdowns exact and period-driven" — NOT "update dashboard"
+- Include PR number in parens if known: `(#42)`
+- One blank line after title.
+
+## Body
+
+```
+The #123 page-wide date selector drove the headline chart but not the
+breakdown tiles, so those stayed frozen on the newest raw rows
+regardless of the selected period (Alex, 1 Feb).
+
+Source the breakdowns from the server-side GROUP BY (/v1/stats/summary),
+which sums the whole window with no row cap:
+
+- Donut chart uses group_by=category. Cross-tenant breakdown was
+  hardcoded zeros (#45); it now shows real aggregated values.
+- Top items by volume uses group_by=item_id (also the exact active count).
+- Breakdown by source uses group_by=workspace.
+
+Headline totals + daily series stay rollup-sourced. Breakdowns fall back
+to the raw aggregation if the grouped call fails. The 12-month window
+clamps the breakdown start to 365 days (the summary endpoint caps at
+366), so the 12m tiles can trail the rollup headline by a few days at
+the far edge.
+
+Breakdowns tab clarity: the value columns are now period-scoped while the
+cap column is monthly, so the tab states the split in plain text. A
+"window" chip scopes the period columns, the two monthly columns carry
+"the cap" / "this month" sub-headers (cap used gets an info tooltip),
+the summary badges read "Total monthly cap" / "Value this window" /
+"over monthly cap", over-cap rows show a warning icon (not colour alone),
+and "Current Value" is renamed "Value".
+```
+- **Lead paragraph**: why the change exists, what was broken. Reference related PRs/issues (`#123`). Name requester if they asked.
+- **Blank line** between every paragraph.
+- **Blank line before bullets**. Bullet items explain one change each. Wrap at ~72 chars with a 2-space indent for continuation lines.
+- **Cross-reference issue numbers** in bullets: `was hardcoded zeros (#45); it now shows...`
+- **Edge cases / fallbacks**: state non-obvious consequences after a blank line.
+- **UI/UX specifics**: exact copy, badge names, tooltip text, accessibility notes.
+
+## What NOT to do
+
+- `[Scope] Fix: description` — no bracket prefixes. Conventional commit ONLY.
+- `Updated things` / `Fixed bug` — vague. Name the file, column, feature, endpoint.
+- Bullet-less walls of text — group related changes into bullet groups.
+- No body for non-trivial commits — if the diff is >20 lines or touches >2 features, write a body.
+
+## Self-check before committing
+
+1. Is the title in `type(scope): imperative verb...` format?
+2. Does the body explain WHY, not just WHAT?
+3. Are bullets present for multi-feature changes?
+4. Did I name exact files/endpoints/columns the user will see?

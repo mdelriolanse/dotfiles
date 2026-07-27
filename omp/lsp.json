@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/lsp-schema.json",
+  "servers": {
+    "pyright": {
+      "command": "pyright-langserver",
+      "args": ["--stdio"],
+      "fileTypes": [".py"],
+      "rootMarkers": [".git"]
+    },
+    "clangd": {
+      "command": "clangd",
+      "fileTypes": [".c", ".h", ".cpp", ".cc", ".cxx", ".hpp"],
+      "rootMarkers": [".git"]
+    },
+    "typescript-language-server": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"],
+      "fileTypes": [".ts", ".tsx"],
+      "rootMarkers": [".git"]
+    },
+    "rust-analyzer": {
+      "command": "rust-analyzer",
+      "fileTypes": [".rs"],
+      "rootMarkers": [".git"]
+    }
+  }
+}

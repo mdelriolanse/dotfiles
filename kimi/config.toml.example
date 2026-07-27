@@ -1,0 +1,47 @@
+# ~/dotfiles/kimi/config.toml.example
+#
+# TEMPLATE — real kimi/config.toml is generated from this by install.sh via
+# envsubst (see section 1c). config.toml is gitignored and NEVER committed;
+# it holds the materialized <PROVIDER>_API_KEY. Kimi-code reads api_key as a
+# literal from the file (no shell-env expansion), so we materialize here
+# rather than referencing the env var inline — same pattern as Cursor's
+# mcp.json.example -> mcp.json.
+#
+#   cp kimi/config.toml.example kimi/config.toml   # then fill, OR run install.sh
+
+default_model = "deepseek-v4-pro"
+default_thinking = true
+default_permission_mode = "yolo"
+merge_all_available_skills = true
+extra_skill_dirs = [
+  "~/dotfiles/kimi/skills",
+  "~/dotfiles/kimi/instructions",
+]
+
+[providers.<provider>]
+type = "openai"
+base_url = "https://<provider-host>/v1"
+api_key = "${<PROVIDER>_API_KEY}"
+
+[models."deepseek-v4-pro"]
+provider = "<provider>"
+model = "deepseek-v4-pro"
+max_context_size = 1048576
+max_output_size = 131072
+capabilities = [ "thinking" ]
+
+[models."kimi-k2.6"]
+provider = "<provider>"
+model = "nvidia-kimi-k2-6-nvfp4"
+max_context_size = 262144
+max_output_size = 32768
+
+[thinking]
+effort = "high"
+
+[loop_control]
+reserved_context_size = 50000
+
+[background]
+max_running_tasks = 4
+keep_alive_on_exit = false

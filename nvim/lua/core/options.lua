@@ -1,5 +1,3 @@
-vim.g.have_nerd_font = true
-
 vim.o.clipboard = 'unnamedplus'
 
 vim.o.number = true

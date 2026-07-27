@@ -47,6 +47,7 @@ info "Dotfiles repo: $REPO_DIR"
 # ---------------------------------------------------------------------------
 # 1. Symlinks  (whole dirs for nvim/opencode; individual items for Cursor)
 # ---------------------------------------------------------------------------
+link "$HOME/.tmux.conf"                           "$REPO_DIR/tmux/tmux.conf"
 link "$HOME/.config/nvim"                          "$REPO_DIR/nvim"
 link "$HOME/.config/opencode"                      "$REPO_DIR/opencode"
 link "$HOME/.config/starship.toml"                 "$REPO_DIR/starship/starship.toml"
@@ -60,6 +61,14 @@ link "$HOME/.cursor/argv.json"                     "$REPO_DIR/cursor/dot-cursor/
 link "$HOME/.cursor/cli-config.json"               "$REPO_DIR/cursor/dot-cursor/cli-config.json"
 link "$HOME/.cursor/USER_RULES.md"                 "$REPO_DIR/cursor/dot-cursor/USER_RULES.md"
 link "$HOME/.cursor/skills-cursor"                 "$REPO_DIR/cursor/dot-cursor/skills-cursor"
+# Claude Code: symlink individual items only — ~/.claude is a real dir holding
+# runtime state, so we must never replace the whole directory. Claude Code has its
+# OWN committed config under claude/ (skills copied from opencode, CLAUDE.md, and
+# mcp.json.example). settings.json, skills/, and CLAUDE.md are pure symlinks here;
+# MCP registration + the ponytail plugin need the claude CLI and live in section 6.
+link "$HOME/.claude/settings.json"                 "$REPO_DIR/claude/settings.json"
+link "$HOME/.claude/skills"                        "$REPO_DIR/claude/skills"
+link "$HOME/.claude/CLAUDE.md"                      "$REPO_DIR/claude/CLAUDE.md"
 # NOTE: ~/.cursor/commands is NOT centralized. opencode/skills is the single
 # source of truth; those skills are deployed to ~/.cursor/skills by
 # link-cursor-skills.sh (step 5). A skill behaves as a /slash command in Cursor
@@ -137,6 +146,27 @@ fi
 link "$HOME/.cursor/mcp.json" "$MCP_REAL"
 
 # ---------------------------------------------------------------------------
+# 4b. Kimi real config.toml (gitignored) — generate from example + secrets.
+#     kimi-code reads api_key as a literal (no shell-env expansion), so we
+#     materialize ${PROVIDER_API_KEY} into kimi/config.toml via envsubst,
+#     mirroring the Cursor mcp.json pattern. ~/.kimi-code/config.toml is a
+#     pre-existing manual symlink into this repo; install.sh does not manage
+#     that link, only regenerates the target. Never overwrites an existing
+#     config.toml.
+# ---------------------------------------------------------------------------
+KIMI_REAL="$REPO_DIR/kimi/config.toml"
+KIMI_EX="$REPO_DIR/kimi/config.toml.example"
+if [ ! -e "$KIMI_REAL" ]; then
+  if command -v envsubst >/dev/null 2>&1 \
+     && envsubst '$PROVIDER_API_KEY' < "$KIMI_EX" > "$KIMI_REAL" 2>/dev/null; then
+    ok "generated kimi/config.toml"
+  else
+    cp "$KIMI_EX" "$KIMI_REAL" 2>/dev/null || true
+    warn "wrote kimi/config.toml stub from example (no envsubst, or substitution failed) — fill secrets.env + re-run."
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # 5. Regenerate derived Cursor skills (symlinks into opencode/skills)
 # ---------------------------------------------------------------------------
 if [ -x "$REPO_DIR/opencode/scripts/link-cursor-skills.sh" ]; then
@@ -188,7 +218,104 @@ if [ -d "$REPO_DIR/hermes" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 6. Optional: reinstall Cursor extensions from snapshot
+# 6. Claude Code — its own committed config lives under claude/ (skills copied
+#    from opencode, CLAUDE.md, mcp.json.example). skills/ + CLAUDE.md + settings
+#    are already symlinked in section 1. This section handles the two things that
+#    need the `claude` CLI: MCP registration (user scope can't be symlinked) and
+#    the ponytail plugin. Idempotent; no-ops cleanly when the CLI is absent.
+# ---------------------------------------------------------------------------
+if command -v claude >/dev/null 2>&1; then
+  info "Configuring Claude Code ..."
+
+  # 6.1 MCP: materialize claude/mcp.json from mcp.json.example (real secret values
+  #     substituted, gitignored — same pattern as Cursor in step 4), then register
+  #     each server into Claude's user scope. Claude keeps user-scope MCP inside
+  #     ~/.claude.json (heavy runtime state), so this is registered via the CLI
+  #     rather than symlinked. remove-then-add keeps it idempotent; a "command"
+  #     key -> stdio add-json, a bare {url} -> http transport.
+  CLAUDE_MCP_REAL="$REPO_DIR/claude/mcp.json"
+  CLAUDE_MCP_EX="$REPO_DIR/claude/mcp.json.example"
+  if [ ! -e "$CLAUDE_MCP_REAL" ] && [ -f "$CLAUDE_MCP_EX" ]; then
+    if command -v envsubst >/dev/null 2>&1 \
+       && envsubst '$GITHUB_TOKEN' < "$CLAUDE_MCP_EX" > "$CLAUDE_MCP_REAL" 2>/dev/null; then
+      ok "generated claude/mcp.json (empty secrets written as stubs)"
+    else
+      cp "$CLAUDE_MCP_EX" "$CLAUDE_MCP_REAL" 2>/dev/null || true
+      warn "wrote claude/mcp.json stub from example (no envsubst) — fill secrets.env + re-run."
+    fi
+  fi
+  if command -v jq >/dev/null 2>&1 && [ -f "$CLAUDE_MCP_REAL" ]; then
+    while IFS= read -r name; do
+      [ -n "$name" ] || continue
+      srv="$(jq -c --arg n "$name" '.mcpServers[$n]' "$CLAUDE_MCP_REAL")"
+      claude mcp remove "$name" -s user >/dev/null 2>&1 || true
+      if printf '%s' "$srv" | jq -e 'has("command")' >/dev/null 2>&1; then
+        claude mcp add-json "$name" "$srv" -s user >/dev/null 2>&1 \
+          && ok "claude MCP: $name" || warn "claude MCP: failed to add $name"
+      else
+        url="$(printf '%s' "$srv" | jq -r '.url // empty')"
+        [ -n "$url" ] && { claude mcp add --transport http "$name" "$url" -s user >/dev/null 2>&1 \
+          && ok "claude MCP: $name (http)" || warn "claude MCP: failed to add $name"; }
+      fi
+    done < <(jq -r '.mcpServers | keys[]' "$CLAUDE_MCP_REAL" 2>/dev/null)
+  else
+    warn "claude MCP skipped (need jq + claude/mcp.json)"
+  fi
+
+  # 6.2 ponytail: install its native Claude Code plugin (commands, hooks, modes).
+  #     `marketplace add` wants the dir CONTAINING .claude-plugin/marketplace.json
+  #     (the repo root), not the .claude-plugin dir itself.
+  PONY_ROOT="$REPO_DIR/opencode/ponytail"
+  if [ -f "$PONY_ROOT/.claude-plugin/marketplace.json" ]; then
+    claude plugin marketplace add "$PONY_ROOT" >/dev/null 2>&1 || true
+    if claude plugin list 2>/dev/null | grep -qi "ponytail"; then
+      ok "ponytail Claude Code plugin present"
+    else
+      claude plugin install ponytail@ponytail >/dev/null 2>&1 \
+        && ok "installed ponytail Claude Code plugin" \
+        || warn "ponytail plugin install failed (non-fatal)"
+    fi
+  else
+    warn "ponytail plugin skipped — $PONY_ROOT/.claude-plugin/marketplace.json missing (init the git submodule?)"
+  fi
+else
+  info "claude CLI not on PATH — skipping Claude Code config (see https://claude.com/claude-code)"
+fi
+
+# ---------------------------------------------------------------------------
+# 6b. omp agent (~/.omp/agent)
+#     omp discovers this tree natively via its .omp provider (priority 100).
+#     Link individual items ONLY — ~/.omp/agent also holds live runtime state
+#     (agent.db, sessions/, history.db) that must stay real files.
+#     mcp.json is a plain symlink (NOT materialized like claude/mcp.json): omp
+#     resolves credentials by bare env-var name, so no secret is ever written
+#     into the tracked file.
+# ---------------------------------------------------------------------------
+OMP_AGENT="$HOME/.omp/agent"
+if [ -d "$REPO_DIR/omp" ]; then
+  link "$OMP_AGENT/AGENTS.md"   "$REPO_DIR/omp/AGENTS.md"
+  link "$OMP_AGENT/config.yml"  "$REPO_DIR/omp/config.yml"
+  link "$OMP_AGENT/models.yml"  "$REPO_DIR/omp/models.yml"
+  link "$OMP_AGENT/mcp.json"    "$REPO_DIR/omp/mcp.json"
+  link "$OMP_AGENT/lsp.json"    "$REPO_DIR/omp/lsp.json"
+  link "$OMP_AGENT/extensions"  "$REPO_DIR/omp/extensions"
+  link "$OMP_AGENT/skills"      "$REPO_DIR/omp/skills"
+fi
+
+# ---------------------------------------------------------------------------
+# 6c. herdr terminal multiplexer (~/.config/herdr)
+#     Link items, not the dir — herdr may write runtime state alongside config.
+#     Note: herdr/config.toml hardcodes ~/dotfiles/herdr/scripts/rename-agent.sh
+#     for its rename popup, so the repo must live at ~/dotfiles for that keybind
+#     to resolve. The scripts symlink below is what makes it reachable.
+# ---------------------------------------------------------------------------
+if [ -d "$REPO_DIR/herdr" ]; then
+  link "$HOME/.config/herdr/config.toml" "$REPO_DIR/herdr/config.toml"
+  link "$HOME/.config/herdr/scripts"     "$REPO_DIR/herdr/scripts"
+fi
+
+# ---------------------------------------------------------------------------
+# 7. Optional: reinstall Cursor extensions from snapshot
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--extensions" ]; then
   if command -v cursor >/dev/null 2>&1; then
@@ -202,17 +329,19 @@ if [ "${1:-}" = "--extensions" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Prerequisite check (warn-only; we do not auto-install system packages)
+# 8. Prerequisite check (warn-only; we do not auto-install system packages)
 # ---------------------------------------------------------------------------
 info "Checking prerequisites ..."
-for c in git nvim node npx envsubst; do
+for c in git nvim node npx envsubst jq; do
   command -v "$c" >/dev/null 2>&1 && ok "found $c" || warn "MISSING: $c"
 done
 command -v opencode >/dev/null 2>&1 && ok "found opencode" || warn "opencode not on PATH — see https://opencode.ai"
 command -v cursor   >/dev/null 2>&1 && ok "found cursor CLI" || warn "cursor CLI not on PATH"
+command -v claude   >/dev/null 2>&1 && ok "found claude CLI" || warn "claude CLI not on PATH — see https://claude.com/claude-code"
+command -v herdr    >/dev/null 2>&1 && ok "found herdr" || warn "herdr not on PATH — ~/.config/herdr links are staged but inert until it is installed"
 
 # ---------------------------------------------------------------------------
-# 8. Summary / next steps
+# 9. Summary / next steps
 # ---------------------------------------------------------------------------
 cat <<EOF
 
@@ -224,6 +353,16 @@ Next steps:
   3) Open a new shell so secrets.env is sourced (opencode reads {env:...})
   4) Cursor extensions:   ./install.sh --extensions
   5) Cursor will re-fetch the plugins in cursor/dot-cursor/plugins-list.txt on demand.
+  6) Claude Code: verify with 'claude mcp list' and 'claude plugin list'
+     (~/.claude/{skills,CLAUDE.md} are symlinks into claude/; MCP is registered
+     from claude/mcp.json into user scope on each ./install.sh run).
+  7) Hermes: ~/.hermes/{SOUL.md,news-topics.txt,scripts} are symlinks; config.yaml
+     and .env were materialized from templates only if absent — fill in real keys.
+  8) omp: ~/.omp/agent/* are symlinks into omp/ (runtime state stays real).
+     models.yml/config.yml ship with <provider> placeholders from the security
+     scrub — edit them with your real provider host/name before omp can resolve
+     a model. Do NOT commit the hydrated values.
+  9) herdr: ~/.config/herdr/{config.toml,scripts} are symlinks into herdr/.
 
 Backups of anything replaced (if any) are under: $BACKUP_DIR
 EOF

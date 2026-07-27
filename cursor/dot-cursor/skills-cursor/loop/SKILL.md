@@ -3,9 +3,8 @@ name: loop
 description: >-
   Run a prompt or skill in this session on a recurring or variable interval
   (e.g. /loop 5m /foo).
-metadata:
-  disabledEnvironments:
-    - cloud
+disabled-environments:
+  - cloud
 ---
 # Loop
 

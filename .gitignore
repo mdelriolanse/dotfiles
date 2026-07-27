@@ -3,8 +3,11 @@
 # hand-copied / regenerated per machine. See secrets/secrets.env.example.
 # ============================================================================
 secrets/secrets.env
-# Cursor's real MCP config holds live API keys; only mcp.json.example is tracked.
+# Real configs that hold materialized API keys; only *.example is tracked.
+# Generated from the .example + secrets.env via envsubst (see install.sh).
 cursor/dot-cursor/mcp.json
+claude/mcp.json
+kimi/config.toml
 # Hermes real config/.env hold live keys; only the *.example templates are tracked.
 # install.sh materializes these from the examples + secrets.env, then symlinks them.
 hermes/config.yaml
@@ -15,6 +18,8 @@ hermes/.env
 # ============================================================================
 **/node_modules/
 *.bak
+__pycache__/
+*.pyc
 *.bak.*
 
 # Cursor heavy state / binaries (never centralized, listed defensively)
@@ -32,5 +37,8 @@ cursor/User/workspaceStorage/
 # Project-specific agent plans — never centralize
 cursor/dot-cursor/plans/
 
-# Claude Code session worktrees (ephemeral)
+# Claude Code session worktrees (git worktree checkouts, ephemeral/machine-local)
 .claude/worktrees/
+
+# Stray MCP server log
+excalidraw.log

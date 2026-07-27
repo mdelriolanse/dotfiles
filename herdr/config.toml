@@ -1,0 +1,54 @@
+onboarding = false
+
+[ui]
+sidebar_width = 44
+sidebar_max_width = 64
+mouse_capture = true
+
+[theme]
+name = "gruvbox"
+auto_switch = false
+
+
+[terminal]
+default_shell="bash"
+
+[keys]
+focus_pane_left = "ctrl+h"
+focus_pane_down = "ctrl+j"
+focus_pane_up = "ctrl+k"
+focus_pane_right = "ctrl+l"
+navigate_workspace_down = "j"
+navigate_workspace_up = "k"
+next_workspace = "prefix+tab"
+previous_workspace = "prefix+shift+tab"
+cycle_pane_next = ""
+next_agent = "ctrl+]"
+previous_agent = "ctrl+\\"
+copy_mode = "prefix+["
+
+[[keys.command]]
+key = "alt+t"
+type = "shell"
+command = "echo SHELL_WORKS >> /tmp/omp/shell_works.txt"
+
+
+[[keys.command]]
+key = "prefix+shift+r"
+type = "popup"
+width = "60%"
+height = "20%"
+command = 'bash ~/dotfiles/herdr/scripts/rename-agent.sh'
+
+
+[[keys.command]]
+key = "ctrl+up"
+type = "shell"
+command = 'printf "\\x02\\x5b\\x15" > "$(readlink /proc/$(pgrep -ax herdr | grep -v server | awk "{print \\$1}" | head -1)/fd/0)"'
+
+[[keys.command]]
+key = "ctrl+down"
+type = "shell"
+command = 'printf "\\x02\\x5b\\x04" > "$(readlink /proc/$(pgrep -ax herdr | grep -v server | awk "{print \\$1}" | head -1)/fd/0)"'
+
+

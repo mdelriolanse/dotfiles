@@ -1,0 +1,118 @@
+<!-- codebase-memory-mcp:start -->
+# Codebase Knowledge Graph — Four-Backend Policy
+
+This project has FOUR complementary code-intelligence backends. Pick the right one for the task.
+**ALWAYS prefer these MCP backends over grep/glob/file-search for code discovery.**
+These tools are purpose-built to understand code structure, relationships, and semantics.
+Resort to grep/glob ONLY when every backend fails or for non-code files.
+
+## 1. CodeGraph (default — reach for this first for "How does X work?" questions)
+
+When a `.codegraph/` index exists in a repo, use CodeGraph as the **primary** code-exploration tool.
+
+- **One tool does it all**: `codegraph_explore` — ask a natural-language question, get back verbatim line-numbered source + call paths (including dynamic-dispatch: callbacks, React re-renders, JSX children)
+- **Best for**: "How does X work?", architecture questions, locating symbols, understanding flows, impact analysis
+- **Parser**: Tree-sitter AST (20+ languages)
+- **When to use**: ALMOST ALWAYS as the first code-discovery call. Usually zero file reads needed.
+- **Availability**: MCP tool + CLI (`codegraph explore "…"`)
+- **Setup**: Run `codegraph init` once per repo to build the `.codegraph/` index. Auto-syncs after.
+- **If missing index**: skip it, pick from the others below
+
+Examples:
+- `codegraph_explore` with query: "how does JWT auth flow work in this repo?"
+- `codegraph_explore` with symbols: `["createRouter", "middleware.ts"]` — get sources + paths between them
+
+## 2. Semble (semantic code search — reach for this for "find where X is done" queries)
+
+When you need to **find code by natural-language description** or **find similar code** to a known location, use Semble. Semantic (embedding + BM25) search retrieves relevant code snippets using ~98% fewer tokens than grep+read. CPU-only, no API keys.
+
+- **Two tools**: `semble_search` (natural-language query → code chunks) and `semble_find_related` (find similar code at a location)
+- **Best for**:
+  - "Where is authentication handled?", "how do we save models?" — vague natural-language queries where you don't know the exact symbol names
+  - Finding related code at a specific line — "find code similar to this error handling pattern"
+  - Quick semantic lookup when CodeGraph hasn't been indexed yet
+- **Parser**: Tree-sitter chunking + Model2Vec embeddings + BM25 lexical matching
+- **When to use**: Before grep, when the query is descriptive or fuzzy. Also useful for finding patterns across languages or when you only have a partial description.
+- **Setup**: None. Indexes on first search, caches automatically, watches for file changes.
+
+## 3. Serena (symbol-level IDE operations — use when editing or refactoring)
+
+When **refactoring code** or needing **language-server precision** (cross-file renames, safe deletes, diagnostics, type navigation), use Serena first.
+
+- **Best for**:
+  - `rename_symbol` — safe cross-file renames (language server guarantees references updated)
+  - `replace_symbol_body` — replace an entire function/class definition atomically
+  - `insert_before_symbol` / `insert_after_symbol` — inject code at semantic boundaries
+  - `safe_delete_symbol` — delete a symbol after checking for remaining usages
+  - `find_declaration` / `find_implementations` / `find_referencing_symbols` — go-to-definition / find-references
+  - `get_diagnostics_for_file` / `get_diagnostics_for_symbol` — type errors, warnings
+  - `get_symbols_overview` — get top-level symbols in a file (faster than full read for navigation)
+- **Parser**: Language servers (LSP), fully type-aware
+- **When to use**: Whenever correctness across files matters. Serena prevents text-level errors that grep-based edits miss.
+- **Setup**: `serena init` (done once globally). Auto-activates the project from cwd — no per-repo setup needed.
+
+## 4. codebase-memory (specialised — use when CodeGraph + Semble + Serena are insufficient)
+
+Keep this as the **fallback / detail** backend for scenarios none of the others cover.
+
+- **Granular multi-tool**: `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`, `get_architecture`
+- **Best for**:
+  - Complexity analysis (`query_graph` with `cyclomatic`, `transitive_loop_depth`, `linear_scan_in_loop`)
+  - Cypher graph queries (`query_graph`) for complex multi-hop patterns
+  - ADR management (`manage_adr`)
+  - Runtime trace ingestion (`ingest_traces`) — seeing actual execution paths
+  - Cross-repo intelligence mode (`index_repository` with `cross-repo-intelligence`)
+  - Engineering metrics (bottleneck detection, dead-code analysis via graph queries)
+- **Parser**: LSP-style type-aware resolution
+- **When to use**: When CodeGraph returns nothing, or when the task specifically needs complexity props, ADRs, traces, or custom Cypher
+
+## Decision Flow
+
+```
+Need to understand code / architecture / call chain?
+  → codegraph_explore first (if .codegraph/ index exists)
+
+Have a vague natural-language query ("where is auth done?") OR need similar code?
+  → Semble first (semble_search / semble_find_related)
+
+Need to refactor, rename, delete, or edit symbols safely?
+  → Serena first (rename_symbol, replace_symbol_body, safe_delete_symbol, find_referencing_symbols)
+
+Need type errors / diagnostics / hover info?
+  → Serena diagnostics tools
+
+No .codegraph/ index AND query is specific enough for symbol names?
+  → codebase-memory search_graph / trace_path
+
+Need loop-depth / complexity?
+  → codebase-memory query_graph
+
+Need ADR / traces / cross-repo?
+  → codebase-memory specific tool
+
+All four backends return nothing?
+  → grep / glob fallback (last resort)
+```
+
+## When to fall back to grep/glob (LAST RESORT ONLY)
+
+The following are the **only** legitimate reasons to use grep or glob instead of the MCP backends:
+- String literals, error messages, config values
+- Non-code files (Dockerfiles, shell scripts, configs, markdown, data files)
+- All four backends return insufficient results after a genuine attempt
+
+**Rule**: If you are grepping for functions, classes, imports, call chains, or architecture, stop. Use the appropriate MCP backend. Grep is ~10× more token-expensive and produces noisier results.
+
+Plan reports: follow `skills/plan/` format.
+<!-- codebase-memory-mcp:end -->
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+Installed and ready. In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->
