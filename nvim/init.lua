@@ -75,6 +75,12 @@ require('lazy').setup({
   },
 })
 
+-- Temporary: diagnostic keylogger for the dead-keys-after-refocus bug.
+-- Only active when started with NVIM_KEYLOG=1. Remove once the bug is found.
+if vim.env.NVIM_KEYLOG == '1' then
+  require('core.keylog').setup()
+end
+
 require 'core.options'
 require 'core.snippets'
 require 'core.keymaps'
