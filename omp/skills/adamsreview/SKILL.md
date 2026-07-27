@@ -3,17 +3,17 @@ name: adamsreview
 description: Multi-stage code review pipeline — parallel sub-agent detection, validation passes, persistent JSON state, and an automated fix loop.
 argument-hint: "[review|fix|add|walkthrough|promote] [options...]"
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, question, Task, todowrite
-compatibility: opencode
+compatibility: omp
 metadata:
   author: "<org>-team"
-  version: "0.5.0-opencode"
+  version: "0.5.0-omp"
   domain: quality
   triggers: code review, PR review, review, adamsreview
   role: specialist
   scope: review
 ---
 
-# adamsreview — multi-stage code review for opencode
+# adamsreview — multi-stage code review for omp
 
 Ported from the Claude Code plugin. **Same semantics, same helpers, same
 artifact shape** — only the runtime bindings (sub-agent dispatch, prompts,
@@ -33,7 +33,7 @@ optional `walkthrough` → `fix`.
 ## Layout
 
 ```
-~/.config/opencode/skills/adamsreview/
+~/.omp/agent/skills/adamsreview/
 ├── SKILL.md                          ← this file
 ├── bin/                              ← helper scripts (all bash/Python, portable)
 │   ├── artifact-read.sh / -patch.py / -render.py / -validate.sh / -publish.sh / -seed.sh
@@ -73,7 +73,7 @@ optional `walkthrough` → `fix`.
    invalid state mid-run.
 
 6. **Reviews root is `~/.adams-reviews/`.** Not under `~/.claude/` or
-   `~/.opencode/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
+   `~/.omp/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
 
 7. **`repo_slug` comes from one helper.** `bin/repo-slug.sh --repo-root <path>`
    is the single source of truth. Never reimplement inline.
@@ -131,7 +131,7 @@ is a broken artifact.
 sub-agents run under the orchestrator's globally configured model.
 References to `opus`, `sonnet`, `haiku`, or `Codex`/`CodeRabbit` in
 any prose are legacy descriptions from the original Claude Code
-plugin; they do NOT apply to the opencode port. Token logging still
+plugin; they do NOT apply to the omp port. Token logging still
 accepts a `--model` field for observability, but it is optional and
 carries no semantic weight.
 
@@ -155,7 +155,7 @@ carries no semantic weight.
    invalid state mid-run.
 
 6. **Reviews root is `~/.adams-reviews/`.** Not under `~/.claude/` or
-   `~/.opencode/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
+   `~/.omp/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
 
 7. **`repo_slug` comes from one helper.** `bin/repo-slug.sh --repo-root <path>`
    is the single source of truth. Never reimplement inline.
@@ -197,7 +197,7 @@ Full normative spec: `references/state-and-gates.md`.
 
 Every `Task` tool-use specifies `subagent_type: general`.
 Sub-agents inherit the orchestrator's globally configured model; no
-per-call `model:` parameter exists in the opencode port.
+per-call `model:` parameter exists in the omp port.
 
 **Parallel fan-outs** happen by firing multiple `Task` blocks in a single
 orchestrator turn. Always batch within one turn.
@@ -281,13 +281,13 @@ helper-script error-as-prompt).
 
 ## Phase 1.5 / Ensemble
 
-**Not ported to opencode.** The ensemble integration (Phase 1.5,
-`--ensemble` flag) is not available in the opencode port. All ensemble
+**Not ported to omp.** The ensemble integration (Phase 1.5,
+`--ensemble` flag) is not available in the omp port. All ensemble
 gating is short-circuited with `ensemble_mode=false`.
 
 The existing L7 (holistic) lens file (`references/fragments/lens-prompts/L7.md`)
 remains in the repository for reference purposes but is not dispatched. Phase 6c
-(dual-agent false-positive audit) provides a new opencode-native quality gate.
+(dual-agent false-positive audit) provides a new omp-native quality gate.
 
 ## Helper index
 
@@ -322,9 +322,9 @@ bash $SKILL_ROOT/test/smoke.sh   # expects: smoke: PASS (N assertions)
 - No light-lane auto-fix without consent
 - No ensemble/Codex external review (not ported)
 
-## Differences from Claude Code plugin
+## omp harness
 
-| Claude Code | opencode port |
+| Claude Code | omp |
 |---|---|
 | `Agent` tool | `Task` tool (`subagent_type: general`) |
 | `model: opus/sonnet/haiku` | Removed (global model config) |

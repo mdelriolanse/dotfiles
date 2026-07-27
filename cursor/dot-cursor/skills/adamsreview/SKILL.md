@@ -2,18 +2,18 @@
 name: adamsreview
 description: Multi-stage code review pipeline — parallel sub-agent detection, validation passes, persistent JSON state, and an automated fix loop.
 argument-hint: "[review|fix|add|walkthrough|promote] [options...]"
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, TodoWrite
-compatibility: claude
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob, Task, todowrite
+compatibility: cursor
 metadata:
   author: "<org>-team"
-  version: "0.5.0"
+  version: "0.5.0-cursor"
   domain: quality
   triggers: code review, PR review, review, adamsreview
   role: specialist
   scope: review
 ---
 
-# adamsreview — multi-stage code review for Claude Code
+# adamsreview — multi-stage code review for Cursor
 
 Ported from the Claude Code plugin. **Same semantics, same helpers, same
 artifact shape** — only the runtime bindings (sub-agent dispatch, prompts,
@@ -33,7 +33,7 @@ optional `walkthrough` → `fix`.
 ## Layout
 
 ```
-~/.claude/skills/adamsreview/
+~/.cursor/skills/adamsreview/
 ├── SKILL.md                          ← this file
 ├── bin/                              ← helper scripts (all bash/Python, portable)
 │   ├── artifact-read.sh / -patch.py / -render.py / -validate.sh / -publish.sh / -seed.sh
@@ -73,7 +73,7 @@ optional `walkthrough` → `fix`.
    invalid state mid-run.
 
 6. **Reviews root is `~/.adams-reviews/`.** Not under `~/.claude/` or
-   `~/.claude/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
+   `~/.cursor/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
 
 7. **`repo_slug` comes from one helper.** `bin/repo-slug.sh --repo-root <path>`
    is the single source of truth. Never reimplement inline.
@@ -127,11 +127,11 @@ is a broken artifact.
 ### Sub-agent model policy
 
 **This skill is model-agnostic.** Every sub-agent dispatches with
-`subagent_type: general-purpose` and no per-call model specification. All
+`subagent_type: generalPurpose` and no per-call model specification. All
 sub-agents run under the orchestrator's globally configured model.
 References to `opus`, `sonnet`, `haiku`, or `Codex`/`CodeRabbit` in
 any prose are legacy descriptions from the original Claude Code
-plugin; they do NOT apply to this port. Token logging still
+plugin; they do NOT apply to the Cursor port. Token logging still
 accepts a `--model` field for observability, but it is optional and
 carries no semantic weight.
 
@@ -155,7 +155,7 @@ carries no semantic weight.
    invalid state mid-run.
 
 6. **Reviews root is `~/.adams-reviews/`.** Not under `~/.claude/` or
-   `~/.claude/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
+   `~/.cursor/`. Override via `$ADAMS_REVIEW_REVIEWS_ROOT`.
 
 7. **`repo_slug` comes from one helper.** `bin/repo-slug.sh --repo-root <path>`
    is the single source of truth. Never reimplement inline.
@@ -195,9 +195,9 @@ Full normative spec: `references/state-and-gates.md`.
 
 ## Sub-agent dispatch pattern
 
-Every `Agent` tool-use specifies `subagent_type: general-purpose`.
+Every `Task` tool-use specifies `subagent_type: generalPurpose`.
 Sub-agents inherit the orchestrator's globally configured model; no
-per-call `model:` parameter exists in this port.
+per-call `model:` parameter exists in the Cursor port.
 
 **Parallel fan-outs** happen by firing multiple `Task` blocks in a single
 orchestrator turn. Always batch within one turn.
@@ -224,7 +224,7 @@ with the `Read` tool and execute the instructions inside.
 
 Parse arguments: `--full` → `force_full=true` (else `false`).
 
-Build a `TodoWrite` list mirroring these phases:
+Build a `todowrite` list mirroring these phases:
 
 | Phase | Fragment | Description |
 |---|---|---|
@@ -252,8 +252,8 @@ Execute Phases 7–9 in order. Parse arguments: first integer → `threshold`
 | 8 | `references/fragments/09-fix-execution.md` | Fix execution (parallel fix-group agents) |
 | 9 | `references/fragments/10-post-fix-and-commit.md` | Post-fix review + commit |
 
-Phase 8 fix-group agents use `subagent_type: general-purpose`.
-Phase 9 post-fix reviewer uses `subagent_type: general-purpose`.
+Phase 8 fix-group agents use `subagent_type: generalPurpose`.
+Phase 9 post-fix reviewer uses `subagent_type: generalPurpose`.
 All git operations (staging, commit, push) happen in the orchestrator.
 
 ### `add [paste...] [--file <path> --line <N> --claim "..."]`
@@ -281,13 +281,13 @@ helper-script error-as-prompt).
 
 ## Phase 1.5 / Ensemble
 
-**Not carried over.** The ensemble integration (Phase 1.5,
-`--ensemble` flag) is not available in this port. All ensemble
+**Not ported to Cursor.** The ensemble integration (Phase 1.5,
+`--ensemble` flag) is not available in the Cursor port. All ensemble
 gating is short-circuited with `ensemble_mode=false`.
 
 The existing L7 (holistic) lens file (`references/fragments/lens-prompts/L7.md`)
 remains in the repository for reference purposes but is not dispatched. Phase 6c
-(dual-agent false-positive audit) provides a new native quality gate.
+(dual-agent false-positive audit) provides a new Cursor-native quality gate.
 
 ## Helper index
 
@@ -322,14 +322,20 @@ bash $SKILL_ROOT/test/smoke.sh   # expects: smoke: PASS (N assertions)
 - No light-lane auto-fix without consent
 - No ensemble/Codex external review (not ported)
 
-## Not carried over from the original plugin
+## Cursor harness
 
-This skill is the ported pipeline, not the original Claude Code plugin. These
-capabilities were dropped in the port and are unavailable here:
-
-- Codex CLI + `--ensemble` external review — dropped entirely
-- Hooks (`hooks/hooks.json`) — not available
-- Orchestrator token tally (`orchestrator-tokens.sh`) — dropped
-- `!include` / `bin/include` fragment transclusion — replaced by `Read`-based loading
-- `Bash(helper:*)` grants in YAML frontmatter — replaced by absolute `$SKILL_ROOT/bin/` paths
-- `$ARGUMENTS` env var — parsed from the user message instead
+| Claude Code | Cursor |
+|---|---|
+| `Agent` tool | `Task` tool (`subagent_type: generalPurpose`) |
+| `model: opus/sonnet/haiku` | Removed (global model config) |
+| `AskUserQuestion` | Cursor's inline question prompt |
+| `Bash(helper:*):` grants in YAML frontmatter | Absolute `$SKILL_ROOT/bin/` paths |
+| `!include` fragment preprocessing | `Read` tool for fragment loading |
+| `$CLAUDE_PLUGIN_ROOT` | `$SKILL_ROOT` |
+| `$ARGUMENTS` env var | Parsed from user message |
+| `TaskList` tracking | `todowrite` |
+| Orchestrator token tally (`orchestrator-tokens.sh`) | Dropped (no `~/.claude/projects/`) |
+| Codex CLI + `--ensemble` flag | Dropped entirely |
+| Hooks (`hooks/hooks.json`) | Not available |
+| `bin/include` fragment transclusion | Not used (Read-based) |
+| `run_in_background` + `BashOutput` + `KillShell` | `run_in_background: true` on `Task` |

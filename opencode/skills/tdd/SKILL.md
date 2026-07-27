@@ -5,6 +5,17 @@ description: Use when implementing any feature or bugfix, before writing impleme
 
 # Test-Driven Development — Agent Swarm
 
+## opencode harness
+
+This copy runs in OpenCode. Map Claude Code terms as follows:
+
+| Claude Code | opencode |
+|---|---|
+| `Agent` tool | `Task` tool, or a fresh `opencode run` process |
+| `run_in_background: true` | shell-background `opencode run ... &`, then `wait $!` |
+| `isolation: "worktree"` | `git worktree add` + `--dir <worktree>` (see Isolation) |
+| `model: opus` | `-m anthropic/claude-opus-4-8` |
+
 ## Overview
 
 A three-agent swarm that enforces the Iron Law structurally: the agent that writes the code has NEVER seen the test being written. Each RED→GREEN cycle is a fresh pair of subagents with zero shared context.

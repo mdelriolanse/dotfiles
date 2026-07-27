@@ -5,16 +5,16 @@ description: Use when implementing any feature or bugfix, before writing impleme
 
 # Test-Driven Development — Agent Swarm
 
-## omp harness
+## Cursor harness
 
-This copy runs in omp. Map Claude Code terms as follows:
+This copy runs in Cursor Agent. Map Claude Code terms as follows:
 
-| Claude Code | omp |
+| Claude Code | Cursor |
 |---|---|
-| `Agent` tool | `Task` tool, or a fresh `omp -p` process |
-| `run_in_background: true` | shell-background `omp -p ... &`, then `wait $!` |
-| `isolation: "worktree"` | `git worktree add` + `--cwd <worktree>` (see Isolation) |
-| `model: opus` | `--model moonshotai/Kimi-K2.7-Code` |
+| `Agent` tool | `Task` tool (`subagent_type: generalPurpose`) |
+| `run_in_background: true` | `run_in_background: true` on `Task` |
+| `isolation: "worktree"` | `git worktree add` + `--workspace <worktree>` (see Isolation) |
+| `model: opus` | Cursor picks the model; drop the override |
 
 ## Overview
 
@@ -141,7 +141,7 @@ agents their own git worktree — create one before dispatching:
 git worktree add /tmp/tdd-wt-<slug> HEAD
 ```
 
-Then pass `--cwd /tmp/tdd-wt-<slug>` to `omp -p` for that behavior's
+Then pass `--workspace /tmp/tdd-wt-<slug>` to `agent -p --trust -f` for that behavior's
 agents. A worktree is a second checkout of the same repo on its own branch, so
 concurrent edits cannot collide. Merge the worktrees back yourself, one at a
 time, running the full suite after each merge. Single-behavior batches run in
@@ -150,8 +150,8 @@ the main tree.
 ### Executor model
 
 RED and GREEN subagents (and any other per-cycle executor the orchestrator
-spawns) run as **Kimi K2.7 Code**: pass `--model moonshotai/Kimi-K2.7-Code`
-on every `omp -p` or `Task` call that dispatches an executor. The
+spawns) inherit the session model. Cursor has no per-call model flag, so state the
+intended depth in the executor prompt instead. The
 orchestrator itself stays on the session's model. Do not let executors silently
 inherit the parent model.
 
@@ -161,7 +161,7 @@ Each agent runs in a **ralph loop**: a bounded retry where every attempt is a
 *brand-new* subagent given the same prompt plus the current file state. Never
 reuse a failed agent's session to "try again" — that preserves the confused
 context you are trying to discard. Spawn a fresh one via a new `Task` or
-`omp -p` call.
+`Task` call.
 
 ```
 attempt = 1

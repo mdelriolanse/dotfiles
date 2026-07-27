@@ -5,19 +5,19 @@ description: Use ONLY at the end of a long-running or recurring task when the ag
 
 # Skill Catalyst
 
-## opencode harness
+## Cursor harness
 
-This copy runs in opencode. Map Claude Code terms as follows:
+This copy runs in Cursor. Map Claude Code terms as follows:
 
-| Claude Code | opencode |
+| Claude Code | Cursor |
 |---|---|
-| `.claude/skills/` (project scope) | `.opencode/skills/` |
-| `~/.claude/skills/` (global scope) | `~/.config/opencode/skills/` |
-| restart Claude Code to load a new skill | restart opencode |
+| `.claude/skills/` (project scope) | `.cursor/skills/` |
+| `~/.claude/skills/` (global scope) | `~/.cursor/skills/` |
+| restart Claude Code to load a new skill | restart Cursor |
 
 ## Purpose
 
-Your job is to notice when a completed task represents a recurring workflow that would benefit from being saved as a reusable opencode skill. If so, suggest creating a `SKILL.md` — but only at the right time and in the right way.
+Your job is to notice when a completed task represents a recurring workflow that would benefit from being saved as a reusable Cursor skill. If so, suggest creating a `SKILL.md` — but only at the right time and in the right way.
 
 ## When to suggest a skill
 
@@ -56,8 +56,8 @@ Use exactly this format:
 
 | If the workflow is... | Suggest scope |
 |---|---|
-| Specific to a repo or tech stack (e.g., Django migrate + seed, this project's CI rules) | `project` (`.opencode/skills/...`) |
-| Generic and reusable across projects (e.g., GitHub PR review, uv setup, Docker build pattern) | `global` (`~/.config/opencode/skills/...`) |
+| Specific to a repo or tech stack (e.g., Django migrate + seed, this project's CI rules) | `project` (`.cursor/skills/...`) |
+| Generic and reusable across projects (e.g., GitHub PR review, uv setup, Docker build pattern) | `global` (`~/.cursor/skills/...`) |
 
 Be conservative: when uncertain, prefer `project` scope.
 
@@ -74,4 +74,4 @@ If the user says yes, create the `SKILL.md` with:
    - Any relevant file paths, commands, or conventions
    - Keep it concise but complete — the goal is to eliminate the discovery phase
 
-After writing it, remind the user to quit and restart opencode so the new skill is loaded.
+After writing it, remind the user to quit and restart Cursor so the new skill is loaded.

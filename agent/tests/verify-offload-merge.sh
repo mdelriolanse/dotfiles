@@ -107,10 +107,16 @@ done
 # Cursor override layer: skills whose instructions name harness machinery ship a
 # Cursor copy that beats the opencode one, which would otherwise tell the agent
 # it is running in OpenCode.
-for s in best-of-n bg-subagent deep-review resolve-review second-opinion; do
+for s in adamsreview best-of-n bg-subagent deep-review resolve-review second-opinion skill-catalyst tdd; do
   check "cursor override exists: $s" test -f "cursor/dot-cursor/skills/$s/SKILL.md"
   check "cursor override maps the harness: $s" grep -q '^## Cursor harness' "cursor/dot-cursor/skills/$s/SKILL.md"
   refute "cursor override drops opencode wording: $s" grep -q 'runs in OpenCode' "cursor/dot-cursor/skills/$s/SKILL.md"
+done
+for s in adamsreview tdd skill-catalyst; do
+  check "opencode harness section: $s" grep -q '^## opencode harness' "opencode/skills/$s/SKILL.md"
+  check "omp harness section: $s"      grep -q '^## omp harness'      "omp/skills/$s/SKILL.md"
+  refute "claude copy is the baseline: $s" grep -q '^## .* harness'   "claude/skills/$s/SKILL.md"
+  refute "claude copy free of opencode leakage: $s" grep -qi 'opencode' "claude/skills/$s/SKILL.md"
 done
 check "link script overlays the cursor tree" grep -q 'link_tree "\$CURSOR_SKILLS"' opencode/scripts/link-cursor-skills.sh
 refute "link script never targets the reserved dir" grep -q 'DEST=.*skills-cursor' opencode/scripts/link-cursor-skills.sh
@@ -326,7 +332,7 @@ if [ -L "$HOME/.omp/agent/AGENTS.md" ]; then
   else
     no "~/.cursor/skills is missing family skills (run link-cursor-skills.sh)"
   fi
-  for s in best-of-n bg-subagent deep-review resolve-review second-opinion; do
+  for s in adamsreview best-of-n bg-subagent deep-review resolve-review second-opinion skill-catalyst tdd; do
     check "~/.cursor/skills/$s resolves to the cursor override" \
       [ "$(readlink -f "$HOME/.cursor/skills/$s")" = "$REPO_DIR/cursor/dot-cursor/skills/$s" ]
   done

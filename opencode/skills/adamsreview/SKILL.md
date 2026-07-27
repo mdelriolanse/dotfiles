@@ -322,7 +322,7 @@ bash $SKILL_ROOT/test/smoke.sh   # expects: smoke: PASS (N assertions)
 - No light-lane auto-fix without consent
 - No ensemble/Codex external review (not ported)
 
-## Differences from Claude Code plugin
+## opencode harness
 
 | Claude Code | opencode port |
 |---|---|
