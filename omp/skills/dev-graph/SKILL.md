@@ -6,6 +6,18 @@ disable-model-invocation: true
 
 # dev-graph
 
+## omp harness
+
+This copy runs in omp. Map Claude Code terms as follows:
+
+| Claude Code | omp |
+|---|---|
+| `Agent` tool | a fresh `omp -p --no-session` sub-session |
+| `run_in_background: true` | shell-background `omp -p ... &`, then `wait $!` |
+| `--add-dir` / workspace | `--cwd <container>` |
+| `model: opus` | `--model moonshotai/Kimi-K2.7-Code` |
+| permission prompts | `--approval-mode yolo` |
+
 Autonomous issue-to-PR pipeline. Given `{{ISSUE-TAG}}` (a GitHub issue URL or
 `number + repo`), drives a 10-session development graph to produce reviewed PRs
 linked to the issue. Two human-in-the-loop breakpoints only: Session 2 (grill)
@@ -148,7 +160,7 @@ plan report and writes it to `docs/plans/<slug>.md` in the container (see the
 
 The plan uses TDD and the agent-swarm approach per the `test-driven-development`
 skill. The orchestrator instructs the plan to reference the code-intelligence
-tools (CodeGraph, Semble, Serena, codebase-memory, graphify, agentmemory — per
+tools (Semble, Serena, codebase-memory, graphify, agentmemory — per
 AGENTS.md) to ensure changes are cross-cutting and correctly implemented.
 
 **The `/plan` skill is a report-format skill — it writes a markdown file. It
@@ -163,7 +175,7 @@ the largest single step. The orchestrator follows the
 - Break the plan into behaviors (one assertion per behavior).
 - For each behavior: RED agent (write failing test) → GREEN agent (write
   minimal code to pass) → orchestrator verify → refactor.
-- RED/GREEN agents run as `omp -p --no-session --model glm-5-2-nvfp4:high`
+- RED/GREEN agents run as `omp -p --no-session --model moonshotai/Kimi-K2.7-Code`
   sub-sessions (per the TDD skill's executor-model policy). Non-interactive,
   no popup. Launch with `--cwd "$CONTAINER"` (umbrella dir) so the session's
   project context, context-file discovery, and session storage anchor to the
@@ -182,7 +194,7 @@ The orchestrator applies changes inside the per-repo worktrees (e.g.
 `$CONTAINER/feat-${DIR_NAME}-app/`). Each worktree is its own git repo, so
 changes land on the `feat/${DIR_NAME}-<repo>` branch.
 
-> Before writing any code, consult the code-intelligence backends per AGENTS.md: CodeGraph (`codegraph explore -p <repo>`) for source + call paths, Semble for natural-language search, Serena for symbol-safe edits/renames, codebase-memory for complexity/cross-service traces. Use these to ensure changes are cross-cutting and correctly implemented. Never grep for function definitions — use the MCP backends.
+> Before writing any code, consult the code-intelligence backends per AGENTS.md: Semble for natural-language search and source discovery, Serena for symbol-safe edits/renames, codebase-memory for complexity/cross-service traces. Use these to ensure changes are cross-cutting and correctly implemented. Never grep for function definitions — use the MCP backends.
 
 **Contingency — TDD build fails to converge.** If a RED→GREEN cycle exhausts
 its ralph loop (MAX attempts), the orchestrator stops, reports the failing
@@ -253,7 +265,7 @@ for entry in "${NONEMPTY_WTS[@]}"; do
   #  context-file discovery, and session storage anchor to the container —
   #  not the worktree. The prompt tells the sub-session to cd into $WT for
   #  git operations (deep-review runs `git diff`).
-  omp -p --no-session --model glm-5-2-nvfp4:high --cwd "$CONTAINER" \
+  omp -p --no-session --model moonshotai/Kimi-K2.7-Code --cwd "$CONTAINER" \
     "cd $WT && /deep-review -n 3 --extra --prd $CONTAINER/docs/PRD.md" \
     > "$LOG" 2>&1 &
   PID=$!
