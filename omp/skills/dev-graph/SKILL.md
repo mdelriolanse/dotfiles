@@ -26,7 +26,7 @@ non-interactive and never trigger the native plan-mode approval popup.
 
 - Container root: `~/<org-root>/worktrees/<$DIR_NAME>/`
 - Org: `<org>`
-- Repos (all 6): `app gateway operator helm app-db gateway-db`
+- Repos (all N): `<repo-1> <repo-2> ... <repo-N>` — the orchestrator fills these from the org's repo set (e.g. app, gateway, operator, helm, plus any DB/migration repos). Replace the placeholder list below wherever it appears.
 - Push authorization: pre-assumed for Session 10 only.
 
 ## Session 1 — Worktree setup + issue pull + PRD (kickoff, NOT a pause)
@@ -62,9 +62,9 @@ After `issue-to-docs` completes, the container has:
 - agentmemory project `issue-<repo>-<N>` with spec memories — each tagged
   `dev-graph-run:$DIR_NAME`.
 
-### 1c. Create worktrees for all 6 repos
+### 1c. Create worktrees for all N repos
 
-For each repo in `app gateway operator helm app-db gateway-db`:
+For each repo in `<repo-1> <repo-2> ... <repo-N>` (see Constants):
 
 ```bash
 REPO_DIR=~/<org-root>/$REPO
@@ -210,7 +210,7 @@ review" decision semantically while respecting the per-repo git boundary.
 
 ```bash
 NONEMPTY_WTS=()
-for REPO in app gateway operator helm app-db gateway-db; do
+for REPO in <repo-1> <repo-2> ... <repo-N>; do
   WT="$CONTAINER/feat-${DIR_NAME}-${REPO}"
   [ -d "$WT" ] || continue
   # Fresh fetch so merge-base reflects the current origin/main, not the one
@@ -435,7 +435,7 @@ For each non-empty worktree, create a PR:
   cd "$WT"
   git push -u origin <branch>
   gh pr create \
-    --repo "<org>/<provider>-$REPO" \
+    --repo "<org>/<pr-repo>-$REPO" \
     --base main \
     --title "<conventional-commit title>" \
     --body "$(cat <<'BODY'
@@ -457,17 +457,19 @@ in a different repo than the issue, the `Closes <org>/<issue-repo>#N` form
 creates the timeline linkage. ALWAYS use `Closes`, per the user's convention.
 
 **Move issue to "In review"**: set the Planner board item's Status field to
-`In review` (option ID `df73e18b`) via:
+`In review` via:
 
 ```bash
-gh project item-edit --project-id PVT_kwDOD20yV84BUEJ6 --id <item-id> \
-  --field-id PVTSSF_lADOD20yV84BUEJ6zhBO0dw --single-select-option-id df73e18b
+gh project item-edit --project-id <PLANNER_PROJECT_ID> --id <item-id> \
+  --field-id <PLANNER_STATUS_FIELD_ID> --single-select-option-id <IN_REVIEW_OPTION_ID>
 ```
 
 The item ID is found by matching the issue URL in the project item list.
+The project/field/option IDs are org-specific — look them up via
+`gh project list` and `gh project field-list` (see `planner-create` skill).
 
 **If the issue is NOT on the board**, add it via
-`gh project item-add 6 --owner <org> --url <issue URL>` (same as
+`gh project item-add <PLANNER_PROJECT_NUMBER> --owner <org> --url <issue URL>` (same as
 `planner-create` Step 3), then set Status to "In review".
 
 ### 10c. Do NOT delete branches or worktrees
@@ -486,11 +488,10 @@ no `git push origin --delete`, no `git branch -D`.
   returns. `--max-time` remains as a wall-clock backstop. Contingency: add
   `--approval-mode yolo` to every `omp -p` call (belt and suspenders with the
   global config).
-- **All 6 repos have an `origin/main` branch.** Verified: app, gateway,
-  operator, helm, app-db, gateway-db all have `origin` remotes pointing at
-  `github.com/<org>/<provider>-<repo>.git`. If a repo's
-  `origin/main` fetch fails, skip that worktree and report — the other 5
-  proceed.
+- **All N repos have an `origin/main` branch.** Verified: each repo in
+  the org's set has an `origin` remote pointing at
+  `github.com/<org>/<repo>.git`. If a repo's `origin/main` fetch fails,
+  skip that worktree and report — the others proceed.
 - **`gh` is authenticated.** `gh auth status` must pass. If not, the
   orchestrator stops at Session 1 and tells the user to authenticate.
 - **The issue already exists on the Planner board.** Session 10 links PRs to
