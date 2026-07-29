@@ -84,9 +84,9 @@ done
 refute "opencode/opencode.jsonc removed" test -e opencode/opencode.jsonc
 refute "nvim/nvim/ nested duplicate removed" test -e nvim/nvim
 
-count_is "claude/skills count"   40 "$(ls -A claude/skills | wc -l)"
-count_is "omp/skills count"      44 "$(ls -A omp/skills | wc -l)"
-count_is "opencode/skills count" 40 "$(ls -A opencode/skills | wc -l)"
+count_is "claude/skills count"   41 "$(ls -A claude/skills | wc -l)"
+count_is "omp/skills count"      45 "$(ls -A omp/skills | wc -l)"
+count_is "opencode/skills count" 41 "$(ls -A opencode/skills | wc -l)"
 # claude, omp and opencode carry the same skill family; drift means a skill was
 # added to one harness and never ported to the others.
 for h in claude opencode; do
