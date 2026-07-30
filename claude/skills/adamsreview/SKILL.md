@@ -49,8 +49,7 @@ optional `walkthrough` → `fix`.
 │   ├── state-and-gates.md            ← normative spec for finding states
 │   ├── pipeline.md                   ← phase trees + token tally semantics
 │   └── helpers.md                    ← helper script inventory
-├── test/                             ← smoke harness + fixtures
-└── plans/                            ← historical design docs
+└── test/                             ← smoke harness + fixtures
 ```
 
 ## Operational rules
