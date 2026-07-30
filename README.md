@@ -53,6 +53,10 @@ omp/*                    -> ~/.omp/agent/*             (7 individual items;
                                                         agent.db, sessions/ and
                                                         history.db stay real)
 tmux/tmux.conf           -> ~/.tmux.conf               (ctrl+hjkl pane nav)
+iris/config.toml         -> ~/.config/iris/config.toml  (IRIS completion menu;
+iris/gruvbox.sed         palette patch + build.sh build  upstream has no theme
+                                                        option, so build.sh
+                                                        rewrites its colours)
 herdr/config.toml        -> ~/.config/herdr/config.toml
 herdr/scripts/           -> ~/.config/herdr/scripts
 hermes/SOUL.md           -> ~/.hermes/SOUL.md          (persona / system prompt)

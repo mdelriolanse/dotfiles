@@ -164,11 +164,14 @@ alias ollama-stop='podman compose -f /opt/ollama-intel-arc/docker-compose.yml do
 
 # Other aliases
 alias nh='nohup'
-alias synonyms='python3 $HOME/projects/words_command/synonyms_cli.py'
 alias py='python3'
 alias c='clear'
 
 alias cldsp='claude --dangerously-skip-permissions'
+
+# IRIS — inline shell completion menu (gruvbox build, see dotfiles/iris/build.sh).
+# Launch it explicitly; it takes over the TTY, so it is not auto-started.
+command -v iris >/dev/null 2>&1 && alias i='iris'
 
 # bun
 export BUN_INSTALL="$HOME/.bun"

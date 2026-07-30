@@ -52,6 +52,7 @@ link "$HOME/.config/nvim"                          "$REPO_DIR/nvim"
 link "$HOME/.config/opencode"                      "$REPO_DIR/opencode"
 link "$HOME/.config/starship.toml"                 "$REPO_DIR/starship/starship.toml"
 link "$HOME/.config/kitty/kitty.conf"              "$REPO_DIR/kitty/kitty.conf"
+link "$HOME/.config/iris/config.toml"              "$REPO_DIR/iris/config.toml"
 link "$HOME/.bashrc"                               "$REPO_DIR/bash/bashrc"
 link "$HOME/.blerc"                                "$REPO_DIR/bash/blerc"
 link "$HOME/.config/Cursor/User/settings.json"     "$REPO_DIR/cursor/User/settings.json"
@@ -326,6 +327,7 @@ command -v cursor   >/dev/null 2>&1 && ok "found cursor CLI" || warn "cursor CLI
 command -v claude   >/dev/null 2>&1 && ok "found claude CLI" || warn "claude CLI not on PATH — see https://claude.com/claude-code"
 command -v omp      >/dev/null 2>&1 && ok "found omp" || warn "omp not on PATH — install with: curl -fsSL https://omp.sh/install | sh"
 command -v herdr    >/dev/null 2>&1 && ok "found herdr" || warn "herdr not on PATH — install with: curl -fsSL https://herdr.dev/install.sh | sh"
+command -v iris     >/dev/null 2>&1 && ok "found iris" || warn "iris not on PATH — build the gruvbox one with: ./iris/build.sh"
 
 # ---------------------------------------------------------------------------
 # 9. Summary / next steps
