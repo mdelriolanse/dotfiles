@@ -5,6 +5,7 @@ sidebar_width = 44
 sidebar_max_width = 64
 mouse_capture = true
 
+agent_panel_sort = "spaces"
 [theme]
 name = "gruvbox"
 auto_switch = false
