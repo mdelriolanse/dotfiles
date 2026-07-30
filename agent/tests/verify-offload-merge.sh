@@ -54,8 +54,15 @@ count_is "no unmerged paths" 0 "$(git diff --name-only --diff-filter=U | wc -l)"
 group "G2. MASTER WORK PRESERVED (byte-identical vs $TAG)"
 # ---------------------------------------------------------------------------
 if git rev-parse --verify "$TAG" >/dev/null 2>&1; then
-  count_is "kitty/ starship/ bash/ hermes/ unchanged" 0 \
-    "$(git diff --name-only "$TAG" -- kitty/ starship/ bash/ hermes/ | wc -l)"
+  count_is "kitty/ starship/ hermes/ unchanged" 0 \
+    "$(git diff --name-only "$TAG" -- kitty/ starship/ hermes/ | wc -l)"
+  # bash/ intentionally diverged after the merge: the dead `synonyms` alias was
+  # dropped (its script never existed on this machine) and the iris alias added.
+  # Guard against LOSS only — additions are ordinary config growth.
+  count_is "bash/ lost exactly one line vs $TAG" 1 \
+    "$(git diff -U0 "$TAG" -- bash/ | grep -cE '^-[^-]')"
+  count_is "the bash/ loss is the dead synonyms alias" 1 \
+    "$(git diff -U0 "$TAG" -- bash/ | grep -cE '^-alias synonyms=')"
   count_is "master-only nvim files unchanged" 0 \
     "$(git diff --name-only "$TAG" -- \
         nvim/lua/core/theme-toggle.lua nvim/lua/core/autosave.lua \
@@ -130,10 +137,12 @@ done
 # ---------------------------------------------------------------------------
 group "G4. HARNESS PRECEDENCE (remote content won)"
 # ---------------------------------------------------------------------------
-for s in serena codebase-memory semble; do
+# firecrawl/browserbase/excalidraw/quiverai were dropped by the offload merge and
+# deliberately reinstated afterwards; composio stays gone.
+for s in serena codebase-memory semble firecrawl browserbase excalidraw quiverai; do
   check "cursor mcp.json.example has $s" grep -q "$s" cursor/dot-cursor/mcp.json.example
 done
-for s in composio firecrawl browserbase excalidraw quiverai; do
+for s in composio; do
   refute "cursor mcp.json.example dropped $s" grep -q "$s" cursor/dot-cursor/mcp.json.example
 done
 if command -v jq >/dev/null 2>&1; then
@@ -174,12 +183,21 @@ else
   no "install.sh section numbering broken"
 fi
 
-for v in DEEPINFRA_API_KEY HERMES_MODEL_API_KEY TELEGRAM_BOT_TOKEN; do
+# FIRECRAWL/QUIVERAI are back because cursor/mcp.json.example references them; a
+# missing export here materializes an empty key and the server fails silently.
+for v in DEEPINFRA_API_KEY HERMES_MODEL_API_KEY TELEGRAM_BOT_TOKEN \
+         FIRECRAWL_API_KEY QUIVERAI_API_KEY; do
   check "secrets.env.example exports $v" grep -q "export $v=" secrets/secrets.env.example
 done
-for v in FIRECRAWL_API_KEY LINEAR_API_KEY; do
+for v in LINEAR_API_KEY; do
   refute "secrets.env.example dropped $v" grep -q "$v" secrets/secrets.env.example
 done
+# Every ${VAR} the cursor MCP template interpolates must have an export to fill it.
+while IFS= read -r v; do
+  check "secrets.env.example backs cursor MCP \${$v}" \
+    grep -q "export $v=" secrets/secrets.env.example
+done < <(grep -oE '\$\{[A-Z0-9_]+\}' cursor/dot-cursor/mcp.json.example \
+           | tr -d '${}' | grep -vE '^(NODE_BIN_PATH|HOME|PATH)$' | sort -u)
 
 # ---------------------------------------------------------------------------
 group "G5b. OMP WIRING (install.sh section 6b)"
@@ -196,6 +214,10 @@ check  "omp/models.yml references the key by name only" grep -q '^ *apiKey: DEEP
 refute "omp/models.yml holds no literal secret" grep -qE 'apiKey: *[A-Za-z0-9]{24,}' omp/models.yml
 check  "omp default model is set and concrete" grep -q '^  default: deepinfra/' omp/config.yml
 refute "omp config has no leftover <provider> placeholders" grep -q '<provider' omp/config.yml omp/models.yml
+# opencode was scrubbed to placeholders but never repointed; guard it too.
+refute "opencode.json has no leftover <provider> placeholders" grep -q '<provider' opencode/opencode.json
+check  "opencode default model is set and concrete" grep -q '"model": "deepinfra/' opencode/opencode.json
+refute "opencode.json holds no literal secret" grep -qE '"apiKey": *"[A-Za-z0-9]{24,}"' opencode/opencode.json
 
 # ---------------------------------------------------------------------------
 group "G5c. CLAUDE SKILLS PRECEDENCE (remote-only)"
@@ -216,7 +238,7 @@ refute "secrets.env.example header drops kimi" grep -qi 'kimi' secrets/secrets.e
 # DEEPINFRA_API_KEY rather than the scrub's generic PROVIDER_API_KEY.
 check  "secrets.env.example exports DEEPINFRA_API_KEY" grep -q 'export DEEPINFRA_API_KEY=' secrets/secrets.env.example
 # KEEP bucket — the model and the prose must survive the CLI deletion
-check "opencode.json keeps Kimi-K2.6 model" grep -q 'nvidia-kimi-k2-6-nvfp4' opencode/opencode.json
+check "opencode.json keeps Kimi-K2.6 model" grep -q 'moonshotai/Kimi-K2.6' opencode/opencode.json
 check "omp/models.yml still defines a Kimi model" grep -qi 'Kimi-K2' omp/models.yml
 for f in claude/CLAUDE.md cursor/dot-cursor/USER_RULES.md omp/AGENTS.md \
          cursor/dot-cursor/rules/chinese-model-english.mdc \
