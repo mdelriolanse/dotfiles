@@ -1,6 +1,6 @@
 ---
 name: issue-to-docs
-description: Pull a GitHub issue or PR body into local docs/ as a verbatim single-file spec plus chunked markdown, and mirror the spec as a fresh agentmemory project. Use when the user runs /issue-to-docs, or asks to turn an issue/PR into local docs + a dedicated memory project for the thing they're currently tackling. Accepts an issue/PR URL, a fuzzy "issue 894 on <provider> gateway repo", or no argument when cwd is a PR feature-branch clone.
+description: Pull a GitHub issue or PR body into local docs/ as a verbatim single-file spec plus chunked markdown, and mirror the spec as a fresh agentmemory project. Use when the user runs /issue-to-docs, or asks to turn an issue/PR into local docs + a dedicated memory project for the thing they're currently tackling. Accepts an issue/PR URL, a fuzzy "issue 894 on acme gateway repo", or no argument when cwd is a PR feature-branch clone.
 disable-model-invocation: true
 ---
 
@@ -20,9 +20,9 @@ through `gh`. Agentmemory writes use the `agentmemory` MCP server (`memory_save`
 Pick the case from the argument shape:
 
 - **URL** — `.../issues/N` → issue; `.../pull/N` → PR. Owner/repo are in the URL.
-- **Number + fuzzy repo** — e.g. "issue 894 on <provider> Gateway repo".
+- **Number + fuzzy repo** — e.g. "issue 894 on acme gateway repo".
   Resolve the repo loosely: `gh repo list <org> --limit 200 --json name`,
-  then match the spoken name (case/spacing-insensitive, "gateway" → `<provider>-gateway`).
+  then match the spoken name (case/spacing-insensitive, "gateway" → `acme-gateway`).
   Default owner is `<org>`. If two names match, ask which.
   Issue vs PR unknown → try `gh issue view` first, fall back to `gh pr view`.
 - **No argument** — cwd is a PR feature-branch clone. Take the current branch's PR:
@@ -63,7 +63,7 @@ no `docs/` in cwd, ask before creating one).
 
 ## 5. Mirror into a new agentmemory project
 
-Project slug (stable, canonical): `issue-<repo>-<N>` (e.g. `issue-<provider>-gateway-894`).
+Project slug (stable, canonical): `issue-<repo>-<N>` (e.g. `issue-acme-gateway-894`).
 Pass it as `project` on every `memory_save`.
 
 - First run `memory_recall`/`memory_smart_search` for the slug to avoid dupes on re-run;
