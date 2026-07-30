@@ -13,6 +13,44 @@
         "AGENTMEMORY_SECRET": "${AGENTMEMORY_SECRET}"
       }
     },
+    "browserbase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@browserbasehq/mcp",
+        "--modelName",
+        "google/gemini-flash-latest",
+        "--modelApiKey",
+        "${GEMINI_API_KEY}"
+      ],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin",
+        "BROWSERBASE_API_KEY": "${BROWSERBASE_API_KEY}",
+        "BROWSERBASE_PROJECT_ID": "${BROWSERBASE_PROJECT_ID}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+      }
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin",
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
+    "excalidraw": {
+      "command": "npx",
+      "args": ["-y", "mcp-excalidraw-server"],
+      "env": {
+        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin"
+      }
+    },
+    "quiverai": {
+      "url": "https://app.quiver.ai/mcp",
+      "env": {
+        "QUIVERAI_API_KEY": "${QUIVERAI_API_KEY}"
+      }
+    },
     "fetch": {
       "command": "npx",
       "args": ["-y", "html-extractor-mcp"],
