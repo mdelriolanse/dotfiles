@@ -42,14 +42,3 @@ height = "20%"
 command = 'bash ~/dotfiles/herdr/scripts/rename-agent.sh'
 
 
-[[keys.command]]
-key = "ctrl+up"
-type = "shell"
-command = 'printf "\\x02\\x5b\\x15" > "$(readlink /proc/$(pgrep -ax herdr | grep -v server | awk "{print \\$1}" | head -1)/fd/0)"'
-
-[[keys.command]]
-key = "ctrl+down"
-type = "shell"
-command = 'printf "\\x02\\x5b\\x04" > "$(readlink /proc/$(pgrep -ax herdr | grep -v server | awk "{print \\$1}" | head -1)/fd/0)"'
-
-

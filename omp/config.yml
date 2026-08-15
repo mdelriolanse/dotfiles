@@ -1,13 +1,17 @@
 setupVersion: 1
-modelRoles:
-  default: deepinfra/moonshotai/Kimi-K2.7-Code
-disabledProviders:
+modelRoles: 
+  default: deepinfra/zai-org/GLM-5.2:high
+  task: deepinfra/zai-org/GLM-5.2:high
+disabledProviders: 
   - opencode
-tools:
+tools: 
   approvalMode: yolo
-  approval: {}
-startup:
+  approval: 
+    {}
+startup: 
   checkUpdate: false
 shellPath: /bin/bash
-compaction:
+compaction: 
   keepRecentTokens: 8000
+theme: 
+  dark: dark-forest

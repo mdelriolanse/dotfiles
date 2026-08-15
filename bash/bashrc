@@ -8,6 +8,31 @@ case $- in
       *) return;;
 esac
 
+# IRIS autostart (gruvbox build, see dotfiles/iris/build.sh). `iris init bash`
+# execs iris, which re-runs this file inside its PTY with IRIS_PID set — the
+# second pass falls through to the precmd hook instead of exec'ing again.
+# Escape hatch if it ever wedges the prompt: IRIS_RESCUE=1 bash
+# The BASH_EXECUTION_STRING guard keeps `bash -ic '...'` callers from being
+# hijacked into the interactive overlay; without it they exec iris and hang.
+# Children spawned outside iris's PTY (Claude Code, editors) inherit IRIS_FD in
+# the environment but not the open descriptor, so the precmd hook writes to a
+# dead fd and bash prints "$IRIS_FD: Bad file descriptor" before the hook's own
+# 2>/dev/null can suppress it. Drop the stale var when the fd isn't really open.
+[ -n "${IRIS_FD:-}" ] && ! { : >&"$IRIS_FD"; } 2>/dev/null && unset IRIS_FD
+
+if [ -z "${BASH_EXECUTION_STRING:-}" ] && command -v iris >/dev/null 2>&1; then
+  eval "$(iris init bash)"
+fi
+
+# The probe above isn't enough: a nested shell can inherit a live fd 13 that
+# belongs to someone else (node reuses low fds), so the hook still installs and
+# then fails at the first prompt. iris writes it as `>&$IRIS_FD 2>/dev/null`,
+# and bash applies redirections left to right, so the failure is reported to the
+# still-live stderr before 2>/dev/null takes effect. Redefine with stderr
+# silenced first. ponytail: override here, not a patched fork of iris.
+declare -F _iris_bash_precmd >/dev/null &&
+  _iris_bash_precmd() { printf 'IRIS_CMD_STOP\x00' 2>/dev/null >&$IRIS_FD; }
+
 # ble.sh — bash line editor. Enables starship's right-side prompt (right_format),
 # which stock bash can't draw. Sourced with --noattach here; ble-attach runs at
 # the very end of this file (after starship init) so it picks up the prompt.

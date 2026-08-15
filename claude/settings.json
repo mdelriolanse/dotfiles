@@ -17,6 +17,7 @@
       }
     ]
   },
+  "enableWorkflows": true,
   "enabledPlugins": {
     "ponytail@ponytail": true,
     "rust-analyzer-lsp@claude-plugins-official": true
@@ -32,5 +33,6 @@
   "effortLevel": "high",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
-  "theme": "dark-ansi"
+  "theme": "dark-ansi",
+  "agentPushNotifEnabled": true
 }
