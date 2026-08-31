@@ -5,7 +5,12 @@ sidebar_width = 44
 sidebar_max_width = 64
 mouse_capture = true
 
-agent_panel_sort = "spaces"
+agent_panel_sort = "priority"
+
+[ui.sidebar.agents.rows_by_agent]
+cursor = [["state_icon", "state_text", "workspace", "tab"], ["agent"]]
+hermes = [["state_icon", "state_text", "workspace", "tab"], ["agent"]]
+
 [theme]
 name = "gruvbox"
 auto_switch = false
