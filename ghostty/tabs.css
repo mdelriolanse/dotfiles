@@ -1,0 +1,161 @@
+/* Kitty-style slanted powerline tabs.
+ *
+ * AdwTabBox always starts tabs at x=SPACING (5) after an empty pinned
+ * scrolledwindow + start-action. Collapse those, then paint the first tab
+ * as a solid rectangle (square left). Other tabs stay parallelograms. */
+
+.bottom-bar,
+.top-bar,
+tabbar .box,
+toolbarview > .bottom-bar tabbar .box,
+toolbarview > .top-bar tabbar .box {
+  background-color: #0d0e0f;
+  color: #a89984;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Pull the whole bar to the window edge. Pinned strip + start-action
+ * still allocate width even when empty; this eats that leftover. */
+tabbar .box {
+  margin-left: -80px;
+}
+
+tabbar .start-action,
+tabbar .start-action * {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+tabbar scrolledwindow.pinned,
+tabbar scrolledwindow.pinned * {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+
+tabbar scrolledwindow.pinned {
+  margin-right: -80px;
+}
+
+tabbar tabbox {
+  padding: 0;
+  min-height: 24px;
+  border-spacing: 0;
+}
+
+tabbar scrolledwindow:not(.pinned) tabbox {
+  padding-right: 80px;
+}
+
+tabbar tabbox > separator {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+tabbar tabbox > tabboxchild {
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: none;
+  padding: 0;
+  margin: 0 -40px 0 0;
+}
+
+tabbar tab,
+dnd tab {
+  min-height: 24px;
+  min-width: 64px;
+  padding: 2px 16px 2px 8px;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  background: none;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' preserveAspectRatio='none'%3E%3Cpolygon points='16,0 100,0 84,24 0,24' fill='%23282828'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  color: #a89984;
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 11px;
+  font-weight: normal;
+}
+
+tabbar tab:hover,
+dnd tab:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' preserveAspectRatio='none'%3E%3Cpolygon points='16,0 100,0 84,24 0,24' fill='%233c3836'/%3E%3C/svg%3E");
+  color: #ebdbb2;
+}
+
+tabbar tab:selected,
+tabbar tab:checked,
+tabbar tabbox.single-tab tab,
+tabbar tabbox.single-tab tab:hover,
+tabbar tabbox.single-tab tab:active {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' preserveAspectRatio='none'%3E%3Cpolygon points='16,0 100,0 84,24 0,24' fill='%23d79921'/%3E%3C/svg%3E");
+  color: #0d0e0f;
+  font-weight: bold;
+  box-shadow: none;
+}
+
+tabbar tab:selected:hover,
+tabbar tab:checked:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' preserveAspectRatio='none'%3E%3Cpolygon points='16,0 100,0 84,24 0,24' fill='%23d79921'/%3E%3C/svg%3E");
+  color: #0d0e0f;
+}
+
+/* First tab: vertical left, slanted right. */
+tabbar tabbox > tabboxchild:nth-child(2) tab,
+tabbar tabbox > separator:first-child + tabboxchild tab {
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' preserveAspectRatio='none'%3E%3Cpolygon points='0,0 100,0 84,24 0,24' fill='%23282828'/%3E%3C/svg%3E");
+}
+
+tabbar tabbox > tabboxchild:nth-child(2) tab:hover,
+tabbar tabbox > separator:first-child + tabboxchild tab:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' preserveAspectRatio='none'%3E%3Cpolygon points='0,0 100,0 84,24 0,24' fill='%233c3836'/%3E%3C/svg%3E");
+}
+
+tabbar tabbox > tabboxchild:nth-child(2) tab:selected,
+tabbar tabbox > tabboxchild:nth-child(2) tab:checked,
+tabbar tabbox > separator:first-child + tabboxchild tab:selected,
+tabbar tabbox > separator:first-child + tabboxchild tab:checked,
+tabbar tabbox.single-tab > tabboxchild:nth-child(2) tab,
+tabbar tabbox.single-tab > separator:first-child + tabboxchild tab {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' preserveAspectRatio='none'%3E%3Cpolygon points='0,0 100,0 84,24 0,24' fill='%23d79921'/%3E%3C/svg%3E");
+  color: #0d0e0f;
+}
+
+tabbar tab indicator,
+dnd tab indicator {
+  background: none;
+  min-height: 0;
+}
+
+tabbar tab button,
+tabbar tab button.image-button,
+dnd tab button.image-button {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+tabbar tab stack,
+tabbar tab .tab-icon {
+  margin: 0;
+  padding: 0;
+}
+
+tabbar .end-action {
+  padding: 2px 4px;
+}

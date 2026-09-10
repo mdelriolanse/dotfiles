@@ -41,3 +41,9 @@ cursor/dot-cursor/plans/
 
 # Stray MCP server log
 excalidraw.log
+
+# Machine-local cargo-dist receipt (install_prefix is host-specific)
+nvim/ruff/ruff-receipt.json
+
+# Live Codex config holds MCP secrets; only harness.toml is tracked
+codex/config.toml

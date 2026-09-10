@@ -186,10 +186,8 @@ known_plugin_toolsets:
     - spotify
 mcp_servers:
   agentmemory:
-    # NOTE: machine-specific path — adjust to where agentmemory-mcp is installed
-    # on this machine (not a secret, just a local install location).
-    command:
-      agentmemory-mcp
+    # Resolved from PATH (install agentmemory-mcp locally; do not hardcode a host path).
+    command: agentmemory-mcp
     env:
       AGENTMEMORY_URL: http://localhost:3111
       AGENTMEMORY_TOOLS: all
