@@ -1,0 +1,10 @@
+# Codex harness — ported from cursor/dot-cursor/cli-config.json
+# Cursor approvalMode=unrestricted + sandbox.mode=disabled maps to the
+# --yolo / --dangerously-bypass-approvals-and-sandbox pair.
+#
+# Do not add default_permissions. Official Permissions docs: sandbox_mode
+# and default_permissions do not compose; if sandbox_mode is present, Codex
+# uses the classic sandbox settings.
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"

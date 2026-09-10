@@ -20,7 +20,13 @@ esac
 # 2>/dev/null can suppress it. Drop the stale var when the fd isn't really open.
 [ -n "${IRIS_FD:-}" ] && ! { : >&"$IRIS_FD"; } 2>/dev/null && unset IRIS_FD
 
-if [ -z "${BASH_EXECUTION_STRING:-}" ] && command -v iris >/dev/null 2>&1; then
+# Herdr identifies agents from the pane's foreground process group. iris keeps
+# the TTY, so cursor-agent (and every other agent) looks like "iris" and never
+# enters the sidebar — even though the cursor session hook already fires.
+# Skip the overlay inside herdr panes; keep it for kitty/normal shells.
+if [ -z "${BASH_EXECUTION_STRING:-}" ] \
+  && [ "${HERDR_ENV:-}" != "1" ] \
+  && command -v iris >/dev/null 2>&1; then
   eval "$(iris init bash)"
 fi
 
@@ -150,11 +156,14 @@ fi
 # User customizations (reconstructed from truncated original)
 # =============================================================================
 
-# Homebrew
-export PATH="$HOME/.linuxbrew/Homebrew/bin:$PATH"
-export HOMEBREW_PREFIX="$HOME/.linuxbrew"
-export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+# Homebrew (skip if not installed)
+if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+elif [ -x "$HOME/.linuxbrew/Homebrew/bin/brew" ]; then
+  export PATH="$HOME/.linuxbrew/Homebrew/bin:$PATH"
+  export HOMEBREW_PREFIX="$HOME/.linuxbrew"
+  export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+fi
 
 # NVM (Node Version Manager)
 export NVM_DIR="$HOME/.nvm"
@@ -211,7 +220,7 @@ eval "$(zoxide init bash --cmd cd)"
 
 # Load dotfiles secrets (gitignored)
 [ -f "$HOME/dotfiles/secrets/secrets.env" ] && set -a && . "$HOME/dotfiles/secrets/secrets.env" && set +a
-. "$HOME/.cargo/env"
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # Attach ble.sh (must be last, after starship init) so the right-side prompt renders.
 [[ ${BLE_VERSION-} ]] && ble-attach

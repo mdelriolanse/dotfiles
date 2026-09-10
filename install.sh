@@ -52,6 +52,9 @@ link "$HOME/.config/nvim"                          "$REPO_DIR/nvim"
 link "$HOME/.config/opencode"                      "$REPO_DIR/opencode"
 link "$HOME/.config/starship.toml"                 "$REPO_DIR/starship/starship.toml"
 link "$HOME/.config/kitty/kitty.conf"              "$REPO_DIR/kitty/kitty.conf"
+# Ghostty: items only — ~/.config/ghostty can hold runtime files.
+link "$HOME/.config/ghostty/config.ghostty"        "$REPO_DIR/ghostty/config.ghostty"
+link "$HOME/.config/ghostty/tabs.css"              "$REPO_DIR/ghostty/tabs.css"
 link "$HOME/.config/iris/config.toml"              "$REPO_DIR/iris/config.toml"
 link "$HOME/.bashrc"                               "$REPO_DIR/bash/bashrc"
 link "$HOME/.blerc"                                "$REPO_DIR/bash/blerc"
@@ -302,6 +305,59 @@ if [ -d "$REPO_DIR/herdr" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 6d. Codex CLI harness (~/.codex/config.toml)
+#     Upsert approval/sandbox keys from the tracked snippet. Do NOT symlink
+#     ~/.codex or the live config.toml — Codex rewrites that file (hooks.state,
+#     plugins, desktop) and it holds secrets. No persistent `codex config set`;
+#     -c is session-only. Line replace/insert only; never rewrite from a parse.
+# ---------------------------------------------------------------------------
+CODEX_HARNESS="$REPO_DIR/codex/harness.toml"
+CODEX_CFG="$HOME/.codex/config.toml"
+if [ -f "$CODEX_HARNESS" ]; then
+  mkdir -p "$HOME/.codex"
+  if [ -f "$CODEX_CFG" ] && grep -qE '^default_permissions[[:space:]]*=' "$CODEX_CFG"; then
+    warn "Codex: live config has default_permissions — do not mix with sandbox_mode (Permissions docs). Leaving it; harness still upserts classic keys."
+  fi
+  # upsert_toml_top_level <file> <key> <value>
+  upsert_toml_top_level() {
+    local file="$1" key="$2" value="$3" tmp
+    tmp="$(mktemp)"
+    if [ ! -f "$file" ]; then
+      printf '%s = %s\n' "$key" "$value" > "$file"
+      rm -f "$tmp"
+      return 0
+    fi
+    if grep -qE "^${key}[[:space:]]*=" "$file"; then
+      awk -v k="$key" -v v="$value" '
+        BEGIN { done=0 }
+        $0 ~ "^" k "[[:space:]]*=" && !done { print k " = " v; done=1; next }
+        { print }
+      ' "$file" > "$tmp"
+    else
+      printf '%s = %s\n' "$key" "$value" > "$tmp"
+      cat "$file" >> "$tmp"
+    fi
+    mv "$tmp" "$file"
+  }
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ''|\#*) continue ;;
+      \[*) break ;;
+    esac
+    key="${line%%=*}"
+    key="${key%"${key##*[![:space:]]}"}"
+    value="${line#*=}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    [ -n "$key" ] && [ -n "$value" ] || continue
+    upsert_toml_top_level "$CODEX_CFG" "$key" "$value"
+  done < "$CODEX_HARNESS"
+  ok "Codex harness upserted into ~/.codex/config.toml"
+else
+  warn "codex/harness.toml missing — skip Codex harness"
+fi
+command -v codex >/dev/null 2>&1 || warn "codex CLI not on PATH — harness keys are written but Codex is not installed"
+
+# ---------------------------------------------------------------------------
 # 7. Optional: reinstall Cursor extensions from snapshot
 # ---------------------------------------------------------------------------
 if [ "${1:-}" = "--extensions" ]; then
@@ -328,6 +384,7 @@ command -v claude   >/dev/null 2>&1 && ok "found claude CLI" || warn "claude CLI
 command -v omp      >/dev/null 2>&1 && ok "found omp" || warn "omp not on PATH — install with: curl -fsSL https://omp.sh/install | sh"
 command -v herdr    >/dev/null 2>&1 && ok "found herdr" || warn "herdr not on PATH — install with: curl -fsSL https://herdr.dev/install.sh | sh"
 command -v iris     >/dev/null 2>&1 && ok "found iris" || warn "iris not on PATH — build the gruvbox one with: ./iris/build.sh"
+command -v codex    >/dev/null 2>&1 && ok "found codex" || warn "codex CLI not on PATH"
 
 # ---------------------------------------------------------------------------
 # 9. Summary / next steps
@@ -352,6 +409,8 @@ Next steps:
      Install omp itself with: curl -fsSL https://omp.sh/install | sh
   9) herdr: ~/.config/herdr/{config.toml,scripts} are symlinks into herdr/.
      Install herdr with: curl -fsSL https://herdr.dev/install.sh | sh
+ 10) Codex: approval/sandbox keys from codex/harness.toml are upserted into
+     ~/.codex/config.toml (the live file is never symlinked).
 
 Backups of anything replaced (if any) are under: $BACKUP_DIR
 EOF

@@ -1,8 +1,8 @@
 # dotfiles
 
 Centralized configuration for **Neovim**, **opencode**, **Cursor**, **Claude
-Code**, **omp**, **tmux**, and **herdr**. The real config locations are symlinks
-into this repo, so editing here == editing live.
+Code**, **omp**, **Codex**, **tmux**, and **herdr**. The real config locations
+are symlinks into this repo, so editing here == editing live.
 
 ## Quickstart
 
@@ -59,6 +59,12 @@ iris/gruvbox.sed         palette patch + build.sh build  upstream has no theme
                                                         rewrites its colours)
 herdr/config.toml        -> ~/.config/herdr/config.toml
 herdr/scripts/           -> ~/.config/herdr/scripts
+codex/harness.toml       upserted -> ~/.codex/config.toml  (approval/sandbox
+                                                        keys only; never
+                                                        symlink the live
+                                                        file — Codex rewrites
+                                                        it and it holds
+                                                        secrets)
 hermes/SOUL.md           -> ~/.hermes/SOUL.md          (persona / system prompt)
 hermes/news-topics.txt   -> ~/.hermes/news-topics.txt  (digest topics)
 
@@ -85,6 +91,16 @@ all `*cache*` / `logs/`, `bin/`, `hermes-agent/`, and the bundled `skills/`
 (re-provisioned by Hermes itself). `scripts/` assume `~/.hermes` and the Obsidian
 vault path — adjust per machine. The `agentmemory` MCP `command:` path in
 `config.yaml.example` is machine-specific (flagged with a `# NOTE:`).
+
+### Codex CLI (`~/.codex`)
+
+Only the harness posture is centralized. `codex/harness.toml` holds
+`approval_policy` + `sandbox_mode` (Cursor unrestricted / sandbox-off, expressed
+in Codex keys). `install.sh` upserts those two top-level keys into the live
+`~/.codex/config.toml`. The live file is **never** symlinked: Codex rewrites it
+(plugins, marketplaces, `[hooks.state]`, desktop) and it holds MCP secrets.
+Do not commit `~/.codex/config.toml`. Do not mix `sandbox_mode` with
+`default_permissions` — they do not compose.
 
 ## Secrets & MCP keys
 

@@ -4,8 +4,7 @@
 -- commits that landed on main after the fork don't show up as our changes, and runs
 -- `lumen diff <merge-base>..HEAD` in a floating terminal.
 --
--- Git commands run with cwd set to the current buffer's directory, so this does the
--- right thing inside a linked worktree (each worktree has its own HEAD).
+-- Git commands run from the current buffer's worktree root.
 
 local M = {}
 
@@ -17,7 +16,7 @@ local FALLBACK_BASES = { 'main', 'master', 'trunk', 'develop' }
 local function cwd()
   local buf_dir = vim.fn.expand '%:p:h'
   if buf_dir ~= '' and vim.fn.isdirectory(buf_dir) == 1 then
-    return buf_dir
+    return vim.fs.root(buf_dir, '.git') or buf_dir
   end
   return vim.fn.getcwd()
 end

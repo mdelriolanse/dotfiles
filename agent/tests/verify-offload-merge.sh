@@ -261,6 +261,21 @@ check "tracked: opencode/plugins/herdr-agent-state.js"   git ls-files --error-un
 check "herdr in prereq check" grep -q 'command -v herdr' install.sh
 
 # ---------------------------------------------------------------------------
+group "G5g. CODEX HARNESS (install.sh section 6d)"
+# ---------------------------------------------------------------------------
+check "codex/harness.toml exists" test -f codex/harness.toml
+check "harness.toml approval_policy never" grep -qE '^approval_policy[[:space:]]*=[[:space:]]*"never"' codex/harness.toml
+check "harness.toml sandbox_mode danger-full-access" grep -qE '^sandbox_mode[[:space:]]*=[[:space:]]*"danger-full-access"' codex/harness.toml
+refute "harness.toml does not set default_permissions" grep -qE '^default_permissions[[:space:]]*=' codex/harness.toml
+refute "no Cursor JSON assignments in harness.toml" grep -qE '^(approvalMode|unrestricted)' codex/harness.toml
+check "install.sh reads codex/harness.toml" grep -q 'codex/harness.toml' install.sh
+check "install.sh upserts ~/.codex/config.toml" grep -q 'upsert_toml_top_level' install.sh
+refute "install.sh does NOT whole-dir link ~/.codex" grep -qE 'link "\$HOME/\.codex"' install.sh
+refute "install.sh does NOT symlink live config.toml" grep -qE 'link "\$HOME/\.codex/config.toml"|link "\$CODEX_CFG"' install.sh
+refute "repo has no materialized codex/config.toml" test -e codex/config.toml
+check "codex in prereq check" grep -q 'command -v codex' install.sh
+
+# ---------------------------------------------------------------------------
 group "G5f. MCP ROSTER (graphify is a CLI, never an MCP)"
 # ---------------------------------------------------------------------------
 for f in cursor/dot-cursor/mcp.json.example claude/mcp.json.example omp/mcp.json opencode/opencode.json; do
@@ -324,7 +339,7 @@ else
   printf '%s\n' "$cred_hits" | sed 's/^/         /'
 fi
 for f in kimi/config.toml claude/mcp.json cursor/dot-cursor/mcp.json \
-         hermes/config.yaml hermes/.env secrets/secrets.env; do
+         hermes/config.yaml hermes/.env secrets/secrets.env codex/config.toml; do
   refute "not tracked: $f" git ls-files --error-unmatch "$f"
 done
 
@@ -346,6 +361,14 @@ if [ -L "$HOME/.omp/agent/AGENTS.md" ]; then
     check "~/.config/herdr/$i -> repo" linked_to "$HOME/.config/herdr/$i" "$REPO_DIR/herdr/$i"
   done
   refute "~/.config/herdr is NOT a symlink" test -L "$HOME/.config/herdr"
+  refute "~/.codex is NOT a symlink" test -L "$HOME/.codex"
+  if [ -f "$HOME/.codex/config.toml" ]; then
+    refute "~/.codex/config.toml is NOT a symlink" test -L "$HOME/.codex/config.toml"
+    check "live Codex config has approval_policy never" \
+      grep -qE '^approval_policy[[:space:]]*=[[:space:]]*"never"' "$HOME/.codex/config.toml"
+    check "live Codex config has sandbox_mode danger-full-access" \
+      grep -qE '^sandbox_mode[[:space:]]*=[[:space:]]*"danger-full-access"' "$HOME/.codex/config.toml"
+  fi
   count_is "no dangling skill symlinks" 0 \
     "$(find -L "$HOME/.claude/skills" "$HOME/.cursor/skills" "$HOME/.cursor/skills-cursor" "$HOME/.omp/agent" -type l 2>/dev/null | wc -l)"
   # Cursor sees the whole skill family, with the 5 adapted ones overridden.
@@ -370,7 +393,7 @@ group "G9. CONFIGURED APPS ARE ACTUALLY INSTALLED"
 # symlinks are inert. Checked against PATH plus the two user-local bin dirs
 # that omp (bun) and herdr/serena (~/.local/bin) install into.
 have() { command -v "$1" >/dev/null 2>&1 || [ -x "$HOME/.local/bin/$1" ] || [ -x "$HOME/.bun/bin/$1" ]; }
-for app in nvim tmux kitty starship opencode cursor claude omp herdr jq node envsubst git; do
+for app in nvim tmux kitty starship opencode cursor claude omp herdr jq node envsubst git codex; do
   check "installed: $app" have "$app"
 done
 # MCP backends are separate binaries the configs invoke by name.

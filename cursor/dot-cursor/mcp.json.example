@@ -13,23 +13,6 @@
         "AGENTMEMORY_SECRET": "${AGENTMEMORY_SECRET}"
       }
     },
-    "browserbase": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@browserbasehq/mcp",
-        "--modelName",
-        "google/gemini-flash-latest",
-        "--modelApiKey",
-        "${GEMINI_API_KEY}"
-      ],
-      "env": {
-        "PATH": "${NODE_BIN_PATH}:/usr/bin:/bin",
-        "BROWSERBASE_API_KEY": "${BROWSERBASE_API_KEY}",
-        "BROWSERBASE_PROJECT_ID": "${BROWSERBASE_PROJECT_ID}",
-        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
-      }
-    },
     "firecrawl-mcp": {
       "command": "npx",
       "args": ["-y", "firecrawl-mcp"],
