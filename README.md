@@ -192,5 +192,3 @@ and are consumed two ways:
   told agents to reach for it first, both are gone. Semble covers the
   natural-language queries it used to answer. Do not re-add it from npm or
   PyPI; those are not the same tool.
-
-Verify the whole setup with `./agent/tests/verify-offload-merge.sh`.

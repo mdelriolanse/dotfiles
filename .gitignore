@@ -49,3 +49,6 @@ nvim/ruff/ruff-receipt.json
 
 # Live Codex config holds MCP secrets; only harness.toml is tracked
 codex/config.toml
+
+# Serena project state (regenerated per machine)
+.serena/
