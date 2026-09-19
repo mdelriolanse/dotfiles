@@ -2,8 +2,9 @@
 
 Centralized configuration for **Neovim**, **opencode**, **Cursor**, **Claude
 Code**, **omp**, **Codex**, **Hermes**, **tmux**, **herdr**, **Ghostty**,
-**kitty**, **starship**, **iris**, and **bash**. Real config locations are
-symlinks into this repo, so editing here == editing live.
+**kitty**, **starship**, **iris**, and **bash**. `install.sh` replaces the
+usual paths (`~/.config/nvim`, `~/.bashrc`, …) with symlinks into this
+repo — there is no second copy.
 
 ## Quickstart
 
