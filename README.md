@@ -1,8 +1,9 @@
 # dotfiles
 
 Centralized configuration for **Neovim**, **opencode**, **Cursor**, **Claude
-Code**, **omp**, **Codex**, **tmux**, and **herdr**. The real config locations
-are symlinks into this repo, so editing here == editing live.
+Code**, **omp**, **Codex**, **Hermes**, **tmux**, **herdr**, **Ghostty**,
+**kitty**, **starship**, **iris**, and **bash**. Real config locations are
+symlinks into this repo, so editing here == editing live.
 
 ## Quickstart
 
@@ -37,8 +38,14 @@ this repo via symlinks. `secrets/secrets.env.example` lists every key you need.
 ```
 nvim/                    -> ~/.config/nvim            (whole dir)
 opencode/                -> ~/.config/opencode        (whole dir; node_modules ignored)
+bash/bashrc              -> ~/.bashrc
+bash/blerc               -> ~/.blerc
+starship/starship.toml   -> ~/.config/starship.toml
+kitty/kitty.conf         -> ~/.config/kitty/kitty.conf
+ghostty/config.ghostty   -> ~/.config/ghostty/config.ghostty
+ghostty/tabs.css         -> ~/.config/ghostty/tabs.css
 cursor/User/*            -> ~/.config/Cursor/User/*    (settings, keybindings, snippets)
-cursor/dot-cursor/*      -> ~/.cursor/*                (argv, cli-config, commands,
+cursor/dot-cursor/*      -> ~/.cursor/*                (argv, cli-config,
                                                         skills-cursor, USER_RULES,
                                                         mcp.json)
 cursor/dot-cursor/skills/  overlaid -> ~/.cursor/skills  (Cursor-adapted copies of
@@ -47,6 +54,8 @@ cursor/dot-cursor/skills/  overlaid -> ~/.cursor/skills  (Cursor-adapted copies 
 claude/settings.json     -> ~/.claude/settings.json    (individual items only —
 claude/skills/           -> ~/.claude/skills            ~/.claude holds runtime
 claude/CLAUDE.md         -> ~/.claude/CLAUDE.md         state, never whole-dir)
+claude/agents/           -> ~/.claude/agents
+claude/commands/         -> ~/.claude/commands
 claude/mcp.json.example  materialized -> claude/mcp.json (gitignored), then
                          registered into Claude's user scope by install.sh
 omp/*                    -> ~/.omp/agent/*             (7 individual items;
@@ -54,9 +63,7 @@ omp/*                    -> ~/.omp/agent/*             (7 individual items;
                                                         history.db stay real)
 tmux/tmux.conf           -> ~/.tmux.conf               (ctrl+hjkl pane nav)
 iris/config.toml         -> ~/.config/iris/config.toml  (IRIS completion menu;
-iris/gruvbox.sed         palette patch + build.sh build  upstream has no theme
-                                                        option, so build.sh
-                                                        rewrites its colours)
+iris/gruvbox.sed + build.sh  palette patch — upstream has no theme option)
 herdr/config.toml        -> ~/.config/herdr/config.toml
 herdr/scripts/           -> ~/.config/herdr/scripts
 codex/harness.toml       upserted -> ~/.codex/config.toml  (approval/sandbox
@@ -76,21 +83,21 @@ install.sh               symlink + bootstrap script
 ### Hermes agent (`~/.hermes`)
 
 Only **preferences** are centralized — never memory or runtime state. `SOUL.md`
-and `news-topics.txt` are symlinked (edit-here == edit-live). Cron scripts stay
-machine-local (gitignored, not in the repo).
+and `news-topics.txt` are symlinked (edit-here == edit-live). Cron scripts are
+machine-local (gitignored; `install.sh` links `~/.hermes/scripts` only if that
+directory exists next to the repo).
 `config.yaml` and `.env` mix preferences with secrets **and** are rewritten by
 Hermes at runtime, so they are not symlinked: `install.sh` materializes them from
 `config.yaml.example` / `.env.example` + `secrets.env` (via `envsubst`) **only if
 absent** — it never clobbers a live config. Secret values (`HERMES_MODEL_API_KEY`,
 `AGENTMEMORY_SECRET`, `TELEGRAM_*`) live in `secrets.env`; the tracked templates
-carry `${VAR}` placeholders / blanks.
+carry `${VAR}` placeholders / blanks. The `agentmemory` MCP entry uses
+`agentmemory-mcp` on `PATH`.
 
 Deliberately **excluded** (memory, state, caches, creds, binaries, the app
 checkout): `memories/`, `sessions/`, `state.db*`, `kanban*`, `cron/`, `auth.json`,
 all `*cache*` / `logs/`, `bin/`, `hermes-agent/`, and the bundled `skills/`
-(re-provisioned by Hermes itself). `scripts/` assume `~/.hermes` and the Obsidian
-vault path — adjust per machine. The `agentmemory` MCP `command:` path in
-`config.yaml.example` is machine-specific (flagged with a `# NOTE:`).
+(re-provisioned by Hermes itself).
 
 ### Codex CLI (`~/.codex`)
 
