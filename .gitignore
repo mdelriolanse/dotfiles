@@ -11,6 +11,8 @@ claude/mcp.json
 # install.sh materializes these from the examples + secrets.env, then symlinks them.
 hermes/config.yaml
 hermes/.env
+# Cron/agent scripts stay machine-local; not centralized.
+hermes/scripts/
 
 # ============================================================================
 # Transient / machine-generated

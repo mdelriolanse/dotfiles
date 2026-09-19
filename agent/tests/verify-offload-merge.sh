@@ -73,7 +73,6 @@ if git rev-parse --verify "$TAG" >/dev/null 2>&1; then
 else
   sk "G2 needs tag $TAG"
 fi
-
 check "kitty.conf keeps JetBrainsMono Nerd Font" grep -q 'JetBrainsMono Nerd Font' kitty/kitty.conf
 check "kitty.conf keeps background_opacity 0.90" grep -qE '^background_opacity[[:space:]]+0\.90' kitty/kitty.conf
 

@@ -172,10 +172,13 @@ fi
 # ---------------------------------------------------------------------------
 HERMES_HOME="$HOME/.hermes"
 if [ -d "$REPO_DIR/hermes" ]; then
-  # Symlinked preferences (persona, digest topics, cron scripts).
+  # Symlinked preferences (persona, digest topics).
   link "$HERMES_HOME/SOUL.md"         "$REPO_DIR/hermes/SOUL.md"
   link "$HERMES_HOME/news-topics.txt" "$REPO_DIR/hermes/news-topics.txt"
-
+  # hermes/scripts is gitignored (machine-local). Link only if present.
+  if [ -d "$REPO_DIR/hermes/scripts" ]; then
+    link "$HERMES_HOME/scripts" "$REPO_DIR/hermes/scripts"
+  fi
 
   # Scaffold secret-bearing, runtime-mutated files from templates (if absent).
   # hermes_scaffold <target> <template> <var-list-for-envsubst>

@@ -67,7 +67,6 @@ codex/harness.toml       upserted -> ~/.codex/config.toml  (approval/sandbox
                                                         secrets)
 hermes/SOUL.md           -> ~/.hermes/SOUL.md          (persona / system prompt)
 hermes/news-topics.txt   -> ~/.hermes/news-topics.txt  (digest topics)
-
 hermes/config.yaml.example  scaffolded -> ~/.hermes/config.yaml  (gitignored real)
 hermes/.env.example         scaffolded -> ~/.hermes/.env         (gitignored real)
 secrets/secrets.env      (gitignored) real keys; sourced by ~/.bashrc
@@ -76,8 +75,9 @@ install.sh               symlink + bootstrap script
 
 ### Hermes agent (`~/.hermes`)
 
-Only **preferences** are centralized — never memory or runtime state. `SOUL.md`,
-`news-topics.txt`, and `scripts/` are symlinked (edit-here == edit-live).
+Only **preferences** are centralized — never memory or runtime state. `SOUL.md`
+and `news-topics.txt` are symlinked (edit-here == edit-live). Cron scripts stay
+machine-local (gitignored, not in the repo).
 `config.yaml` and `.env` mix preferences with secrets **and** are rewritten by
 Hermes at runtime, so they are not symlinked: `install.sh` materializes them from
 `config.yaml.example` / `.env.example` + `secrets.env` (via `envsubst`) **only if
