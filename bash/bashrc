@@ -8,6 +8,25 @@ case $- in
       *) return;;
 esac
 
+# User bins + /usr/local/bin before iris/go/zoxide/starship. Ghostty's
+# posix inject may skip ~/.profile; a GUI session can also hand us a
+# brew-only PATH. ${HOME} in Ghostty env= is literal, so don't rely on it.
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin${PATH:+:$PATH}" ;; esac
+case ":$PATH:" in *":$HOME/bin:"*) ;; *) PATH="$HOME/bin${PATH:+:$PATH}" ;; esac
+for d in /usr/local/bin /usr/bin /bin; do
+  case ":$PATH:" in *":$d:"*) ;; *) PATH="${PATH:+$PATH:}$d" ;; esac
+done
+export PATH
+
+# SSH: use the local Cinnamon display when X11 isn't forwarded, so xclip
+# (nvim yank, tmux copy) hits this machine's clipboard. ssh -X keeps DISPLAY.
+if [ -n "${SSH_CONNECTION:-}" ]; then
+  export XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}"
+  if [ -z "${DISPLAY:-}" ]; then
+    export DISPLAY=:0
+  fi
+fi
+
 # IRIS autostart (gruvbox build, see dotfiles/iris/build.sh). `iris init bash`
 # execs iris, which re-runs this file inside its PTY with IRIS_PID set — the
 # second pass falls through to the precmd hook instead of exec'ing again.
@@ -174,7 +193,9 @@ export NVM_DIR="$HOME/.nvm"
 export PATH="$PATH:/opt/Quartus/quartus/bin"
 
 # Go
-export PATH="$PATH:$(go env GOPATH)/bin"
+if command -v go >/dev/null 2>&1; then
+  export PATH="$PATH:$(go env GOPATH)/bin"
+fi
 
 # Android Studio / SDK
 export ANDROID_HOME="$HOME/Android/Sdk"
@@ -215,8 +236,8 @@ export AGENTMEMORY_URL=http://localhost:3111
 export USER_ID=bob
 export TEAM_ID=developer-relations
 
-eval "$(starship init bash)"
-eval "$(zoxide init bash --cmd cd)"
+command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash --cmd cd)"
 
 # Load dotfiles secrets (gitignored)
 [ -f "$HOME/dotfiles/secrets/secrets.env" ] && set -a && . "$HOME/dotfiles/secrets/secrets.env" && set +a

@@ -271,24 +271,8 @@ vim.keymap.set('n', '<leader>td', function()
 	vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, { silent = true, noremap = true })
 
--- Copy selected text to system clipboard via xclip (no +clipboard compiled in)
-vim.keymap.set({ 'v', 'x' }, '<C-c>', function()
-  vim.cmd('normal! "xy')
-  local text = vim.fn.getreg('x')
-  if #text > 0 then
-    vim.fn.system('xclip -selection clipboard -i', text)
-  end
-end, { desc = 'Copy selection to system clipboard' })
-
--- Paste from system clipboard (via xclip). Reads clipboard, sets the " register
--- (so subsequent p/P or C-r" in insert mode can paste it), then pastes in place.
-vim.keymap.set('n', '<leader>P', function()
-  local text = vim.fn.system('xclip -selection clipboard -o')
-  if vim.v.shell_error ~= 0 or #text == 0 then return end
-  text = text:gsub('\n$', '')
-  vim.fn.setreg('"', text, 'c')
-  vim.cmd('normal! p')
-end, { desc = '[P]aste from system clipboard' })
+vim.keymap.set({ 'v', 'x' }, '<C-c>', '"+y', { desc = 'Copy selection to system clipboard' })
+vim.keymap.set('n', '<leader>P', '"+p', { desc = '[P]aste from system clipboard' })
 
 -- Arrow symbol auto-replacement in insert mode
 vim.keymap.set('i', '-->', '→', { desc = 'Replace --> with →' })

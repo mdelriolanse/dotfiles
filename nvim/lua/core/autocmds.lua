@@ -1,16 +1,9 @@
--- Highlight when yanking and sync to system clipboard via xclip.
--- We do NOT have +clipboard compiled in, so use xclip directly.
+-- Highlight on yank. Clipboard sync is vim.g.clipboard (OSC 52 + xclip).
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
     vim.hl.on_yank()
-    -- Only sync yanks (y/Y), not deletes (d/x), to avoid wiping clipboard
-    if vim.v.event.operator ~= 'y' then return end
-    local yanked = vim.fn.getreg('"')
-    if #yanked > 0 then
-      vim.fn.system('xclip -selection clipboard -i', yanked)
-    end
   end,
 })
 
