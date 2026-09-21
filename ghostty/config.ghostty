@@ -42,10 +42,9 @@ palette = 13=#d3869b
 palette = 14=#8ec07c
 palette = 15=#ebdbb2
 
-# GUI sessions sometimes inherit a Homebrew-only PATH. Ghostty is a login
-# shell, so /etc/bash.bashrc runs `zoxide init` before ~/.profile can add
-# ~/.local/bin, and bashrc's `go env` 404s if /usr/bin isn't on PATH yet.
-env = PATH=${HOME}/.local/bin:${HOME}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# Ghostty does not expand ${HOME} in env= values — a prior PATH= override
+# put the literal string "${HOME}/.local/bin" on PATH, so go/zoxide/iris
+# 404'd at startup. User bins are prepended in ~/.profile before bashrc.
 
 # --- Tab bar -------------------------------------------------------------
 # Kitty powerline + slanted is parallelograms joined by . Ghostty's GTK tabs

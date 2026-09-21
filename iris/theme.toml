@@ -1,0 +1,22 @@
+# ~/.config/iris/theme.toml
+# Gruvbox palette (same hex as iris/gruvbox.sed).
+
+border = "#fabd2f"
+accent = "#b8bb26"
+muted = "#928374"
+text = "#ebdbb2"
+text_sel = "#fbf1c7"
+key = "#fabd2f"
+match = "#b8bb26"
+desc = "#a89984"
+desc_sel = "#ebdbb2"
+sel_bg = "#504945"
+sel_text = "#282828"
+scroll_info = "#fabd2f"
+ghost_text = "#665c54"
+sys = "#3c3836"
+sys_sel = "#fabd2f"
+hist = "#3c3836"
+hist_sel = "#b8bb26"
+alias = "#3c3836"
+alias_sel = "#fabd2f"
