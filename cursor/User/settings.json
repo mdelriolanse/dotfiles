@@ -3,8 +3,11 @@
     "jupyter.askForKernelRestart": false,
     "remote.SSH.remotePlatform": {
         "unicorn": "linux",
-        "ece": "linux"
+        "ece": "linux",
+        "spark": "linux",
+        "spark-cursor": "linux"
     },
+    "remote.SSH.connectTimeout": 120,
     "remote.autoForwardPortsSource": "hybrid",
     "files.autoSave": "afterDelay",
     "workbench.colorTheme": "Vira Teal High Contrast",

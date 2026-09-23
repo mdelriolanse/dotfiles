@@ -30,12 +30,18 @@ while IFS= read -r -d '' dangling; do
 done
 
 link_tree() {
-  local root="$1" label="$2"
+  local root="$1" label="$2" skip="${3:-}"
   [ -d "$root" ] || return 0
   find "$root" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0 |
   while IFS= read -r -d '' skill_md; do
     src="$(dirname "$skill_md")"
     name="$(basename "$src")"
+    # The session hook already injects skills/ponytail/SKILL.md. Linking it
+    # again would put the same text in the skill catalog.
+    if [ -n "$skip" ] && [ "$name" = "$skip" ]; then
+      if [ -L "$DEST/$name" ]; then rm -f "$DEST/$name"; fi
+      continue
+    fi
     target="$DEST/$name"
 
     if [ -e "$target" ] && [ ! -L "$target" ]; then
@@ -48,4 +54,5 @@ link_tree() {
 }
 
 link_tree "$REPO/skills" ""
+link_tree "$REPO/ponytail/skills" "ponytail" "ponytail"
 link_tree "$CURSOR_SKILLS" "cursor override"

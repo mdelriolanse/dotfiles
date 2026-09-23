@@ -271,8 +271,14 @@ vim.keymap.set('n', '<leader>td', function()
 	vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, { silent = true, noremap = true })
 
-vim.keymap.set({ 'v', 'x' }, '<C-c>', '"+y', { desc = 'Copy selection to system clipboard' })
-vim.keymap.set('n', '<leader>P', '"+p', { desc = '[P]aste from system clipboard' })
+-- Paste from the X11 clipboard (herdr copy/select). Yank does not write it.
+vim.keymap.set('n', '<leader>P', function()
+  local text = vim.fn.system('xclip -selection clipboard -o')
+  if vim.v.shell_error ~= 0 or #text == 0 then return end
+  text = text:gsub('\n$', '')
+  vim.fn.setreg('"', text, 'c')
+  vim.cmd('normal! p')
+end, { desc = '[P]aste from system clipboard' })
 
 -- Arrow symbol auto-replacement in insert mode
 vim.keymap.set('i', '-->', '→', { desc = 'Replace --> with →' })

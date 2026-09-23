@@ -1,44 +1,5 @@
--- OSC 52 so herdr/SSH can forward yanks to the laptop clipboard.
--- xclip to :0 so rocketship's Cinnamon clipboard gets them too.
--- Do not OSC-52 paste: terminals often never reply and nvim waits 10s.
-do
-  local osc52 = require('vim.ui.clipboard.osc52')
-  local function x11_env()
-    return {
-      DISPLAY = ':0',
-      XAUTHORITY = vim.env.XAUTHORITY or (vim.env.HOME .. '/.Xauthority'),
-      HOME = vim.env.HOME,
-    }
-  end
-  local function copy(reg)
-    local osc_copy = osc52.copy(reg)
-    return function(lines)
-      osc_copy(lines)
-      vim.system({ '/usr/bin/xclip', '-selection', 'clipboard', '-in' }, {
-        stdin = table.concat(lines, '\n'),
-        env = x11_env(),
-      })
-    end
-  end
-  local function paste()
-    return function()
-      local r = vim.system({ '/usr/bin/xclip', '-selection', 'clipboard', '-out' }, {
-        env = x11_env(),
-        text = true,
-      }):wait()
-      if r.code ~= 0 or not r.stdout then
-        return 0
-      end
-      return vim.split(r.stdout, '\n', { plain = true })
-    end
-  end
-  vim.g.clipboard = {
-    name = 'osc52+xclip',
-    copy = { ['+'] = copy('+'), ['*'] = copy('*') },
-    paste = { ['+'] = paste(), ['*'] = paste() },
-  }
-end
-vim.o.clipboard = 'unnamedplus'
+-- Yank stays in nvim registers. System clipboard is herdr copy/select only.
+vim.o.clipboard = ''
 
 vim.o.number = true
 vim.o.relativenumber = true
