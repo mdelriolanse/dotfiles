@@ -67,6 +67,8 @@ iris/config.toml         -> ~/.config/iris/config.toml  (IRIS completion menu;
 iris/gruvbox.sed + build.sh  palette patch — upstream has no theme option)
 herdr/config.toml        -> ~/.config/herdr/config.toml
 herdr/scripts/           -> ~/.config/herdr/scripts
+codex/AGENTS.md          -> ~/.codex/AGENTS.md         (global user instructions;
+                                                        not model_instructions_file)
 codex/harness.toml       upserted -> ~/.codex/config.toml  (approval/sandbox
                                                         keys only; never
                                                         symlink the live
@@ -102,13 +104,19 @@ all `*cache*` / `logs/`, `bin/`, `hermes-agent/`, and the bundled `skills/`
 
 ### Codex CLI (`~/.codex`)
 
-Only the harness posture is centralized. `codex/harness.toml` holds
-`approval_policy` + `sandbox_mode` (Cursor unrestricted / sandbox-off, expressed
-in Codex keys). `install.sh` upserts those two top-level keys into the live
-`~/.codex/config.toml`. The live file is **never** symlinked: Codex rewrites it
-(plugins, marketplaces, `[hooks.state]`, desktop) and it holds MCP secrets.
-Do not commit `~/.codex/config.toml`. Do not mix `sandbox_mode` with
-`default_permissions` — they do not compose.
+Global user instructions live in `codex/AGENTS.md`, symlinked to
+`~/.codex/AGENTS.md`. Codex reads that file (or `AGENTS.override.md` if it
+exists and is non-empty) on every run and injects it as user instructions.
+Do not point `model_instructions_file` at it — that key replaces Codex's
+built-in base instructions.
+
+`codex/harness.toml` holds `approval_policy` + `sandbox_mode` (Cursor
+unrestricted / sandbox-off, expressed in Codex keys). `install.sh` upserts
+those two top-level keys into the live `~/.codex/config.toml`. The live file
+is **never** symlinked: Codex rewrites it (plugins, marketplaces,
+`[hooks.state]`, desktop) and it holds MCP secrets. Do not commit
+`~/.codex/config.toml`. Do not mix `sandbox_mode` with `default_permissions`
+— they do not compose. Codex has no skills tree in this repo.
 
 ## Secrets & MCP keys
 

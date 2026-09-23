@@ -54,63 +54,29 @@
         "html-extractor-mcp"
       ]
     },
-    "github": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
-      "environment": {
-        "GITHUB_TOKEN": "{env:GITHUB_TOKEN}"
-      }
-    },
     "codebase-memory": {
       "type": "local",
       "command": [
         "codebase-memory-mcp"
       ],
       "enabled": true
-    },
-    "serena": {
-      "type": "local",
-      "command": [
-        "serena",
-        "start-mcp-server",
-        "--context",
-        "ide",
-        "--project-from-cwd"
-      ],
-      "enabled": true
-    },
-    "semble": {
-      "type": "local",
-      "command": [
-        "uvx",
-        "--from",
-        "semble[mcp]",
-        "semble"
-      ],
-      "enabled": true
     }
   },
   "instructions": [
-    "instructions/mcp-first.md",
-    "instructions/tool-names.md",
-    "AGENTS.md",
-    "instructions/agentmemory-conventions.md",
-    "instructions/memory-first-codebase.md",
-    "instructions/discovery-protocol.md",
-    "instructions/never-push.md",
-    "instructions/shared-machine.md",
-    "instructions/chinese-model-english.md",
-    "instructions/karpathy-guidelines.md",
-    "instructions/context-efficiency.md",
-    "instructions/gh-cli-preference.md",
-    "instructions/commit-message-style.md",
-    "instructions/commit-hygiene.md",
-    "instructions/ponytail-scope.md",
-    "instructions/output-concision.md"
+    "~/.config/opencode/instructions/tool-names.md",
+    "~/.config/opencode/instructions/shared-machine.md",
+    "~/.config/opencode/instructions/chinese-model-english.md",
+    "~/.config/opencode/instructions/commit-hygiene.md",
+    "~/.config/opencode/instructions/karpathy-guidelines.md",
+    "~/.config/opencode/instructions/ponytail-scope.md",
+    "~/.config/opencode/instructions/context-efficiency.md",
+    "~/.config/opencode/instructions/output-concision.md",
+    "~/.config/opencode/instructions/telegraphic.md",
+    "~/.config/opencode/instructions/concision-scope.md",
+    "~/.config/opencode/instructions/affirmative.md",
+    "~/.config/opencode/instructions/browser-verify.md",
+    "~/.config/opencode/instructions/git-commit.md",
+    "~/.config/opencode/instructions/pull-requests.md"
   ],
   "skills": {
     "paths": [

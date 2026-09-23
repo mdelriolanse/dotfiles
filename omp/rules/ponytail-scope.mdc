@@ -1,3 +1,7 @@
+---
+description: Ponytail applies to implementation only — not commits or PRs
+alwaysApply: true
+---
 
 # Ponytail scope
 

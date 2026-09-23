@@ -1,3 +1,7 @@
+---
+description: Keep internal tooling (ponytail markers) and review process (adamsreview/andrea-review lingo, reviewer attribution) out of commits and PRs
+alwaysApply: true
+---
 
 # Commit & PR Hygiene — keep internal tooling and review process out
 

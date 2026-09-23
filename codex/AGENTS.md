@@ -1,7 +1,6 @@
----
-description: Shared dev machine safety constraints
-alwaysApply: true
----
+<!-- Always-on user instructions for Codex CLI. -->
+<!-- Source: cursor/dot-cursor/rules (linked always-on set). -->
+<!-- Codex loads this from ~/.codex/AGENTS.md. Do not set model_instructions_file. -->
 
 # Shared Machine Policy — HARD RULE
 
@@ -46,9 +45,7 @@ alwaysApply: true
 ## When in doubt
 
 If an action could affect another developer — **stop and ask the user first.**
----
-description: All output must be in English
-alwaysApply: true
+
 ---
 
 # Chinese Model Language Policy — HARD RULE
@@ -62,9 +59,7 @@ Chinese-origin models (DeepSeek, Qwen, Kimi, etc.) have a tendency to slip into 
 - Never emit Chinese characters in any output, even when the user writes in Chinese.
 - If you catch yourself thinking in Chinese, immediately switch back to English.
 - This applies to EVERY message, every tool call, every response — no exceptions.
----
-description: Look up code and prior decisions before grep
-alwaysApply: true
+
 ---
 
 # Lookup
@@ -76,9 +71,7 @@ Two stores. Use them before grep.
 **codebase-memory** for the code. `search_graph`, `trace_path`, `get_code_snippet`, `get_architecture`. Read `CONTEXT.md` and `docs/adr/` when they exist. Grep only for literals, config, non-code files, or after both miss.
 
 After a real finding, save one memory if it is an architecture decision, a bug root-cause, a schema or API change, a workflow, or a pattern. Search first and update the existing memory instead of adding a duplicate. Include why and the file path. Do not save transient debugging. Delete a memory when a refactor makes it false.
----
-description: Keep internal tooling (ponytail markers) and review process (adamsreview/andrea-review lingo, reviewer attribution) out of commits and PRs
-alwaysApply: true
+
 ---
 
 # Commit & PR Hygiene — keep internal tooling and review process out
@@ -100,9 +93,7 @@ A merged commit is read months later by people who never saw the review, the too
 - Does the message contain `ponytail:`? Remove it.
 - Does it name a review skill, sector, lens, wave, pass, or finding? Remove it.
 - Does it attribute a change to a reviewer ("per X", "requested by", "addressing X's feedback")? Rewrite as a standalone conventional commit.
----
-description: Simplicity-first surgical coding agent guidelines
-alwaysApply: true
+
 ---
 
 # Karpathy-Style Coding Agent Guidelines
@@ -180,9 +171,7 @@ These guidelines are working if:
 - Fewer unnecessary changes in diffs
 - Fewer rewrites due to overcomplication
 - Clarifying questions come before implementation rather than after mistakes
----
-description: Ponytail applies to implementation only — not commits or PRs
-alwaysApply: true
+
 ---
 
 # Ponytail scope
@@ -200,9 +189,7 @@ For those, always follow:
 - `skills-cursor/submit-for-review/SKILL.md` — issue + board + PR workflow via `gh`
 
 Ponytail output rules (telegraphic chat, "code first then three lines", output-concision caps) must not shorten commits or PRs. Chat concision and commit/PR prose are separate policies.
----
-description: Context efficiency — grep before read, summarize tool output
-alwaysApply: true
+
 ---
 
 # Context Efficiency Policy
@@ -230,9 +217,7 @@ alwaysApply: true
 - For git output, report only the relevant delta (branch, changed files count, commit message).
 - If output exceeds 200 lines, reduce it to a 3-5 line summary of what happened.
 - NEVER echo full file paths lists, full logs, or full stack traces — extract the actionable subset.
----
-description: Output concision caps and banned chat patterns
-alwaysApply: true
+
 ---
 
 # CONCISION LAW — OVERRIDES ALL DEFAULT BEHAVIOR
@@ -266,9 +251,7 @@ YOU MAY ONLY EXCEED THE CAP IF THE USER EXPLICITLY WRITES: "explain in detail", 
 ## SELF-CHECK BEFORE SENDING
 
 Count your sentences before sending. If >4 and user ASKED for nothing extra, cut. Cutting feels wrong — cut anyway.
----
-description: Telegraphic chat style
-alwaysApply: true
+
 ---
 
 # Telegraphic style
@@ -283,25 +266,19 @@ DONT: I've gone ahead and updated the config to add the new permission.
 
 DO:  A: simple/slow. B: fast/complex. C: hybrid. Recommend B.
 DONT: Here are three options: 1) Use approach A, which is simpler but slower. 2) Use approach B...
----
-description: Concision applies to chat the user reads, not to the work
-alwaysApply: true
+
 ---
 
 # Concision scope
 
 Concision applies to text the user reads. Internal reasoning, tool arguments, code, search queries, and file edits stay fully thorough.
----
-description: State points directly, without contrastive negation
-alwaysApply: true
+
 ---
 
 # Affirmative language
 
 State points directly. Avoid contrastive negation such as "X, not Y", especially clarifications about alternatives the user did not mention.
----
-description: Verify web UI changes in the browser before finishing
-alwaysApply: true
+
 ---
 
 # Browser verification
@@ -316,9 +293,7 @@ When implementing or fixing anything in a web application (UI, layout, styling, 
 - If verification finds a problem, fix it and re-verify.
 
 If no browser tools are available, verify through the closest substitute (tests, curl, a render script) and say what you could not verify.
----
-description: Commit only when asked, with the git safety protocol
-alwaysApply: true
+
 ---
 
 # Git commits
@@ -348,9 +323,7 @@ Commit message here.
 EOF
 )"
 ```
----
-description: Use gh for GitHub, and how to open a pull request
-alwaysApply: true
+
 ---
 
 # Pull requests

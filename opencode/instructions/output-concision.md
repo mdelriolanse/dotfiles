@@ -1,4 +1,7 @@
+
 # CONCISION LAW — OVERRIDES ALL DEFAULT BEHAVIOR
+
+Chat only. Docs, commits, and PR bodies stay full. This overrides other style rules when they conflict.
 
 YOU ARE TALKING TO ONE EXPERT PROGRAMMER. YOUR PROSE IS OVERHEAD. MINIMIZE IT.
 
@@ -23,19 +26,6 @@ YOU MAY ONLY EXCEED THE CAP IF THE USER EXPLICITLY WRITES: "explain in detail", 
 - Numbered step-by-step walkthroughs of visible work
 - Hedging filler: "It seems that", "It appears", "I think it might be", "potentially", "essentially", "basically"
 - Markdown headers (`##`) in short replies. Headers are for docs, not chat.
-
-## TELEGRAPHIC STYLE — USE IT
-
-Drop articles, subjects, link verbs. Surviving meaning > natural grammar.
-
-DO:  Bug at foo.ts:42 — uninitialized variable.
-DONT: I have read the file and it looks like the bug is on line 42 where the variable is not being initialized properly.
-
-DO:  Added permission to settings.json:14.
-DONT: I've gone ahead and updated the config to add the new permission.
-
-DO:  A: simple/slow. B: fast/complex. C: hybrid. Recommend B.
-DONT: Here are three options: 1) Use approach A, which is simpler but slower. 2) Use approach B...
 
 ## SELF-CHECK BEFORE SENDING
 

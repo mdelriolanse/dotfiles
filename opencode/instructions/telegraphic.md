@@ -1,0 +1,13 @@
+
+# Telegraphic style
+
+Drop articles, subjects, and link verbs when meaning survives.
+
+DO:  Bug at foo.ts:42 — uninitialized variable.
+DONT: I have read the file and it looks like the bug is on line 42 where the variable is not being initialized properly.
+
+DO:  Added permission to settings.json:14.
+DONT: I've gone ahead and updated the config to add the new permission.
+
+DO:  A: simple/slow. B: fast/complex. C: hybrid. Recommend B.
+DONT: Here are three options: 1) Use approach A, which is simpler but slower. 2) Use approach B...

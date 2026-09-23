@@ -1,3 +1,7 @@
+---
+description: Shared dev machine safety constraints
+alwaysApply: true
+---
 
 # Shared Machine Policy — HARD RULE
 

@@ -1,286 +1,46 @@
-<!-- Migrated from opencode by dotfiles. Source: opencode/AGENTS.md + opencode/instructions/*.md -->
-<!-- Standalone user rules for Claude Code (mirrors cursor USER_RULES.md ordering; concision leads). -->
+# Shared Machine Policy — HARD RULE
 
-# CONCISION LAW — OVERRIDES ALL DEFAULT BEHAVIOR
+**This is a shared development machine.** Other developers work on it simultaneously. You must never interfere with their work, resources, or processes.
 
-YOU ARE TALKING TO ONE EXPERT PROGRAMMER. YOUR PROSE IS OVERHEAD. MINIMIZE IT.
+## Ports and networking
 
-## HARD CAP — DO NOT EXCEED
+- **Assume every port could be in use by another dev.** Before binding to any port, check if it's already occupied (`ss -tlnp`, `lsof -i`, or similar).
+- **Never kill or override another dev's port binding.** Choose a different port instead.
+- **Never modify system-wide network configuration** (iptables, nftables, /etc/hosts, DNS resolvers) without explicit request.
+- **Never expose services on public interfaces (0.0.0.0) without explicit request.**
 
-| Situation | Max |
-|-----------|-----|
-| Default user prompt | ≤4 sentences |
-| Tool succeeded | 1 sentence stating result OR just the value/diff |
-| Lists | ≤5 bullets, ≤12 words each |
-| Code changes | Show code/diff → one sentence context max |
+## Processes and containers
 
-YOU MAY ONLY EXCEED THE CAP IF THE USER EXPLICITLY WRITES: "explain in detail", "walk me through", "why", "elaborate". "Help me", "fix this", "what's wrong" ARE NOT requests for elaboration.
+- **Never kill, stop, or restart processes you didn't start.** This includes Docker containers, systemd services, and background daemons.
+- **Never run `docker-compose down`, `docker stop`, `docker rm`, `kill`, `pkill`, or `killall`** without explicit confirmation you're targeting your own resources.
+- **Never run `systemctl stop/restart/disable` on system services** unless explicitly instructed.
+- **If you start a container or long-running process, bind it to your own user context** (e.g., use your username in container names, use non-conflicting ports, clean up when done).
 
-## BANNED — DO NOT EMIT
+## Filesystem
 
-- "Great question!" / "I'll help you with that" / "Let me…" / "Sure!"
-- "I've successfully…" / "Done!" / "Here's what I did:"
-- "Let me know if you need anything else" / "Hope this helps"
-- "In summary," / "To summarize," / "Overall," — summary IS the reply, not an appendix
-- Restating the user's question
-- Numbered step-by-step walkthroughs of visible work
-- Hedging filler: "It seems that", "It appears", "I think it might be", "potentially", "essentially", "basically"
-- Markdown headers (`##`) in short replies. Headers are for docs, not chat.
+- **Stay within your home directory** (your home directory, e.g. ~) unless explicitly directed elsewhere.
+- **Never read, modify, or delete files owned by other users** or in their home directories.
+- **Never change permissions or ownership of shared directories** (`/tmp`, `/opt`, `/usr/local`) unless instructed.
+- **Never delete or modify files under `/var`, `/etc`, or `/dev`** without explicit request.
 
-## TELEGRAPHIC STYLE — USE IT
+## System-wide resources
 
-Drop articles, subjects, link verbs. Surviving meaning > natural grammar.
+- **Never modify shared configuration** (global git config, system PATH, global npm/pip packages, kernel parameters).
+- **Never restart the machine or trigger a reboot.**
+- **Never install or remove system packages** (`apt`, `yum`, `dnf`, `pacman`) unless instructed.
+- **Never run `chown`, `chmod -R` on shared directories.**
 
-DO:  Bug at foo.ts:42 — uninitialized variable.
-DONT: I have read the file and it looks like the bug is on line 42 where the variable is not being initialized properly.
+## What IS allowed
 
-DO:  Added permission to settings.json:14.
-DONT: I've gone ahead and updated the config to add the new permission.
+- Creating, modifying, and deleting files within your home directory.
+- Starting processes and containers scoped to your user, on non-conflicting ports, cleaned up after use.
+- Installing packages in user-local contexts (user pip, user npm, npx, local venvs).
+- Running `git` operations on your own repositories (never push — see never-push policy).
+- Using `/tmp/opencode` for temporary work.
 
-DO:  A: simple/slow. B: fast/complex. C: hybrid. Recommend B.
-DONT: Here are three options: 1) Use approach A, which is simpler but slower. 2) Use approach B...
+## When in doubt
 
-## SELF-CHECK BEFORE SENDING
-
-Count your sentences before sending. If >4 and user ASKED for nothing extra, cut. Cutting feels wrong — cut anyway.
-
----
-
-# MCP-First Hard Rule
-
-## YOU HAVE MCP TOOLS — USE THEM BEFORE GREP
-
-Before any grep/glob/Read for code discovery, you MUST call one of these:
-
-1. **semble_search** — for natural-language code search ("where is auth handled?"), "how does X work", tracing flows
-2. **Serena find_symbol / find_referencing_symbols** — for symbol lookup and references
-3. **codebase-memory search_graph / trace_path** — for structured graph queries
-
-## RULE
-
-- **code first → grep NEVER** for anything involving functions, classes, imports, call chains, or architecture
-- grep/glob are ONLY for: string literals in code, config values, non-code files (Dockerfiles, YAML, markdown)
-- If you reach for grep to find a function definition, a class, or an import — STOP. Call an MCP tool instead.
-- These tools cost fewer tokens and give better results. There is no reason to grep first.
-
-## WHEN YOU NEED CODE
-
-| Task | Tool |
-|---|---|
-| "How does X work?" | semble_search |
-| "Where is X done?" | semble_search |
-| "Find class/function" | Serena find_symbol |
-| "Who calls this?" | Serena find_referencing_symbols |
-| "Rename/move/delete" | Serena rename_symbol / safe_delete_symbol |
-| "Complex graph query" | codebase-memory search_graph |
-
-**DO NOT use grep for any of the above.**
-
----
-
-<!-- codebase-memory-mcp:start -->
-# Codebase Knowledge Graph — Three-Backend Policy
-
-This project has THREE complementary code-intelligence backends. Pick the right one for the task.
-**ALWAYS prefer these MCP backends over grep/glob/file-search for code discovery.**
-These tools are purpose-built to understand code structure, relationships, and semantics.
-Resort to grep/glob ONLY when every backend fails or for non-code files.
-
-
-## 1. Semble (semantic code search — reach for this for "find where X is done" queries)
-
-When you need to **find code by natural-language description** or **find similar code** to a known location, use Semble. Semantic (embedding + BM25) search retrieves relevant code snippets using ~98% fewer tokens than grep+read. CPU-only, no API keys.
-
-- **Two tools**: `semble_search` (natural-language query → code chunks) and `semble_find_related` (find similar code at a location)
-- **Best for**:
-  - "Where is authentication handled?", "how do we save models?" — vague natural-language queries where you don't know the exact symbol names
-  - Finding related code at a specific line — "find code similar to this error handling pattern"
-- **Parser**: Tree-sitter chunking + Model2Vec embeddings + BM25 lexical matching
-- **When to use**: Before grep, when the query is descriptive or fuzzy. Also useful for finding patterns across languages or when you only have a partial description.
-- **Setup**: None. Indexes on first search, caches automatically, watches for file changes.
-
-## 2. Serena (symbol-level IDE operations — use when editing or refactoring)
-
-When **refactoring code** or needing **language-server precision** (cross-file renames, safe deletes, diagnostics, type navigation), use Serena first.
-
-- **Best for**:
-  - `rename_symbol` — safe cross-file renames (language server guarantees references updated)
-  - `replace_symbol_body` — replace an entire function/class definition atomically
-  - `insert_before_symbol` / `insert_after_symbol` — inject code at semantic boundaries
-  - `safe_delete_symbol` — delete a symbol after checking for remaining usages
-  - `find_declaration` / `find_implementations` / `find_referencing_symbols` — go-to-definition / find-references
-  - `get_diagnostics_for_file` / `get_diagnostics_for_symbol` — type errors, warnings
-  - `get_symbols_overview` — get top-level symbols in a file (faster than full read for navigation)
-- **Parser**: Language servers (LSP), fully type-aware
-- **When to use**: Whenever correctness across files matters. Serena prevents text-level errors that grep-based edits miss.
-- **Setup**: `serena init` (done once globally). Auto-activates the project from cwd — no per-repo setup needed.
-
-## 3. codebase-memory (specialised — use when Semble + Serena are insufficient)
-
-Keep this as the **fallback / detail** backend for scenarios none of the others cover.
-
-- **Granular multi-tool**: `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`, `get_architecture`
-- **Best for**:
-  - Complexity analysis (`query_graph` with `cyclomatic`, `transitive_loop_depth`, `linear_scan_in_loop`)
-  - Cypher graph queries (`query_graph`) for complex multi-hop patterns
-  - ADR management (`manage_adr`)
-  - Runtime trace ingestion (`ingest_traces`) — seeing actual execution paths
-  - Cross-repo intelligence mode (`index_repository` with `cross-repo-intelligence`)
-  - Engineering metrics (bottleneck detection, dead-code analysis via graph queries)
-- **Parser**: LSP-style type-aware resolution
-- **When to use**: When Semble and Serena return nothing, or when the task specifically needs complexity props, ADRs, traces, or custom Cypher
-
-## Decision Flow
-
-```
-Need to understand code / architecture / call chain, have a vague
-natural-language query ("where is auth done?"), or need similar code?
-  → Semble first (semble_search / semble_find_related)
-
-Need to refactor, rename, delete, or edit symbols safely?
-  → Serena first (rename_symbol, replace_symbol_body, safe_delete_symbol, find_referencing_symbols)
-
-Need type errors / diagnostics / hover info?
-  → Serena diagnostics tools
-
-Query is specific enough for symbol names?
-  → codebase-memory search_graph / trace_path
-
-Need loop-depth / complexity?
-  → codebase-memory query_graph
-
-Need ADR / traces / cross-repo?
-  → codebase-memory specific tool
-
-All three backends return nothing?
-  → grep / glob fallback (last resort)
-```
-
-## When to fall back to grep/glob (LAST RESORT ONLY)
-
-The following are the **only** legitimate reasons to use grep or glob instead of the MCP backends:
-- String literals, error messages, config values
-- Non-code files (Dockerfiles, shell scripts, configs, markdown, data files)
-- All three backends return insufficient results after a genuine attempt
-
-**Rule**: If you are grepping for functions, classes, imports, call chains, or architecture, stop. Use the appropriate MCP backend. Grep is ~10× more token-expensive and produces noisier results.
-
-Plan reports: follow `skills/plan/` format.
-<!-- codebase-memory-mcp:end -->
-
-
----
-
-# Agent Memory Policy
-
-## Search-first rule
-- BEFORE asking the user about project history, decisions, or schemas, search agentmemory (memory_smart_search preferred, memory_recall for exact matches).
-- If memory is stale or ambiguous, ask — but never re-derive from scratch when memory exists.
-
-## Save triggers
-Save a memory AFTER:
-- Architectural or design decisions (type: architecture)
-- Bug root-causes and fixes (type: bug)
-- Schema, enum, or API contract changes (type: fact)
-- Validated workflow steps or runbooks (type: workflow)
-- New patterns or anti-patterns recognized (type: pattern)
-
-## Deduplication
-- Search for existing memories on the same topic BEFORE saving.
-- If a memory exists on the same topic, update the user's understanding rather than creating a duplicate.
-
-## Quality bar
-- Include the "why", not just the "what".
-- Link to relevant file paths.
-- Use specific concept tags (comma-separated, no spaces).
-- Write for future sessions with zero prior context.
-
-## Session handoff
-- When a task spans sessions, save a "work in progress" memory (type: workflow) before ending.
-- Include next steps, blockers, and files touched.
-
-## Cleanup
-- Delete obsolete memories via memory_governance_delete after major refactors.
-- Export via memory_export before destructive operations.
-- Do NOT save transient debugging states ("currently at line 45").
-
----
-
-# Memory-First Codebase Reference
-
-When the user asks any question about the codebase — including project structure, architecture, file locations, how something works, or why a decision was made:
-
-1. **Search memory first.** Use `memory_recall` or `memory_smart_search` to check if this topic has already been discussed.
-2. **Synthesize from memory.** If relevant memories exist, use them as the primary basis for your answer, citing the source memories. Do not re-derive or re-explore from scratch.
-3. **Fall back to codebase exploration** only if no relevant memory exists, or if the memory is ambiguous, stale, or contradicts the current codebase state.
-
-Always respect the existing agentmemory save triggers and deduplication rules in `agentmemory-conventions.md`.
-
----
-
-# Discovery Protocol — Tiered & Memory-Augmenting
-
-When discovering information about the codebase, project decisions, architecture, or prior work,
-follow this priority ladder. Each tier is more token-efficient than the next — exhaust higher
-tiers before descending.
-
-## Priority Ladder
-
-1. **Docs markdown files** — `CONTEXT.md`, ADRs in `docs/adr/`, project READMEs, and any
-   markdown documentation in the repo. Use glob + read, not grep, to locate and consume these.
-2. **Semble MCP** — `semble_search` and `semble_find_related`. Semantic (embedding + BM25)
-   code search for vague natural-language queries or finding similar code at a location.
-   ~98% fewer tokens than grep+read. Use before grep when the query is descriptive or fuzzy.
-3. **Serena MCP** — `find_declaration`, `find_referencing_symbols`, `get_symbols_overview`.
-   Symbol-level navigation and diagnostics. Use when editing/refactoring or needing language-server
-   precision. See `AGENTS.md` for when to prefer Serena over the others.
-4. **codebase-memory MCP** — `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`,
-   `get_architecture`. Use when the task needs complexity metrics,
-   ADRs, runtime traces, or custom Cypher queries.
-5. **Agent Memory MCP** — `memory_smart_search` (preferred) then `memory_recall`. Past sessions'
-   discoveries, decisions, patterns, and lessons.
-6. **Grep / glob / file search** — Fallback ONLY when tiers 1–5 yield insufficient context
-   or when the question is strictly file-level (string literals, config values, non-code files).
-   These are the least token-efficient methods; never start here.
-
-## Memory Augmentation (Lighten Future Load)
-
-After every discovery pass, regardless of tier:
-
-- **Upsert to Agent Memory** — Save new findings that aren't already recorded to agentmemory
-  (follow save triggers and deduplication rules in `agentmemory-conventions.md`).
-- **Deprecate stale memories** — If a memory contradicts the current codebase state or an
-  architectural decision has been superseded, delete or update it via `memory_governance_delete`
-  or a fresh `memory_save` that supersedes the old one.
-- **Update docs** — If you discover something that should live in `CONTEXT.md`, an ADR, or
-  another markdown doc, propose or apply the update so the doc tier stays current.
-
-## What to Upsert
-
-- File-to-responsibility mappings (e.g. "auth logic lives in src/auth/")
-- Architectural decisions discovered that aren't in ADRs
-- Patterns observed (function naming conventions, error-handling strategies)
-- Recent changes or refactors that invalidate past memories
-
-## Rationale
-
-Grep is ~10× more token-expensive than a structured memory lookup. Every time an agent
-greps for something that was already known, future agents pay the same cost again.
-Memory augmentation prevents this — each discovery pass leaves the knowledge surface
-richer for the next agent.
-
----
-
-# Push Policy
-
-**Pushing to remotes is permitted when the user explicitly authorizes it.** This rule can be bypassed by a direct, unambiguous push request from the user (e.g., "push this," "go ahead and push," "please push to origin," "you are allowed to push"). If the user grants explicit permission, push promptly without asking for additional confirmation.
-
-- Always ask the user to confirm any force push (`-f`, `--force`, `--force-with-lease`).
-- Committing locally is fine.
-- If the user has not explicitly authorized pushing, stop and remind yourself: **don't push without permission**.
-- If a push fails due to repository permission (403), inform the user immediately and suggest a fork-and-PR workflow or asking for write access.
-
----
+If an action could affect another developer — **stop and ask the user first.**
 
 # Chinese Model Language Policy — HARD RULE
 
@@ -294,7 +54,35 @@ Chinese-origin models (DeepSeek, Qwen, Kimi, etc.) have a tendency to slip into 
 - If you catch yourself thinking in Chinese, immediately switch back to English.
 - This applies to EVERY message, every tool call, every response — no exceptions.
 
----
+# Lookup
+
+Two stores. Use them before grep.
+
+**Agent memory** for anything already decided or discussed. `memory_smart_search`, then `memory_recall`. If a memory is current, answer from it. If it is stale or contradicts the repo, say so and check the code.
+
+**codebase-memory** for the code. `search_graph`, `trace_path`, `get_code_snippet`, `get_architecture`. Read `CONTEXT.md` and `docs/adr/` when they exist. Grep only for literals, config, non-code files, or after both miss.
+
+After a real finding, save one memory if it is an architecture decision, a bug root-cause, a schema or API change, a workflow, or a pattern. Search first and update the existing memory instead of adding a duplicate. Include why and the file path. Do not save transient debugging. Delete a memory when a refactor makes it false.
+
+# Commit & PR Hygiene — keep internal tooling and review process out
+
+Commit messages, PR titles, and PR bodies are permanent public artifacts. They must read like the project's own commits, not leak the internal tooling or review process that produced them.
+
+## Never include
+
+- **`ponytail:` code-comment markers.** The `ponytail:` prefix marks deliberate simplifications *in source code*. It must never appear in a commit message or PR body. A commit describes the change, not the mode it was written in.
+- **Review-skill lingo.** Never name or reference the review skills ("adamsreview", "andrea review") or their terminology (sectors, lenses, waves, passes, finding IDs, confidence scores, etc.) in any commit message or PR body. The words "adamsreview" and "andrea review" never appear in a commit message — not even to say a review was run.
+- **Review attribution.** When shipping fixes requested by a PR review, do NOT write "per Jane's review", "addressing feedback from Sarah", "requested by X", or any other attribution to the reviewer. Once a commit merges, the only thing that matters is what changed and why — not who asked for it. Write a normal conventional commit that stands on its own, as if the change were self-evident.
+
+## Why
+
+A merged commit is read months later by people who never saw the review, the tooling, or the chat. "ponytail: ..." or "adamsreview pass 3 found..." or "per a reviewer's request" adds zero signal and leaks private process into public history. The commit-message-style rule governs format; this rule governs content that must stay out regardless of format.
+
+## Self-check
+
+- Does the message contain `ponytail:`? Remove it.
+- Does it name a review skill, sector, lens, wave, pass, or finding? Remove it.
+- Does it attribute a change to a reviewer ("per X", "requested by", "addressing X's feedback")? Rewrite as a standalone conventional commit.
 
 # Karpathy-Style Coding Agent Guidelines
 
@@ -372,7 +160,21 @@ These guidelines are working if:
 - Fewer rewrites due to overcomplication
 - Clarifying questions come before implementation rather than after mistakes
 
----
+# Ponytail scope
+
+When Ponytail mode is active (hook or skill), it governs **implementation only**: code shape, scope, YAGNI, stdlib-first, minimal diffs.
+
+It does **not** apply to:
+
+- Git commit messages
+- Pull request titles or bodies
+
+For those, always follow:
+
+- `commit-message-style.mdc` — conventional title, full body with why/bullets/edge cases
+- `skills-cursor/submit-for-review/SKILL.md` — issue + board + PR workflow via `gh`
+
+Ponytail output rules (telegraphic chat, "code first then three lines", output-concision caps) must not shorten commits or PRs. Chat concision and commit/PR prose are separate policies.
 
 # Context Efficiency Policy
 
@@ -400,134 +202,120 @@ These guidelines are working if:
 - If output exceeds 200 lines, reduce it to a 3-5 line summary of what happened.
 - NEVER echo full file paths lists, full logs, or full stack traces — extract the actionable subset.
 
----
+# CONCISION LAW — OVERRIDES ALL DEFAULT BEHAVIOR
 
-# BOUNDARY: gh = GITHUB.COM, git = LOCAL ONLY
+Chat only. Docs, commits, and PR bodies stay full. This overrides other style rules when they conflict.
 
-This system's `git` CLI is NOT authenticated to GitHub.com. Any command that hits the network (`fetch`, `pull`, `push`, `ls-remote`, etc.) will fail.
+YOU ARE TALKING TO ONE EXPERT PROGRAMMER. YOUR PROSE IS OVERHEAD. MINIMIZE IT.
 
-## REMOTE — USE gh (DO NOT USE git)
+## HARD CAP — DO NOT EXCEED
 
-- PRs / PR comments / PR reviews / PR status → `gh pr ...`
-- Issues / labels / milestones → `gh issue ...`
-- CI / status checks / releases → `gh run ...`, `gh release ...`, `gh api ...`
-- Repo info / branch list from remote / commits on remote → `gh repo ...`, `gh api ...`
-- Reading files from a remote branch → `gh api repos/{owner}/{repo}/contents/...`
-- Fetch from or sync with remote → `gh repo sync` or `gh api ...`
-- ANY operation that reads from or writes to github.com → `gh`
+| Situation | Max |
+|-----------|-----|
+| Default user prompt | ≤4 sentences |
+| Tool succeeded | 1 sentence stating result OR just the value/diff |
+| Lists | ≤5 bullets, ≤12 words each |
+| Code changes | Show code/diff → one sentence context max |
 
-## LOCAL — USE git (NO NETWORK)
+YOU MAY ONLY EXCEED THE CAP IF THE USER EXPLICITLY WRITES: "explain in detail", "walk me through", "why", "elaborate". "Help me", "fix this", "what's wrong" ARE NOT requests for elaboration.
 
-- status, add, commit, reset, stash
-- rebase, merge (local-only, no fetch), cherry-pick
-- branch, checkout (local branch), switch
-- log, diff, blame, show (local commits)
-- ANY operation that does not contact the remote
+## BANNED — DO NOT EMIT
 
-## DO NOT
+- "Great question!" / "I'll help you with that" / "Let me…" / "Sure!"
+- "I've successfully…" / "Done!" / "Here's what I did:"
+- "Let me know if you need anything else" / "Hope this helps"
+- "In summary," / "To summarize," / "Overall," — summary IS the reply, not an appendix
+- Restating the user's question
+- Numbered step-by-step walkthroughs of visible work
+- Hedging filler: "It seems that", "It appears", "I think it might be", "potentially", "essentially", "basically"
+- Markdown headers (`##`) in short replies. Headers are for docs, not chat.
 
-- `git fetch`, `git pull`, `git push`, `git ls-remote` — unauthenticated, will fail.
-- GitHub MCP tools for read-only lookups — `gh` is faster and already authenticated.
-- Use `git` as a substitute for `gh` when reading PRs, issues, or remote state.
+## SELF-CHECK BEFORE SENDING
 
----
+Count your sentences before sending. If >4 and user ASKED for nothing extra, cut. Cutting feels wrong — cut anyway.
 
-# Commit Message Style — USE EXACTLY THIS FORMAT
+# Telegraphic style
 
-When committing, write commit messages that match the style of the project's `main` branch.
+Drop articles, subjects, and link verbs when meaning survives.
 
-## Title (single line)
+DO:  Bug at foo.ts:42 — uninitialized variable.
+DONT: I have read the file and it looks like the bug is on line 42 where the variable is not being initialized properly.
+
+DO:  Added permission to settings.json:14.
+DONT: I've gone ahead and updated the config to add the new permission.
+
+DO:  A: simple/slow. B: fast/complex. C: hybrid. Recommend B.
+DONT: Here are three options: 1) Use approach A, which is simpler but slower. 2) Use approach B...
+
+# Concision scope
+
+Concision applies to text the user reads. Internal reasoning, tool arguments, code, search queries, and file edits stay fully thorough.
+
+# Affirmative language
+
+State points directly. Avoid contrastive negation such as "X, not Y", especially clarifications about alternatives the user did not mention.
+
+# Browser verification
+
+When implementing or fixing anything in a web application (UI, layout, styling, routing, client state, or rendered data), verify the work in the browser before declaring the task complete.
+
+- Exercise the changed feature end to end: click, type, submit, navigate. A screenshot is not verification.
+- Check every page and route that shares the state, data, or components you touched.
+- Hunt for regressions in the surrounding flows.
+- Verify the edge states the change touches (empty, error, route and flag variants).
+- When layout or styling changed, check desktop and mobile.
+- If verification finds a problem, fix it and re-verify.
+
+If no browser tools are available, verify through the closest substitute (tests, curl, a render script) and say what you could not verify.
+
+# Git commits
+
+Only create commits when the user asks. If it is unclear, ask first.
+
+- Never update git config.
+- Never run destructive git commands (push --force, hard reset) unless the user explicitly requests them.
+- Never skip hooks (--no-verify, --no-gpg-sign) unless the user explicitly requests it.
+- Never force-push main or master. Warn if the user asks.
+- Do not push unless the user explicitly asks.
+- Never use git commands with -i (rebase -i, add -i).
+- Do not commit files that look like secrets (.env, credentials). Warn if the user asks to commit them.
+- If there is nothing to commit, do not make an empty commit.
+- Amend only when the user asked, or a pre-commit hook auto-modified files on a commit you just created in this conversation that has not been pushed. If the commit failed or was rejected, fix it in a new commit. If it was already pushed, do not amend unless the user explicitly asks.
+
+When asked to commit:
+
+1. In parallel: git status, git diff (staged and unstaged), git log for recent message style.
+2. Draft a 1–2 sentence message that says why. Pass it with a HEREDOC.
+3. Stage the relevant files, commit, then git status to confirm.
 
 ```
-type(scope): imperative description up to ~80 chars (#PR)
+git commit -m "$(cat <<'EOF'
+Commit message here.
+
+EOF
+)"
 ```
 
-- `type` — `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`
-- `scope` — the subsystem / page / module (e.g. `usage`, `api-keys`, `auth`, `settings`, `billing`)
-- **Imperative mood**: "make", "fix", "add", "remove", "rename" — NOT "made", "fixed", "adding"
-- **Specific, not vague**: "make admin dashboard breakdowns exact and period-driven" — NOT "update dashboard"
-- Include PR number in parens if known: `(#42)`
-- One blank line after title.
+# Pull requests
 
-## Body
+Use `gh` for GitHub: issues, pull requests, checks, and releases. If given a GitHub URL, use `gh` to read it. GitHub operations use `gh api`, not an MCP.
+
+When asked to create a pull request:
+
+1. In parallel: git status, git diff, whether the branch tracks a remote, and `git log` plus `git diff [base]...HEAD` for every commit that will be in the PR.
+2. Draft the summary from all of those commits, not only the latest.
+3. Create a branch if needed, push with `-u` if needed, then `gh pr create`. Pass the body with a HEREDOC.
 
 ```
-The #123 page-wide date selector drove the headline chart but not the
-breakdown tiles, so those stayed frozen on the newest raw rows
-regardless of the selected period (Alex, 1 Feb).
+gh pr create --title "the pr title" --body "$(cat <<'EOF'
+## Summary
+- ...
 
-Source the breakdowns from the server-side GROUP BY (/v1/stats/summary),
-which sums the whole window with no row cap:
+## Test plan
+- [ ] ...
 
-- Donut chart uses group_by=category. Cross-tenant breakdown was
-  hardcoded zeros (#45); it now shows real aggregated values.
-- Top items by volume uses group_by=item_id (also the exact active count).
-- Breakdown by source uses group_by=workspace.
-
-Headline totals + daily series stay rollup-sourced. Breakdowns fall back
-to the raw aggregation if the grouped call fails. The 12-month window
-clamps the breakdown start to 365 days (the summary endpoint caps at
-366), so the 12m tiles can trail the rollup headline by a few days at
-the far edge.
-
-Breakdowns tab clarity: the value columns are now period-scoped while the
-cap column is monthly, so the tab states the split in plain text. A
-"window" chip scopes the period columns, the two monthly columns carry
-"the cap" / "this month" sub-headers (cap used gets an info tooltip),
-the summary badges read "Total monthly cap" / "Value this window" /
-"over monthly cap", over-cap rows show a warning icon (not colour alone),
-and "Current Value" is renamed "Value".
+EOF
+)"
 ```
-- **Lead paragraph**: why the change exists, what was broken. Reference related PRs/issues (`#123`). Name requester if they asked.
-- **Blank line** between every paragraph.
-- **Blank line before bullets**. Bullet items explain one change each. Wrap at ~72 chars with a 2-space indent for continuation lines.
-- **Cross-reference issue numbers** in bullets: `was hardcoded zeros (#45); it now shows...`
-- **Edge cases / fallbacks**: state non-obvious consequences after a blank line.
-- **UI/UX specifics**: exact copy, badge names, tooltip text, accessibility notes.
 
-## What NOT to do
-
-- `[Scope] Fix: description` — no bracket prefixes. Conventional commit ONLY.
-- `Updated things` / `Fixed bug` — vague. Name the file, column, feature, endpoint.
-- Bullet-less walls of text — group related changes into bullet groups.
-- No body for non-trivial commits — if the diff is >20 lines or touches >2 features, write a body.
-
-## Self-check before committing
-
-1. Is the title in `type(scope): imperative verb...` format?
-2. Does the body explain WHY, not just WHAT?
-3. Are bullets present for multi-feature changes?
-4. Did I name exact files/endpoints/columns the user will see?
-
----
-
-# Ponytail scope
-
-When Ponytail mode is active (ponytail-bridge plugin or skill), it governs **implementation only**: code shape, scope, YAGNI, stdlib-first, minimal diffs.
-
-It does **not** apply to:
-
-- Git commit messages
-- Pull request titles or bodies
-
-For those, always follow:
-
-- `instructions/commit-message-style.md` — conventional title, full body with why/bullets/edge cases
-- `skills/submit-for-review/SKILL.md` (or creating-pull-requests rule in Cursor) — PR title + body via `gh pr create`
-
-Ponytail output rules (telegraphic chat, "code first then three lines", output-concision caps) must not shorten commits or PRs. Chat concision and commit/PR prose are separate policies.
-
----
-
-# Knowledge base
-
-- The Obsidian vault is `$OBSIDIAN_VAULT_PATH` — start at its `INDEX.md`
-  and walk `[[links]]`/Grep from there; never sweep whole folders.
-- Before making decisions about my tools, projects, or preferences, check whether the vault already
-  has a page on it, and cite the page when you use it.
-- When we make a durable decision or learn a lesson worth keeping, note it — a SessionEnd hook and
-  nightly compile pass will fold it into the vault; only write vault pages directly when working
-  inside the vault (its own CLAUDE.md has the rules).
-
----
-
+Return the PR URL. Do not update git config.

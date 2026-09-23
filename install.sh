@@ -64,6 +64,17 @@ link "$HOME/.config/Cursor/User/keybindings.json"  "$REPO_DIR/cursor/User/keybin
 link "$HOME/.config/Cursor/User/snippets"          "$REPO_DIR/cursor/User/snippets"
 link "$HOME/.cursor/argv.json"                     "$REPO_DIR/cursor/dot-cursor/argv.json"
 link "$HOME/.cursor/cli-config.json"               "$REPO_DIR/cursor/dot-cursor/cli-config.json"
+link "$HOME/.cursor/hooks.json"                    "$REPO_DIR/cursor/dot-cursor/hooks.json"
+link "$HOME/.cursor/hooks"                         "$REPO_DIR/cursor/dot-cursor/hooks"
+# Not linked: never-push, gh-cli-preference, commit-message-style.
+# The user-prompt copies of push/gh/commit style live in git-commit and pull-requests.
+mkdir -p "$HOME/.cursor/rules"
+for rule in shared-machine chinese-model-english codebase-discovery \
+  commit-hygiene karpathy-guidelines ponytail-scope \
+  context-efficiency output-concision telegraphic concision-scope \
+  affirmative browser-verify git-commit pull-requests; do
+  link "$HOME/.cursor/rules/$rule.mdc" "$REPO_DIR/cursor/dot-cursor/rules/$rule.mdc"
+done
 link "$HOME/.cursor/USER_RULES.md"                 "$REPO_DIR/cursor/dot-cursor/USER_RULES.md"
 link "$HOME/.cursor/skills-cursor"                 "$REPO_DIR/cursor/dot-cursor/skills-cursor"
 # Claude Code: symlink individual items only — ~/.claude is a real dir holding
@@ -309,12 +320,16 @@ if [ -d "$REPO_DIR/herdr" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 6d. Codex CLI harness (~/.codex/config.toml)
+# 6d. Codex CLI harness (~/.codex)
+#     AGENTS.md is the global user-instruction file Codex reads from CODEX_HOME
+#     (AGENTS.override.md wins if present). Symlink that file. Do NOT set
+#     model_instructions_file — that replaces Codex's built-in base instructions.
 #     Upsert approval/sandbox keys from the tracked snippet. Do NOT symlink
 #     ~/.codex or the live config.toml — Codex rewrites that file (hooks.state,
 #     plugins, desktop) and it holds secrets. No persistent `codex config set`;
 #     -c is session-only. Line replace/insert only; never rewrite from a parse.
 # ---------------------------------------------------------------------------
+link "$HOME/.codex/AGENTS.md" "$REPO_DIR/codex/AGENTS.md"
 CODEX_HARNESS="$REPO_DIR/codex/harness.toml"
 CODEX_CFG="$HOME/.codex/config.toml"
 if [ -f "$CODEX_HARNESS" ]; then
@@ -413,8 +428,9 @@ Next steps:
      Install omp itself with: curl -fsSL https://omp.sh/install | sh
   9) herdr: ~/.config/herdr/{config.toml,scripts} are symlinks into herdr/.
      Install herdr with: curl -fsSL https://herdr.dev/install.sh | sh
- 10) Codex: approval/sandbox keys from codex/harness.toml are upserted into
-     ~/.codex/config.toml (the live file is never symlinked).
+ 10) Codex: ~/.codex/AGENTS.md is a symlink into codex/AGENTS.md. Approval/sandbox
+     keys from codex/harness.toml are upserted into ~/.codex/config.toml (the
+     live config file is never symlinked).
 
 Backups of anything replaced (if any) are under: $BACKUP_DIR
 EOF

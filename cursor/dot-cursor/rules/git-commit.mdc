@@ -1,0 +1,32 @@
+---
+description: Commit only when asked, with the git safety protocol
+alwaysApply: true
+---
+
+# Git commits
+
+Only create commits when the user asks. If it is unclear, ask first.
+
+- Never update git config.
+- Never run destructive git commands (push --force, hard reset) unless the user explicitly requests them.
+- Never skip hooks (--no-verify, --no-gpg-sign) unless the user explicitly requests it.
+- Never force-push main or master. Warn if the user asks.
+- Do not push unless the user explicitly asks.
+- Never use git commands with -i (rebase -i, add -i).
+- Do not commit files that look like secrets (.env, credentials). Warn if the user asks to commit them.
+- If there is nothing to commit, do not make an empty commit.
+- Amend only when the user asked, or a pre-commit hook auto-modified files on a commit you just created in this conversation that has not been pushed. If the commit failed or was rejected, fix it in a new commit. If it was already pushed, do not amend unless the user explicitly asks.
+
+When asked to commit:
+
+1. In parallel: git status, git diff (staged and unstaged), git log for recent message style.
+2. Draft a 1–2 sentence message that says why. Pass it with a HEREDOC.
+3. Stage the relevant files, commit, then git status to confirm.
+
+```
+git commit -m "$(cat <<'EOF'
+Commit message here.
+
+EOF
+)"
+```
