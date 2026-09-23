@@ -148,22 +148,21 @@ orchestrator just invokes the skill and waits for it to return.
 
 ## Session 3 — Plan + build
 
-### 3a. Run `/plan` with pre-seeded context
+### 3a. Write the plan from `plan-format.md`
 
-The orchestrator reads the `plan` skill and follows its format. The plan input
+The orchestrator reads `plan-format.md` in this skill directory and follows that
+format. It is a reference, not a skill and not a slash command. The plan input
 is: the PRD (`docs/PRD.md`), the ADRs (`docs/adr/`), the `CONTEXT.md`, and the
 agentmemory project `issue-<repo>-<N>` (recalled via
-`memory_recall "issue-<repo>-<N>"`). The plan skill produces a caveman-format
-plan report and writes it to `docs/plans/<slug>.md` in the container (see the
-`plan` skill's Persist section).
+`memory_recall "issue-<repo>-<N>"`). Emit a caveman-format plan report and write
+it to `docs/plans/<slug>.md` in the container (see Persist in `plan-format.md`).
 
 The plan uses TDD and the agent-swarm approach per the `test-driven-development`
 skill. The orchestrator instructs the plan to reference the code-intelligence
-tools (Semble, Serena, codebase-memory, graphify, agentmemory — per
-AGENTS.md) to ensure changes are cross-cutting and correctly implemented.
+tools (codebase-memory and agentmemory, per AGENTS.md) to ensure changes are cross-cutting and correctly implemented.
 
-**The `/plan` skill is a report-format skill — it writes a markdown file. It
-does NOT trigger native plan mode. No `xd://propose` write, no popup.**
+**The plan format writes a markdown file. It does NOT trigger native plan mode.
+No `xd://propose` write, no popup.**
 
 ### 3b. Build plan
 
@@ -193,7 +192,7 @@ The orchestrator applies changes inside the per-repo worktrees (e.g.
 `$CONTAINER/feat-${DIR_NAME}-app/`). Each worktree is its own git repo, so
 changes land on the `feat/${DIR_NAME}-<repo>` branch.
 
-> Before writing any code, consult the code-intelligence backends per AGENTS.md: Semble for natural-language search and source discovery, Serena for symbol-safe edits/renames, codebase-memory for complexity/cross-service traces. Use these to ensure changes are cross-cutting and correctly implemented. Never grep for function definitions — use the MCP backends.
+> Before writing any code, consult codebase-memory for the code and agentmemory for prior decisions. Never grep for function definitions until those miss.
 
 **Contingency — TDD build fails to converge.** If a RED→GREEN cycle exhausts
 its ralph loop (MAX attempts), the orchestrator stops, reports the failing
@@ -210,7 +209,7 @@ avoid dupes. Follow the tagging directive: each `memory_save` is followed by
 
 End of Session 3. Proceed to Sessions 4 + 5 (parallel).
 
-## Sessions 4 + 5 — Dual review (parallel)
+## Session 4 — Review
 
 ### 4a. Resolve non-empty worktrees
 
@@ -239,18 +238,17 @@ if [ ${#NONEMPTY_WTS[@]} -eq 0 ]; then
 fi
 ```
 
-**Contingency — review finds nothing.** If both reviews return empty FIX
-buckets on round 1, skip the loop and go straight to Session 10.
+**Contingency — review finds nothing.** If the deep-review FIX
+bucket is empty on round 1, skip the loop and go straight to Session 10.
 
-### 4b. Session 4 — deep-review (parallel with Session 5)
+### 4b. Session 4 — deep-review
 
 If `SKIP_REVIEWS=1` (set in 4a, no non-empty worktrees), skip 4b/4c and go
 straight to Session 10.
 
-Run `/deep-review -n 3 --extra --prd "$CONTAINER/docs/PRD.md"` per non-empty
+Run `/deep-review -n 3 --prd "$CONTAINER/docs/PRD.md"` per non-empty
 worktree. The `--prd` is an absolute path to the container PRD. `-n 3` runs the
-skill 3x and merges across runs; `--extra` adds the code-reviewer track in
-parallel.
+skill 3x and merges across runs.
 
 Each sub-session is a non-interactive `opencode run` process (no popup):
 
@@ -265,7 +263,7 @@ for entry in "${NONEMPTY_WTS[@]}"; do
   #  not the worktree. The prompt tells the sub-session to cd into $WT for
   #  git operations (deep-review runs `git diff`).
   opencode run --auto -m anthropic/claude-opus-4-8 --dir "$CONTAINER" \
-    "cd $WT && /deep-review -n 3 --extra --prd $CONTAINER/docs/PRD.md" \
+    "cd $WT && /deep-review -n 3 --prd $CONTAINER/docs/PRD.md" \
     > "$LOG" 2>&1 &
   PID=$!
   STALL_SECS=300 "$WATCHDOG" "$PID" "$LOG" &
@@ -293,32 +291,23 @@ After all finish, the orchestrator collects each worktree's
 - Preserve each finding's verbatim rationale from the first reporter; append
   any divergent rationale from other worktrees as a `also noted:` line.
 
-### 4c. Session 5 — andrea-review (parallel with Session 4)
+### 4c. Andrea
 
-Run `/andrea-review --prd "$CONTAINER/docs/PRD.md"` per non-empty worktree, in
-parallel with Session 4. Same pattern: `opencode run --auto --dir "$CONTAINER"`
-sub-sessions (umbrella dir for project context), one per worktree, with `cd
-$WT` in the prompt for git ops. Each has an `omp-watchdog.sh` instance
-attached (same wiring as 4b). Each writes its report to its own worktree's
-`docs/andrea-review-reports/`. The orchestrator merges into
-`docs/andrea-review-merged.md` in the container.
+Andrea runs inside `/deep-review`. It is not a separate command. Do not launch
+`/andrea-review`. Session 4's report already includes it.
 
-Both Sessions 4 and 5 launch their sub-sessions in one batch, then `wait` for
-all. No dependency between them.
-
-End of Sessions 4 + 5. Proceed to Session 6 (the second breakpoint).
+End of Session 4. Proceed to Session 6 (the second breakpoint).
 
 ## Session 6 — Resolve review (BREAKPOINT 2)
 
-Run `/resolve-review` with both merged review outputs. See the resolve-review
+Run `/resolve-review` with the merged deep-review output. See the resolve-review
 skill edits (origin gate + `RR-#.md` output).
 
 ### 6a. The orchestrator feeds both merged reports to resolve-review
 
 The resolve-review skill reads the newest report in `./docs/deep-review/`. Since
 we have merged reports at the container level, the orchestrator points
-resolve-review at `docs/deep-review-merged.md` (and the andrea-review merged
-report). The skill processes FIX and SKIP-NOW findings.
+resolve-review at `docs/deep-review-merged.md`. The skill processes FIX and SKIP-NOW findings.
 
 ### 6b. The skill's origin gate drops pre-existing findings
 
@@ -345,31 +334,26 @@ decisions in `RR-1.md` and proceeds to Session 7.
 
 ## Session 7 — Plan resolve-review decisions
 
-Run `/plan` with the latest `RR-#.md` as input. The plan covers implementing
-everything HITL decided in Session 6. The plan skill writes
-`docs/plans/<slug>.md` in the container. Then the orchestrator builds the plan
+Follow `plan-format.md` with the latest `RR-#.md` as input. The plan covers
+implementing everything HITL decided in Session 6. Write
+`docs/plans/<slug>.md` in the container (Persist in `plan-format.md`). Then the orchestrator builds the plan
 (same TDD agent-swarm pattern as Step 3b), applying changes to the worktrees.
 
-End of Session 7. Proceed to Sessions 8 + 9 (parallel).
+End of Session 7. Proceed to Session 8.
 
-## Sessions 8 + 9 — Second dual review (parallel)
+## Session 8 — Second review
 
-Same as Step 5 (4b/4c — including `--cwd "$CONTAINER"` + `cd $WT` in the
-prompt, plus `omp-watchdog.sh`), but without `-n 3` (single pass, not 3x
-ensemble — the second review pass is lighter):
+Same as Session 4 (including `--workspace "$CONTAINER"` + `cd $WT` in the
+prompt, plus `omp-watchdog.sh`), but without `-n 3`:
 
-- Session 8: `/deep-review --extra --prd "$CONTAINER/docs/PRD.md"` per
-  non-empty worktree, parallel.
-- Session 9: `/andrea-review --prd "$CONTAINER/docs/PRD.md"` per non-empty
-  worktree, parallel.
+- `/deep-review --prd "$CONTAINER/docs/PRD.md"` per non-empty worktree.
 
-Merge reports into `docs/deep-review-merged.md` and
-`docs/andrea-review-merged.md` (overwrite the round-1 versions, or version them
+Merge reports into `docs/deep-review-merged.md` (overwrite the round-1 version, or version it
 as `*-round-2.md`).
 
 ## Loop gate
 
-After Sessions 8 + 9 complete, run the resolve-review ponytail triage on the
+After Session 8 completes, run the resolve-review ponytail triage on the
 merged findings (same as Session 6, but without the HITL pause — auto-triage
 only).
 
@@ -377,7 +361,7 @@ only).
 NIT/MINOR never trigger a loop.
 
 **Round-specific behavior**:
-- **Round 1** (Sessions 4/5 → 6 → 7): address ALL flagged issues (FIX + SKIP-NOW
+- **Round 1** (Sessions 4 → 6 → 7): address ALL flagged issues (FIX + SKIP-NOW
   that were promoted).
 - **Rounds 2–3** (Sessions 8/9 → loop): address ONLY BLOCKER + MAJOR. NIT/MINOR
   are recorded in `RR-#.md` but not actioned.
@@ -393,7 +377,7 @@ the final `RR-#.md` as deferred.
 integer file). Increment after each round. The orchestrator reads it at the
 loop gate to decide whether to loop or exit.
 
-If looping: go back to Sessions 4/5 equivalent (but now it's the next round, so
+If looping: go back to Session 4 equivalent (but now it's the next round, so
 Sessions 8/9 pattern). Increment `docs/.review-round`. Run resolve-review
 (auto-triage, no HITL unless a new security/data-loss finding appears — then
 pause). If the HITL pause fires, it's an ad-hoc breakpoint, not a scheduled one.
@@ -413,7 +397,6 @@ git -C "$WT" add -A
 git -C "$WT" reset -- docs/
 # Local-only excludes (not committed) so review/plan docs never get pushed.
 echo "docs/deep-review/" >> "$WT/.git/info/exclude"
-echo "docs/andrea-review-reports/" >> "$WT/.git/info/exclude"
 git -C "$WT" commit -m "$(conventional-commit-message)"
 ```
 
