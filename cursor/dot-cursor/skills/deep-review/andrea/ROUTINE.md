@@ -357,12 +357,9 @@ verified against live code — the backend choice is the means, not the end.
   where `adamsreview` fixes, `andrea-review` suggests. They can be run
   together (run `andrea-review` first for the sector findings, then
   `adamsreview fix` on the FIX bucket).
-- **`deep-review`** — orchestrates adamsreview + code-reviewer + PRD
-  conformance in parallel. `andrea-review` is a single-track 12-sector
-  swarm; `deep-review` is a multi-track ensemble. Composable: a
-  `deep-review` track could be `andrea-review`.
-- **`code-reviewer`** — single-pass diff read. `andrea-review` is the
-  deep, sector-partitioned, infra-grounded version.
+- **`deep-review`** — runs this routine and Adams `review --full` together.
+  `--prd` adds a spec. `--ocr` adds open-code-review. This routine is not
+  a separate command.
 
 ## Maintenance
 
