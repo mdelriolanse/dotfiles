@@ -7,6 +7,9 @@
       },
       {
         "command": "./hooks/ponytail-session-start"
+      },
+      {
+        "command": "bash \"$HOME/.cursor/herdr-agent-state.sh\" session"
       }
     ],
     "beforeSubmitPrompt": [
