@@ -240,5 +240,5 @@ The `RR-#.md` file contains:
 - **Deferred**: findings deliberately not actioned (NIT/MINOR in rounds 2+ of
   a dev-graph run, or user-deferred), with rationale.
 
-This file is the input to a subsequent `/plan` step that implements the HITL
+This file is the input to a subsequent plan (see dev-graph `plan-format.md`) that implements the HITL
 decisions and the deferred-and-now-actionable findings.
