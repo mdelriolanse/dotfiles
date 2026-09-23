@@ -8,7 +8,10 @@
     },
     "agentmemory": {
       "command": "npx",
-      "args": ["-y", "@agentmemory/mcp@0.9.27"],
+      "args": [
+        "-y",
+        "@agentmemory/mcp@0.9.27"
+      ],
       "env": {
         "AGENTMEMORY_URL": "http://localhost:3111",
         "AGENTMEMORY_TOOLS": "all"
@@ -17,27 +20,13 @@
     },
     "fetch": {
       "command": "npx",
-      "args": ["-y", "html-extractor-mcp"]
-    },
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_TOKEN": "GITHUB_TOKEN"
-      }
+      "args": [
+        "-y",
+        "html-extractor-mcp"
+      ]
     },
     "codebase-memory": {
       "command": "codebase-memory-mcp",
-      "enabled": true
-    },
-    "serena": {
-      "command": "serena",
-      "args": ["start-mcp-server", "--context", "ide", "--project-from-cwd"],
-      "enabled": true
-    },
-    "semble": {
-      "command": "uvx",
-      "args": ["--from", "semble[mcp]", "semble"],
       "enabled": true
     }
   },
