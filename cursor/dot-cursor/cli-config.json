@@ -15,6 +15,7 @@
     "useHttp1ForAgent": false
   },
   "approvalMode": "unrestricted",
+  "autoAcceptWebSearch": true,
   "sandbox": {
     "mode": "disabled",
     "networkAccess": "user_config_with_defaults"
@@ -22,5 +23,52 @@
   "attribution": {
     "attributeCommitsToAgent": true,
     "attributePRsToAgent": true
+  },
+  "model": {
+    "modelId": "grok-4.7",
+    "displayModelId": "grok-4.7",
+    "displayName": "Grok 4.7 256K High Fast",
+    "displayNameShort": "Grok 4.7 256K High Fast",
+    "aliases": [],
+    "maxMode": false
+  },
+  "selectedModel": {
+    "modelId": "grok-4.7",
+    "parameters": [
+      {
+        "id": "context",
+        "value": "256k"
+      },
+      {
+        "id": "reasoning_effort",
+        "value": "high"
+      },
+      {
+        "id": "fast",
+        "value": "true"
+      }
+    ]
+  },
+  "modelParameters": {
+    "grok-4.7": [
+      {
+        "id": "context",
+        "value": "256k"
+      },
+      {
+        "id": "reasoning_effort",
+        "value": "high"
+      },
+      {
+        "id": "fast",
+        "value": "true"
+      }
+    ]
+  },
+  "hasChangedDefaultModel": true,
+  "maxMode": false,
+  "exploreSubagentModel": "inherit",
+  "subagentModels": {
+    "explore": "inherit"
   }
 }
