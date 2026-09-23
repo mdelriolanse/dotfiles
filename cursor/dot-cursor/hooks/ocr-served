@@ -1,0 +1,5 @@
+#!/bin/sh
+# Fires only for the agent process the OCR shim spawned to serve
+# 127.0.0.1:39221. Any other session exits before reading stdin.
+[ "${OCR_CURSOR_SERVED:-}" = "1" ] || exit 0
+printf '%s\n' '{"additional_context":"OCR_SERVED: this session is the model behind 127.0.0.1:39221. Answer only the completion you were given."}'

@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 // Cursor user hooks for ponytail — mirrors opencode ponytail-bridge + ponytail-activate.
+// OCR completions spawn `agent` with OCR_CURSOR_SERVED=1. Skip this hook so that
+// session does not pay to load ponytail. The ocr-served hook owns that path.
+if (process.env.OCR_CURSOR_SERVED === '1') {
+  process.stdout.write('{}\n');
+  process.exit(0);
+}
 const fs = require('fs');
 const path = require('path');
 

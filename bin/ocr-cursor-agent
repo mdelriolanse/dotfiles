@@ -1,0 +1,357 @@
+#!/usr/bin/env python3
+"""OpenAI chat-completions endpoint that calls Cursor agent.
+
+ocr has no command/script model. It does accept a custom provider with
+protocol "openai" and a base URL. This process is that URL: each
+POST /v1/chat/completions runs
+
+    OCR_CURSOR_SERVED=1 agent -p --mode ask --trust --output-format text \
+      --model 'grok-4.7[context=256k,reasoning_effort=high,fast=true]'
+
+and returns native tool_calls (or a content message). ocr's review loop
+requires structured tool_calls; narrated calls in message content are ignored.
+
+Bind: 127.0.0.1:39221
+Placeholder API key (custom providers require a non-empty key): cursor
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+import threading
+import time
+import uuid
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+HOST = "127.0.0.1"
+PORT = 39221
+API_KEY = "cursor"
+AGENT = os.environ.get("OCR_CURSOR_AGENT", os.path.expanduser("~/.local/bin/agent"))
+AGENT_TIMEOUT = int(os.environ.get("OCR_CURSOR_AGENT_TIMEOUT", "840"))
+MAX_PARALLEL = int(os.environ.get("OCR_CURSOR_AGENT_PARALLEL", "4"))
+
+_slots = threading.BoundedSemaphore(MAX_PARALLEL)
+
+
+def _text(content) -> str:
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            elif isinstance(part, dict):
+                parts.append(str(part.get("text") or part.get("content") or ""))
+        return "\n".join(p for p in parts if p)
+    return str(content)
+
+
+def _render_messages(messages: list) -> str:
+    blocks = []
+    for msg in messages:
+        role = msg.get("role", "user")
+        body = _text(msg.get("content"))
+        calls = msg.get("tool_calls") or []
+        if calls:
+            rendered = []
+            for call in calls:
+                fn = call.get("function") or {}
+                rendered.append(
+                    json.dumps(
+                        {
+                            "id": call.get("id"),
+                            "name": fn.get("name"),
+                            "arguments": fn.get("arguments"),
+                        },
+                        ensure_ascii=False,
+                    )
+                )
+            body = (body + "\n" if body else "") + "tool_calls:\n" + "\n".join(rendered)
+        if role == "tool":
+            body = f"tool_call_id={msg.get('tool_call_id', '')}\n{body}"
+        blocks.append(f"[{role}]\n{body}")
+    return "\n\n".join(blocks)
+
+
+def _render_tools(tools: list) -> str:
+    chunks = []
+    for tool in tools:
+        fn = tool.get("function") or tool
+        chunks.append(
+            json.dumps(
+                {
+                    "name": fn.get("name"),
+                    "description": fn.get("description") or "",
+                    "parameters": fn.get("parameters") or {"type": "object", "properties": {}},
+                },
+                ensure_ascii=False,
+            )
+        )
+    return "\n".join(chunks)
+
+
+def _prompt(messages: list, tools: list) -> str:
+    tool_block = _render_tools(tools) if tools else "(none)"
+    if tools:
+        shape = (
+            '{"tool_calls":[{"name":"<one tool name from TOOLS>","arguments":{}}]}\n'
+            "arguments is a JSON object matching that tool's parameters. "
+            "Return one tool call. When the task is finished, call task_done "
+            "if it is listed (state DONE unless the task failed)."
+        )
+    else:
+        shape = '{"content":"<plain text answer>"}'
+    return (
+        "You are the tool-calling backend for the ocr CLI. "
+        "Do not use your own tools, do not edit files, and do not explain. "
+        "Your entire reply is one JSON object and nothing else. No markdown fences.\n\n"
+        f"Reply shape:\n{shape}\n\n"
+        f"TOOLS:\n{tool_block}\n\n"
+        f"CONVERSATION:\n{_render_messages(messages)}\n\n"
+        "Reply with the JSON object only."
+    )
+
+
+def _extract_json(text: str):
+    cleaned = text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            return json.loads(cleaned[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    return None
+
+
+def _call_agent(prompt: str) -> str:
+    proc = subprocess.run(
+        [
+            AGENT,
+            "-p",
+            "--mode",
+            "ask",
+            "--trust",
+            "--output-format",
+            "text",
+            "--model",
+            "grok-4.7[context=256k,reasoning_effort=high,fast=true]",
+            prompt,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=AGENT_TIMEOUT,
+        cwd="/tmp",
+        env={**os.environ, "OCR_CURSOR_SERVED": "1"},
+    )
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError(f"agent exited {proc.returncode}: {err[:500]}")
+    return proc.stdout or ""
+
+
+def _normalize_calls(raw_calls, allowed: set[str]) -> list[dict]:
+    calls = []
+    for item in raw_calls:
+        if not isinstance(item, dict):
+            continue
+        fn = item.get("function") if isinstance(item.get("function"), dict) else item
+        name = fn.get("name") or item.get("name")
+        if not name or (allowed and name not in allowed):
+            continue
+        args = fn.get("arguments", item.get("arguments", {}))
+        if not isinstance(args, str):
+            args = json.dumps(args, ensure_ascii=False)
+        calls.append(
+            {
+                "id": item.get("id") or f"call_{uuid.uuid4().hex[:12]}",
+                "type": "function",
+                "function": {"name": name, "arguments": args},
+            }
+        )
+    return calls
+
+
+def _complete(body: dict) -> dict:
+    messages = body.get("messages") or []
+    tools = body.get("tools") or []
+    allowed = set()
+    for tool in tools:
+        fn = tool.get("function") or tool
+        if fn.get("name"):
+            allowed.add(fn["name"])
+    prompt = _prompt(messages, tools)
+    last = ""
+    parsed = None
+    for attempt in range(2):
+        last = _call_agent(prompt if attempt == 0 else prompt + "\n\nThe previous reply was not valid JSON tool calls. Reply with the JSON object only.")
+        parsed = _extract_json(last)
+        if parsed is not None:
+            break
+    if not isinstance(parsed, dict):
+        raise RuntimeError(f"agent did not return JSON: {last[:300]!r}")
+
+    raw_calls = parsed.get("tool_calls") or []
+    if isinstance(raw_calls, dict):
+        raw_calls = [raw_calls]
+    calls = _normalize_calls(raw_calls, allowed) if tools else []
+    if tools and not calls:
+        raise RuntimeError(f"agent returned no usable tool_calls: {last[:300]!r}")
+
+    content = None if calls else str(parsed.get("content") or last.strip())
+    message = {"role": "assistant", "content": content}
+    finish = "stop"
+    if calls:
+        message["tool_calls"] = calls
+        finish = "tool_calls"
+    return {
+        "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": body.get("model") or "cursor-agent",
+        "choices": [
+            {
+                "index": 0,
+                "message": message,
+                "finish_reason": finish,
+            }
+        ],
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
+
+
+class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def log_message(self, fmt, *args):
+        sys.stderr.write("%s %s\n" % (self.address_string(), fmt % args))
+
+    def _send(self, code: int, payload: dict):
+        data = json.dumps(payload).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _authorized(self) -> bool:
+        header = self.headers.get("Authorization", "")
+        token = header[7:].strip() if header.lower().startswith("bearer ") else header.strip()
+        return token == API_KEY
+
+    def do_GET(self):
+        path = self.path.split("?", 1)[0]
+        if path in ("/health", "/v1/health"):
+            self._send(200, {"status": "ok"})
+            return
+        if path in ("/v1/models", "/models"):
+            if not self._authorized():
+                self._send(401, {"error": {"message": "unauthorized", "type": "auth_error"}})
+                return
+            self._send(
+                200,
+                {
+                    "object": "list",
+                    "data": [{"id": "cursor-agent", "object": "model", "owned_by": "cursor"}],
+                },
+            )
+            return
+        self._send(404, {"error": {"message": "not found", "type": "not_found"}})
+
+    def do_POST(self):
+        path = self.path.split("?", 1)[0]
+        if path not in ("/v1/chat/completions", "/chat/completions"):
+            self._send(404, {"error": {"message": "not found", "type": "not_found"}})
+            return
+        if not self._authorized():
+            self._send(401, {"error": {"message": "unauthorized", "type": "auth_error"}})
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            body = json.loads(self.rfile.read(length) or b"{}")
+        except json.JSONDecodeError:
+            self._send(400, {"error": {"message": "invalid json", "type": "invalid_request"}})
+            return
+        if body.get("stream") is True:
+            self._send(400, {"error": {"message": "stream is not supported", "type": "invalid_request"}})
+            return
+        try:
+            with _slots:
+                payload = _complete(body)
+        except Exception as exc:
+            self._send(502, {"error": {"message": str(exc), "type": "server_error"}})
+            return
+        self._send(200, payload)
+
+
+def _healthy() -> bool:
+    try:
+        with socket.create_connection((HOST, PORT), timeout=0.5) as sock:
+            req = b"GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n"
+            sock.sendall(req)
+            data = sock.recv(256)
+            return b" 200 " in data
+    except OSError:
+        return False
+
+
+def serve():
+    httpd = ThreadingHTTPServer((HOST, PORT), Handler)
+    print(f"ocr-cursor-agent listening on http://{HOST}:{PORT}/v1", flush=True)
+    httpd.serve_forever()
+
+
+def start():
+    if _healthy():
+        print(f"already listening on http://{HOST}:{PORT}/v1")
+        return
+    log_dir = os.path.expanduser("~/.opencodereview")
+    os.makedirs(log_dir, mode=0o700, exist_ok=True)
+    log_path = os.path.join(log_dir, "cursor-agent.log")
+    log = open(log_path, "a")
+    proc = subprocess.Popen(
+        [sys.executable, os.path.abspath(__file__), "serve"],
+        stdout=log,
+        stderr=log,
+        stdin=subprocess.DEVNULL,
+        start_new_session=True,
+        cwd="/tmp",
+    )
+    for _ in range(50):
+        if _healthy():
+            print(f"started pid {proc.pid} on http://{HOST}:{PORT}/v1")
+            return
+        if proc.poll() is not None:
+            raise SystemExit(f"server exited {proc.returncode}; see {log_path}")
+        time.sleep(0.1)
+    raise SystemExit(f"server did not become healthy; see {log_path}")
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "start"
+    if cmd == "serve":
+        serve()
+    elif cmd == "start":
+        start()
+    elif cmd == "health":
+        raise SystemExit(0 if _healthy() else 1)
+    else:
+        raise SystemExit("usage: ocr-cursor-agent [start|serve|health]")
+
+
+if __name__ == "__main__":
+    main()

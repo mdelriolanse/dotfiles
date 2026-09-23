@@ -3,6 +3,9 @@
   "hooks": {
     "sessionStart": [
       {
+        "command": "./hooks/ocr-served"
+      },
+      {
         "command": "./hooks/ponytail-session-start"
       }
     ],
