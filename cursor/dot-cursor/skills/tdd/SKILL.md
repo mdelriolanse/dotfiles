@@ -103,7 +103,7 @@ Example: "Add email validation to the signup form"
 4. Trims whitespace from email
 ```
 
-Present the behavior list to the user for approval before starting cycles.
+Present the behavior list to the user for approval before starting cycles. That list is the seam confirmation: each behavior is a public interface, and no test is written for a behavior the user has not approved.
 
 ### Step 1.5: Group behaviors into parallel batches
 
@@ -183,9 +183,18 @@ failure to route around.
 Each iteration costs a cold start. That is the price of discarding a poisoned
 context, and it is usually worth paying.
 
+## Test quality
+
+The RED agent tests a public seam. See `tests.md` and `mocking.md`.
+
+- One behavior, one assertion, through the public interface.
+- No implementation-coupled tests (private methods, internal mocks, call counts).
+- No tautological assertions (expected value recomputed the way the code computes it).
+- Mock only at system boundaries (external APIs, time, randomness).
+
 ### Step 2: For each behavior — RED agent
 
-Dispatch a `general` subagent with the RED agent prompt (`references/red-agent-prompt.md`).
+Dispatch a `general` subagent. The prompt is the MUST list below.
 
 Provide:
 - The behavior to test
@@ -196,7 +205,7 @@ Provide:
 
 The RED agent MUST:
 1. Read the relevant source code to understand existing patterns
-2. Write ONE failing test for this behavior
+2. Write ONE failing test for this behavior, at the approved public seam (`tests.md`, `mocking.md`)
 3. Run the test and verify it FAILS (not errors)
 4. Report: test file, test name, the failure output
 
@@ -208,7 +217,7 @@ The RED agent MUST:
 
 ### Step 3: For each behavior — GREEN agent
 
-Dispatch a `general` subagent with the GREEN agent prompt (`references/green-agent-prompt.md`).
+Dispatch a `general` subagent. The prompt is the MUST list below.
 
 Provide ONLY:
 - The test file content (or path to read)
@@ -341,5 +350,5 @@ After all cycles complete and final refactor is done:
 ## Files
 
 - `SKILL.md` — this file (orchestrator workflow)
-- `references/red-agent-prompt.md` — RED subagent prompt template
-- `references/green-agent-prompt.md` — GREEN subagent prompt template
+- `tests.md` — good and bad tests
+- `mocking.md` — when to mock
