@@ -80,14 +80,17 @@ link "$HOME/.cursor/skills-cursor"                 "$REPO_DIR/cursor/dot-cursor/
 # Claude Code: symlink individual items only — ~/.claude is a real dir holding
 # runtime state, so we must never replace the whole directory. Claude Code has its
 # OWN committed config under claude/ (skills copied from opencode, CLAUDE.md, and
-# mcp.json.example). settings.json, skills/, agents/, commands/, and CLAUDE.md are
+# mcp.json.example). settings.json, skills/, agents/, and CLAUDE.md are
 # pure symlinks here;
 # MCP registration + the ponytail plugin need the claude CLI and live in section 6.
 link "$HOME/.claude/settings.json"                 "$REPO_DIR/claude/settings.json"
 link "$HOME/.claude/skills"                        "$REPO_DIR/claude/skills"
 link "$HOME/.claude/CLAUDE.md"                      "$REPO_DIR/claude/CLAUDE.md"
 link "$HOME/.claude/agents"                        "$REPO_DIR/claude/agents"
-link "$HOME/.claude/commands"                      "$REPO_DIR/claude/commands"
+if [ -L "$HOME/.claude/commands" ]; then
+  rm -f "$HOME/.claude/commands"
+  ok "removed stale ~/.claude/commands symlink"
+fi
 # NOTE: herdr is wired in section 6c, not here.
 # NOTE: ~/.cursor/commands is NOT centralized. opencode/skills is the single
 # source of truth; those skills are deployed to ~/.cursor/skills by

@@ -56,7 +56,6 @@ claude/settings.json     -> ~/.claude/settings.json    (individual items only â€
 claude/skills/           -> ~/.claude/skills            ~/.claude holds runtime
 claude/CLAUDE.md         -> ~/.claude/CLAUDE.md         state, never whole-dir)
 claude/agents/           -> ~/.claude/agents
-claude/commands/         -> ~/.claude/commands
 claude/mcp.json.example  materialized -> claude/mcp.json (gitignored), then
                          registered into Claude's user scope by install.sh
 omp/*                    -> ~/.omp/agent/*             (7 individual items;
