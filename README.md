@@ -99,7 +99,11 @@ carry `${VAR}` placeholders / blanks. The `agentmemory` MCP entry uses
 Deliberately **excluded** (memory, state, caches, creds, binaries, the app
 checkout): `memories/`, `sessions/`, `state.db*`, `kanban*`, `cron/`, `auth.json`,
 all `*cache*` / `logs/`, `bin/`, `hermes-agent/`, and the bundled `skills/`
-(re-provisioned by Hermes itself).
+tree (re-provisioned by Hermes itself). User skills are the exception:
+`hermes/skills/<category>/<skill>/` is the canonical copy, and `install.sh`
+symlinks each skill directory into `~/.hermes/skills/<category>/`. Hermes
+discovers them by scanning `~/.hermes/skills/` for `SKILL.md` (category
+subdirectory plus `name` / `description` frontmatter).
 
 ### Codex CLI (`~/.codex`)
 

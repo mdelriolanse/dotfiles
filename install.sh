@@ -194,6 +194,21 @@ if [ -d "$REPO_DIR/hermes" ]; then
   if [ -d "$REPO_DIR/hermes/scripts" ]; then
     link "$HERMES_HOME/scripts" "$REPO_DIR/hermes/scripts"
   fi
+  # User skills only. Each hermes/skills/<category>/<skill> is linked into the
+  # live tree. The rest of ~/.hermes/skills stays Hermes-managed (bundled sync).
+  if [ -d "$REPO_DIR/hermes/skills" ]; then
+    while IFS= read -r src; do
+      rel="${src#"$REPO_DIR/hermes/skills/"}"
+      dest="$HERMES_HOME/skills/$rel"
+      # A category dir that is itself a symlink (skills/research -> ~/.agents)
+      # would drop the skill back onto a Cursor load path. Link it at the
+      # top of ~/.hermes/skills/ instead.
+      if [ -L "$(dirname "$dest")" ]; then
+        dest="$HERMES_HOME/skills/$(basename "$src")"
+      fi
+      link "$dest" "$src"
+    done < <(find "$REPO_DIR/hermes/skills" -mindepth 2 -maxdepth 2 -type d | sort)
+  fi
 
   # Scaffold secret-bearing, runtime-mutated files from templates (if absent).
   # hermes_scaffold <target> <template> <var-list-for-envsubst>
@@ -424,8 +439,9 @@ Next steps:
   6) Claude Code: verify with 'claude mcp list' and 'claude plugin list'
      (~/.claude/{skills,CLAUDE.md} are symlinks into claude/; MCP is registered
      from claude/mcp.json into user scope on each ./install.sh run).
-  7) Hermes: ~/.hermes/{SOUL.md,news-topics.txt,scripts} are symlinks; config.yaml
-     and .env were materialized from templates only if absent — fill in real keys.
+  7) Hermes: ~/.hermes/{SOUL.md,news-topics.txt,scripts} are symlinks, and each
+     hermes/skills/<category>/<skill> dir is linked into ~/.hermes/skills/.
+     config.yaml and .env were materialized from templates only if absent.
   8) omp: ~/.omp/agent/* are symlinks into omp/ (runtime state stays real).
      Provider is DeepInfra; put your key in DEEPINFRA_API_KEY in secrets.env.
      Install omp itself with: curl -fsSL https://omp.sh/install | sh

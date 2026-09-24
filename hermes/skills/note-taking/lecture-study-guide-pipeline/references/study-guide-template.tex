@@ -1,0 +1,94 @@
+% Study-guide LaTeX template — house style for this vault's lecture study
+% guides. Copy this, fill in <PLACEHOLDERS>, compile with `tectonic file.tex`.
+% See references/tectonic-setup.md for the tectonic install/compile flow.
+
+\documentclass[11pt]{article}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{hyperref}
+
+\definecolor{headingblue}{HTML}{1A3D6D}
+\definecolor{subheadblue}{HTML}{2C5A8F}
+\definecolor{calloutbg}{HTML}{EEF4FB}
+\definecolor{calloutborder}{HTML}{9CC0E8}
+
+\titleformat{\section}{\Large\bfseries\color{headingblue}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{subheadblue}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\itshape}{\thesubsubsection}{0.6em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lfoot{\small\color{gray} <COURSE CODE> Study Guide --- for personal review}
+\rfoot{\small\color{gray} Page \thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Blue-tinted callout box: use for "key insight" / "core fact" boxes.
+\newtcolorbox{callout}{colback=calloutbg,colframe=calloutborder,boxrule=0.5pt,arc=2pt,left=6pt,right=6pt,top=4pt,bottom=4pt,breakable}
+% White answer box with a thin gray border: use for every answer-key entry.
+\newenvironment{answerbox}{\begin{tcolorbox}[colback=white,colframe=gray!50,boxrule=0.4pt,arc=1pt,left=6pt,right=6pt,top=4pt,bottom=4pt,breakable]}{\end{tcolorbox}}
+
+% Shorthand for a bracketed matrix: \vect{1 & 2 \\ 3 & 4}
+\newcommand{\vect}[1]{\begin{bmatrix}#1\end{bmatrix}}
+
+% IMPORTANT: never bake "N of M" into the title itself — just "Study Guide N".
+% The total-count context belongs in chat/prose, not the artifact (guides get
+% added/reordered/split later and a hardcoded total goes stale immediately).
+\title{\color{headingblue}\textbf{<COURSE CODE> Study Guide <N>}\\[4pt]\large\normalfont\color{black} <Lecture range>: <Topic summary>}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+\vspace{-1.5em}
+\noindent\hrulefill
+
+\section*{1. <First topic heading> (Lecture <N>)}
+<Walkthrough prose. Ground every claim/example in the actual OCR'd lecture
+content — never invent a "similar" example from general knowledge.>
+
+\begin{callout}
+\textbf{<Key insight label>:} <the one-sentence takeaway worth a highlighted box.>
+\end{callout}
+
+\begin{quote}
+Example (Lecture <N>):
+\[
+\left[\begin{array}{ccc|c} 1 & -2 & 1 & 0 \\ 0 & 1 & -4 & 4 \\ 0 & 0 & 1 & -1\end{array}\right]
+\]
+<Explain what the matrix shows, worked step by step.>
+\end{quote}
+
+% ... repeat \section*{} blocks for each lecture/topic in this guide's range ...
+
+\newpage
+\section*{Practice Problems}
+<Fresh problems reusing the lecture's exact notation/matrix sizes/difficulty
+register — new numbers, same structure, so it's genuine unseen practice.>
+
+\subsubsection*{Problem 1 (<short descriptor>)}
+<Problem statement, with a matrix/system in the same \[ \left[\begin{array}...
+\end{array}\right] \] style as the walkthrough examples.>
+
+% ... Problem 2, 3, 4, 5 ...
+
+\newpage
+\section*{Answer Key}
+
+\subsubsection*{Problem 1}
+\begin{answerbox}
+<Full worked answer. MUST be independently numerically verified (numpy /
+execute_code) before going here — do not hand-wave arithmetic.>
+\end{answerbox}
+
+% ... Answer 2, 3, 4, 5, matching problem order ...
+
+\end{document}
