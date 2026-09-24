@@ -7,6 +7,9 @@ description: >-
   up, publish, or share their project on Cursor, or how to not lose it.
 disabled-environments:
   - cloud
+metadata:
+  disabledEnvironments:
+    - cloud
 ---
 # share — save this project somewhere safe
 

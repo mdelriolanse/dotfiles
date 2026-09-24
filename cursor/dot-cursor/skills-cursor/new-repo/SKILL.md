@@ -7,6 +7,9 @@ description: >-
   signs in the origin CLI when needed.
 disabled-environments:
   - cloud
+metadata:
+  disabledEnvironments:
+    - cloud
 ---
 # new-repo — create a repo for this project and push it
 

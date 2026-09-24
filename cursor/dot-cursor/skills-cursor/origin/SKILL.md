@@ -7,6 +7,9 @@ description: >-
   clone, or configure Cursor-hosted repos.
 disabled-environments:
   - cloud
+metadata:
+  disabledEnvironments:
+    - cloud
 ---
 # origin — set up and repair the origin CLI
 

@@ -4,8 +4,9 @@ description: >-
   Rename the current chat to match its focus. Use only when the user invokes
   /rename-chat. Optional text after the command steers the title.
 disable-model-invocation: true
-environments:
-  - local
+metadata:
+  environments:
+    - local
 ---
 # Rename Chat
 
