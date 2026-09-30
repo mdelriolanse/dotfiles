@@ -1,0 +1,67 @@
+--- a/src/command/diff/state.rs
++++ b/src/command/diff/state.rs
+@@ -785,6 +785,9 @@
+             .map(|f| f.filename.clone());
+         let old_scroll = self.scroll;
+         let old_h_scroll = self.h_scroll;
++        let old_sidebar_path = self
++            .sidebar_item_at_visible(self.sidebar_selected)
++            .map(|item| sidebar_item_path(item).to_owned());
+
+         // Convert viewed_files indices to filenames (to handle index changes after reload)
+         let mut viewed_filenames: HashSet<String> = self
+@@ -834,6 +837,15 @@
+         }
+
+         self.rebuild_sidebar_visible();
++
++        // The sidebar cursor can differ from the file open in the diff panel.
++        if let Some(path) = old_sidebar_path {
++            if let Some(idx) = self.sidebar_visible.iter().position(|&idx| {
++                sidebar_item_path(&self.sidebar_items[idx]) == path
++            }) {
++                self.sidebar_selected = idx;
++            }
++        }
+
+         self.needs_reload = false;
+         self.invalidate_cache(); // Clear cache after reload
+@@ -1020,6 +1032,38 @@
+     }
+
+     #[test]
++    fn test_reload_preserves_sidebar_cursor_independently_of_open_file() {
++        let files = ["a.rs", "b.rs", "src/c.rs", "src/d.rs"];
++        let mut state = AppState::new(files.iter().map(|f| make_file_diff(f)).collect(), Some("a.rs"));
++        state.sidebar_selected = state.sidebar_visible_index_for_file(3).unwrap();
++        state.sidebar_scroll = 1;
++
++        for _ in 0..3 {
++            // Inserting a file changes both file indices and sidebar row indices.
++            state.reload(
++                ["0.rs", "a.rs", "b.rs", "src/c.rs", "src/d.rs"]
++                    .iter().map(|f| make_file_diff(f)).collect(),
++                None,
++            );
++            assert_eq!(sidebar_item_path(state.sidebar_item_at_visible(state.sidebar_selected).unwrap()), "src/d.rs");
++            assert_eq!(state.file_diffs[state.current_file].filename, "a.rs");
++            assert_eq!(state.sidebar_scroll, 1);
++        }
++
++        state.sidebar_selected = state.sidebar_visible_index_for_dir("src").unwrap();
++        state.reload(files.iter().map(|f| make_file_diff(f)).collect(), None);
++        assert_eq!(sidebar_item_path(state.sidebar_item_at_visible(state.sidebar_selected).unwrap()), "src");
++
++        // A removed selection falls back to the open file; an empty diff stays valid.
++        state.reload(vec![make_file_diff("a.rs")], None);
++        assert_eq!(state.sidebar_selected, 0);
++        assert_eq!(state.sidebar_scroll, 0);
++        state.reload(Vec::new(), None);
++        assert_eq!(state.sidebar_selected, 0);
++        assert!(state.sidebar_item_at_visible(0).is_none());
++    }
++
++    #[test]
+     fn test_focus_selects_matching_file() {
+         let diffs = vec![
+             make_file_diff("src/main.rs"),
