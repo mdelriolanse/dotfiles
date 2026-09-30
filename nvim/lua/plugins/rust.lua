@@ -14,6 +14,8 @@ return {
       -- Configure before the plugin's ftplugin runs.
       vim.g.rustaceanvim = {
         server = {
+          -- Autosave can leave Cargo.toml incomplete while typing; errors remain in :RustLsp logFile.
+          status_notify_level = false,
           -- nvim-cmp completion against rust-analyzer (matches the other servers).
           capabilities = require('cmp_nvim_lsp').default_capabilities(),
           default_settings = {
