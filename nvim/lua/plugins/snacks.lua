@@ -2,6 +2,9 @@ return {
   'folke/snacks.nvim',
   priority = 1000,
   lazy = false,
+  keys = {
+    { '<leader>gh', function() Snacks.terminal('ghui') end, desc = 'GitHub PRs (ghui)' },
+  },
   opts = {
     dashboard = {
       preset = {

@@ -420,6 +420,7 @@ command -v cursor   >/dev/null 2>&1 && ok "found cursor CLI" || warn "cursor CLI
 command -v claude   >/dev/null 2>&1 && ok "found claude CLI" || warn "claude CLI not on PATH — see https://claude.com/claude-code"
 command -v omp      >/dev/null 2>&1 && ok "found omp" || warn "omp not on PATH — install with: curl -fsSL https://omp.sh/install | sh"
 command -v herdr    >/dev/null 2>&1 && ok "found herdr" || warn "herdr not on PATH — install with: curl -fsSL https://herdr.dev/install.sh | sh"
+command -v ghui     >/dev/null 2>&1 && ok "found ghui" || warn "ghui not on PATH — install with: npm install -g @kitlangton/ghui"
 command -v iris     >/dev/null 2>&1 && ok "found iris" || warn "iris not on PATH — build the gruvbox one with: ./iris/build.sh"
 command -v codex    >/dev/null 2>&1 && ok "found codex" || warn "codex CLI not on PATH"
 
