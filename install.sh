@@ -55,6 +55,7 @@ link "$HOME/.config/kitty/kitty.conf"              "$REPO_DIR/kitty/kitty.conf"
 # Ghostty: items only — ~/.config/ghostty can hold runtime files.
 link "$HOME/.config/ghostty/config.ghostty"        "$REPO_DIR/ghostty/config.ghostty"
 link "$HOME/.config/ghostty/tabs.css"              "$REPO_DIR/ghostty/tabs.css"
+link "$HOME/.config/ghui/config.json"              "$REPO_DIR/ghui/config.json"
 link "$HOME/.config/iris/config.toml"              "$REPO_DIR/iris/config.toml"
 link "$HOME/.config/iris/theme.toml"               "$REPO_DIR/iris/theme.toml"
 link "$HOME/.bashrc"                               "$REPO_DIR/bash/bashrc"
