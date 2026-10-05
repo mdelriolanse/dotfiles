@@ -195,6 +195,8 @@ export PATH="$PATH:/opt/Quartus/quartus/bin"
 # Go
 if command -v go >/dev/null 2>&1; then
   export PATH="$PATH:$(go env GOPATH)/bin"
+elif [ -d "$HOME/go/bin" ]; then
+  export PATH="$PATH:$HOME/go/bin"
 fi
 
 # Android Studio / SDK
