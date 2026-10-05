@@ -5,7 +5,8 @@
         "unicorn": "linux",
         "ece": "linux",
         "spark": "linux",
-        "spark-cursor": "linux"
+        "spark-cursor": "linux",
+        "rocketship-cursor": "linux"
     },
     "remote.SSH.connectTimeout": 120,
     "remote.autoForwardPortsSource": "hybrid",
