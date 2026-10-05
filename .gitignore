@@ -52,3 +52,6 @@ codex/config.toml
 
 # Serena project state (regenerated per machine)
 .serena/
+
+# Claude Code skills synced from claude.ai (proprietary, account-scoped cache)
+claude/skills/synced/
