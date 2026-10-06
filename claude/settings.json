@@ -20,13 +20,20 @@
   "enableWorkflows": true,
   "enabledPlugins": {
     "ponytail@ponytail": true,
-    "rust-analyzer-lsp@claude-plugins-official": true
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "open-code-review@open-code-review": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
       "source": {
         "source": "directory",
         "path": "$HOME/dotfiles/opencode/ponytail"
+      }
+    },
+    "open-code-review": {
+      "source": {
+        "source": "github",
+        "repo": "alibaba/open-code-review"
       }
     }
   },
