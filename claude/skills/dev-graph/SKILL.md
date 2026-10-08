@@ -200,6 +200,8 @@ End of Session 3. Proceed to Sessions 4 + 5 (parallel).
 
 ## Session 4 — Review
 
+> **Repo wiki.** Every review checks the diff against the reviewed repo's wiki (`docs/INDEX.md`, `docs/adr/`, `docs/incidents/`, `CONTEXT.md`, `CLAUDE.md`). The `wiki-context.sh` hook injects it automatically; if it is missing from context, read those files first. ADR violations, reintroduced incidents and undocumented behavior changes are IMPORTANT findings, never nits. Cite the page.
+
 ### 4a. Resolve non-empty worktrees
 
 Both reviews operate on a single git repo's diff (`git diff $mb`), so the
@@ -331,6 +333,8 @@ implementing everything HITL decided in Session 6. Write
 End of Session 7. Proceed to Session 8.
 
 ## Session 8 — Second review
+
+> **Repo wiki.** Every review checks the diff against the reviewed repo's wiki (`docs/INDEX.md`, `docs/adr/`, `docs/incidents/`, `CONTEXT.md`, `CLAUDE.md`). The `wiki-context.sh` hook injects it automatically; if it is missing from context, read those files first. ADR violations, reintroduced incidents and undocumented behavior changes are IMPORTANT findings, never nits. Cite the page.
 
 Same as Session 4 (including `--workspace "$CONTAINER"` + `cd $WT` in the
 prompt, plus `omp-watchdog.sh`), but without `-n 3`:

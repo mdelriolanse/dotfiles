@@ -88,6 +88,10 @@ link "$HOME/.claude/settings.json"                 "$REPO_DIR/claude/settings.js
 link "$HOME/.claude/skills"                        "$REPO_DIR/claude/skills"
 link "$HOME/.claude/CLAUDE.md"                      "$REPO_DIR/claude/CLAUDE.md"
 link "$HOME/.claude/agents"                        "$REPO_DIR/claude/agents"
+# Wiki hooks: link files, not the dir (~/.claude/hooks also holds runtime logs + other hooks).
+for h in wiki-context.sh wiki-objection.sh wiki-capture.sh; do
+  link "$HOME/.claude/hooks/$h"                   "$REPO_DIR/claude/hooks/$h"
+done
 if [ -L "$HOME/.claude/commands" ]; then
   rm -f "$HOME/.claude/commands"
   ok "removed stale ~/.claude/commands symlink"

@@ -56,6 +56,9 @@ claude/settings.json     -> ~/.claude/settings.json    (individual items only â€
 claude/skills/           -> ~/.claude/skills            ~/.claude holds runtime
 claude/CLAUDE.md         -> ~/.claude/CLAUDE.md         state, never whole-dir)
 claude/agents/           -> ~/.claude/agents
+claude/hooks/wiki-*.sh   -> ~/.claude/hooks/           (repo-wiki hooks; omp runs the
+                                                        same scripts via
+                                                        omp/extensions/wiki-hooks.ts)
 claude/mcp.json.example  materialized -> claude/mcp.json (gitignored), then
                          registered into Claude's user scope by install.sh
 omp/*                    -> ~/.omp/agent/*             (7 individual items;

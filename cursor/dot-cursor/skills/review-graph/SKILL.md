@@ -23,6 +23,8 @@ Target, `--prd`, `--ocr`, and `-n` mean what they mean in `deep-review`. Pass th
 
 ## Procedure
 
+> **Repo wiki.** Every review checks the diff against the reviewed repo's wiki (`docs/INDEX.md`, `docs/adr/`, `docs/incidents/`, `CONTEXT.md`, `CLAUDE.md`). The `wiki-context.sh` hook injects it automatically; if it is missing from context, read those files first. ADR violations, reintroduced incidents and undocumented behavior changes are IMPORTANT findings, never nits. Cite the page.
+
 1. Run the `deep-review` skill (`~/.cursor/skills/deep-review/SKILL.md`) in this session with the user's arguments unchanged: target, `--prd`, `--ocr`, `-n`.
 2. When that run has finished, use the report it wrote: `<reviewed-repo>/docs/deep-review/<title>-<timestamp>.md` (the path `deep-review` prints as its last line). If that file is not on disk, stop.
 3. Run the `resolve-review` skill (`~/.cursor/skills/resolve-review/SKILL.md`) on that report. Pass the path. Do not add scope words; resolve-review's default is both FIX and SKIP NOW.
