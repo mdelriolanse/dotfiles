@@ -12,6 +12,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" session",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/herdr-tab-title.sh\" session",
+            "timeout": 5
           }
         ]
       }
@@ -58,16 +63,26 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/wiki-capture.sh\"",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/herdr-tab-title.sh\"",
+            "timeout": 5
           }
         ]
       }
     ]
   },
   "enableWorkflows": true,
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"/home/mdelrio/dotfiles/opencode/ponytail/hooks/ponytail-statusline.sh\""
+  },
   "enabledPlugins": {
     "ponytail@ponytail": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "open-code-review@open-code-review": true
+    "open-code-review@open-code-review": true,
+    "mattpocock-skills@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
