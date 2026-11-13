@@ -18,7 +18,6 @@ Check with the user that these modules match their expectations. Check with the 
 
 3. Write the PRD using the template below to `./docs/PRD.md` (a `docs/` directory nested in the current working directory, i.e. the directory the chat is taking place in). Create the `docs/` directory if it does not already exist.
 
-   After writing the PRD, `memory_save` the PRD's module boundaries and key decisions (type: `architecture`) so downstream `/to-issues` and `/tdd` recall them instead of re-deriving.
 
 <prd-template>
 

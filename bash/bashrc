@@ -203,7 +203,7 @@ fi
 export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin"
 
-# API keys (Anthropic, GitHub, Browserbase, Linear, agentmemory, …) live ONLY
+# API keys (Anthropic, GitHub, Browserbase, Linear, …) live ONLY
 # in the gitignored ~/dotfiles/secrets/secrets.env, sourced near the end of this
 # file. Never inline real keys here — this file is tracked in the dotfiles repo.
 
@@ -233,10 +233,6 @@ command -v iris >/dev/null 2>&1 && alias i='iris'
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
-
-export AGENTMEMORY_URL=http://localhost:3111
-export USER_ID=bob
-export TEAM_ID=developer-relations
 
 command -v starship >/dev/null 2>&1 && eval "$(starship init bash)"
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init bash --cmd cd)"

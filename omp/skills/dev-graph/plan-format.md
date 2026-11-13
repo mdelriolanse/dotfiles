@@ -89,7 +89,7 @@ If the user says "skip 03" or "expand on 02," comply directly. Re-emit the plan 
 
 Whenever suggesting an approach (execution strategy, implementation pattern, library choice, or architectural decision):
 
-1. **Search first.** Use codebase-memory MCP `search_graph` or `search_code` to find similar patterns already implemented.
+1. **Search first.** Search the repo for similar patterns already implemented.
 2. **Cite examples.** Reference 1–2 specific file paths/locations where the codebase already solves this or a similar problem.
 3. **Explain the fit.** One sentence on why the precedent supports the suggested approach.
 4. **If none found.** State "no precedent found — proposing new pattern."

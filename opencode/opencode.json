@@ -33,19 +33,6 @@
       "url": "https://mcp.context7.com/mcp",
       "enabled": true
     },
-    "agentmemory": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@agentmemory/mcp@0.9.27"
-      ],
-      "environment": {
-        "AGENTMEMORY_URL": "http://localhost:3111",
-        "AGENTMEMORY_TOOLS": "all"
-      },
-      "enabled": true
-    },
     "fetch": {
       "type": "local",
       "command": [
@@ -53,13 +40,6 @@
         "-y",
         "html-extractor-mcp"
       ]
-    },
-    "codebase-memory": {
-      "type": "local",
-      "command": [
-        "codebase-memory-mcp"
-      ],
-      "enabled": true
     }
   },
   "instructions": [

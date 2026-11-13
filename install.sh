@@ -154,7 +154,7 @@ fi
 # Inform (don't fail) when MCP keys are absent — those servers will be stubs.
 mcp_missing=""
 for v in FIRECRAWL_API_KEY BROWSERBASE_API_KEY BROWSERBASE_PROJECT_ID \
-         GEMINI_API_KEY AGENTMEMORY_SECRET GITHUB_TOKEN; do
+         GEMINI_API_KEY GITHUB_TOKEN; do
   [ -z "${!v:-}" ] && mcp_missing="$mcp_missing $v"
 done
 [ -n "$mcp_missing" ] && warn "MCP keys empty/unset:$mcp_missing — those Cursor MCP servers will be stubbed and fail until you fill secrets.env (bootstrap continues)."
@@ -163,7 +163,7 @@ if [ ! -e "$MCP_REAL" ]; then
   : "${NODE_BIN_PATH:=$(dirname "$(command -v node 2>/dev/null || echo /usr/bin/node)")}"
   export NODE_BIN_PATH
   if command -v envsubst >/dev/null 2>&1 \
-     && envsubst '$NODE_BIN_PATH $FIRECRAWL_API_KEY $AGENTMEMORY_SECRET $BROWSERBASE_API_KEY $BROWSERBASE_PROJECT_ID $GEMINI_API_KEY $GITHUB_TOKEN' \
+     && envsubst '$NODE_BIN_PATH $FIRECRAWL_API_KEY $BROWSERBASE_API_KEY $BROWSERBASE_PROJECT_ID $GEMINI_API_KEY $GITHUB_TOKEN' \
           < "$MCP_EX" > "$MCP_REAL" 2>/dev/null; then
     ok "generated cursor/dot-cursor/mcp.json (any empty keys are written as stubs)"
   else
@@ -231,12 +231,12 @@ if [ -d "$REPO_DIR/hermes" ]; then
     fi
   }
   hermes_scaffold "$HERMES_HOME/config.yaml" "$REPO_DIR/hermes/config.yaml.example" \
-    '$HERMES_MODEL_API_KEY $AGENTMEMORY_SECRET'
+    '$HERMES_MODEL_API_KEY'
   hermes_scaffold "$HERMES_HOME/.env"        "$REPO_DIR/hermes/.env.example" \
     '$TELEGRAM_BOT_TOKEN $TELEGRAM_ALLOWED_USERS $TELEGRAM_HOME_CHANNEL $TELEGRAM_HOME_CHANNEL_NAME'
 
   hermes_missing=""
-  for v in HERMES_MODEL_API_KEY AGENTMEMORY_SECRET TELEGRAM_BOT_TOKEN; do
+  for v in HERMES_MODEL_API_KEY TELEGRAM_BOT_TOKEN; do
     [ -z "${!v:-}" ] && hermes_missing="$hermes_missing $v"
   done
   [ -n "$hermes_missing" ] && warn "Hermes keys empty/unset:$hermes_missing — fill secrets.env; existing ~/.hermes files (if any) were left untouched."

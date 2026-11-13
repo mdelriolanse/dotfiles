@@ -1,19 +1,16 @@
 ---
 name: issue-to-docs
-description: Pull a GitHub issue or PR body into local docs/ as a verbatim single-file spec plus chunked markdown, and mirror the spec as a fresh agentmemory project. Use when the user runs /issue-to-docs, or asks to turn an issue/PR into local docs + a dedicated memory project for the thing they're currently tackling. Accepts an issue/PR URL, a fuzzy "issue 894 on the acme gateway repo", or no argument when cwd is a PR feature-branch clone.
+description: Pull a GitHub issue or PR body into local docs/ as a verbatim single-file spec plus chunked markdown. Use when the user runs /issue-to-docs, or asks to turn an issue/PR into local docs. Accepts an issue/PR URL, a fuzzy "issue 894 on the acme gateway repo", or no argument when cwd is a PR feature-branch clone.
 disable-model-invocation: true
 ---
 
 # Issue to Docs
 
-Materialise one GitHub issue/PR as (1) a verbatim single-file spec under `./docs`,
-(2) chunked markdown under `./docs`, and (3) a dedicated agentmemory project holding
-the spec, so the current piece of work has an exact local spec plus recallable
-memories scoped to just it.
+Materialise one GitHub issue/PR as (1) a verbatim single-file spec under `./docs`
+and (2) chunked markdown under `./docs`.
 
 `gh` is the network here (local `git` is not authenticated). All remote reads go
-through `gh`. Agentmemory writes use the `agentmemory` MCP server (`memory_save`,
-`memory_recall`, `memory_smart_search` via `CallMcpTool`).
+through `gh`.
 
 ## 1. Resolve the target
 
@@ -67,21 +64,6 @@ chunks live one level down at `./docs/<repo>-<N>/`, not under `docs/issues/`.
   Keep each chunk one coherent topic. Preserve the original prose verbatim — this is
   the spec, don't paraphrase it.
 
-## 5. Mirror into a new agentmemory project
+## 5. Report
 
-Project slug (stable, canonical): `issue-<repo>-<N>` (e.g. `issue-acme-gateway-894`).
-Pass it as `project` on every `memory_save`.
-
-- First run `memory_recall`/`memory_smart_search` for the slug to avoid dupes on re-run;
-  only save facts not already there.
-- Save one memory per chunk/spec item — the concrete requirement, constraint, or
-  acceptance criterion, not a summary of the whole issue. Set `type` (`fact`,
-  `architecture`, `workflow`) and `concepts`; put the chunk file path in `files`.
-- Save one index memory naming the slug, `owner/repo#N`, the url, and the docs dir,
-  so a later session can `memory_recall "<slug>"` and find everything.
-
-## 6. Report
-
-One block: resolved target, verbatim spec path, docs dir + chunk count, project slug +
-memory count.
-Tell the user they can now `memory_recall "issue-<repo>-<N>"` for the scoped spec.
+One block: resolved target, verbatim spec path, docs dir, and chunk count.

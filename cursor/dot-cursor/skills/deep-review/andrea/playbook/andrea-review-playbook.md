@@ -282,12 +282,10 @@ coordinated set?
   not the deploy.
 
 **Backend grounding:** cross-service edges are the only real multi-repo
-signal — use codebase-memory `trace_path cross_service` on indexed repos;
-for un-indexed repos, `read` the routes/channels directly. Do NOT trust a
+signal — `read` the routes and channels directly. Do NOT trust a
 union graph for inferred cross-repo edges.
 
 **Failure modes:**
-- Running `trace_path cross_service` on an un-indexed repo and concluding "no edges exist" (the repo isn't indexed, not the edges are absent).
 - Trusting a merged graph for cross-repo HTTP edges (merged graphs are union-only).
 
 ### Sector 10 — SSRF, redaction & security boundaries
@@ -384,7 +382,7 @@ passes the injected clock.
   use `read` or `semble_search repo=<worktree>`.
 - **CR-4: A recorded deferral is a decision, not a finding.** Do not
   re-raise a deferred issue unless the rationale no longer holds. Check
-  agentmemory for prior deferral rationales before re-raising.
+  the PR discussion and ADRs for prior deferral rationales before re-raising.
 - **CR-5: Read-only workers.** Sector agents never modify source. The
   only output is the finding list.
 - **CR-6: Never auto-commit.** (Restated from CR-2 for emphasis: the
@@ -405,9 +403,7 @@ verification; the backend is the means.
 |---|---|---|
 | Semble (MCP) | Vague natural-language lookup | `semble_search "<desc>"` / `semble_find_related` |
 | Serena (MCP) | Symbol confirm, references | `find_symbol` (scoped), `find_referencing_symbols` |
-| codebase-memory (MCP) | Multi-hop, cross-service, Cypher, complexity | `search_graph`, `trace_path`, `query_graph` |
 | graphify (CLI) | Communities, god nodes, broad map | `graphify query "<q>"` |
-| agentmemory (MCP) | Past-session decisions, deferral rationales | `memory_smart_search`, `memory_recall` |
 
 ## Severity bar
 

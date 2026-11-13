@@ -32,7 +32,6 @@ non-interactive and never trigger the native plan-mode approval popup.
 
 > Do not enter native plan mode. Do not write to `xd://propose`. Do not call the `ask` tool except at the two scheduled breakpoints (Session 2, Session 6) and any ad-hoc breakpoint explicitly specified in the runbook (e.g. the loop-gate round-3 BLOCKER guard, a new security/data-loss finding in a loop). Execute every session directly. Tool calls are auto-approved (`approvalMode: yolo` in config).
 
-> Every memory saved during this run — across all sessions and all sub-session skills (issue-to-docs, to-prd, plan, TDD build, resolve-review) — must carry a structured facet tag identifying the run. After every `memory_save` call, immediately call `memory_facet_tag` with: `targetType: "memory"`, `targetId: <the memory ID returned by memory_save>`, `dimension: "dev-graph-run"`, `value: "<$DIR_NAME>"`. The `<$DIR_NAME>` is the umbrella container directory name created in Step 2a (e.g. `batch-api-894`). This applies to ALL memories saved in this workflow, including those saved by sub-skills — forward this directive to every sub-session via the `omp -p` prompt or inline skill invocation. To recall all memories from a run, query `memory_facet_query matchAll="dev-graph-run:<$DIR_NAME>" targetType="memory"`.
 
 ## Constants
 
@@ -65,14 +64,11 @@ Run the `issue-to-docs` skill (see the skill edit for container docs). It
 resolves `{{ISSUE-TAG}}` to `owner/repo#N`, fetches the body via `gh issue view`,
 and writes the verbatim spec to the **container** `./docs` directory (the
 `docs/` created in 1a, not a per-repo `docs/`). Invoke it inline (read the
-skill, follow it) with cwd = `$CONTAINER`. Forward the tagging directive so its
-`memory_save` calls are followed by `memory_facet_tag`.
+skill, follow it) with cwd = `$CONTAINER`.
 
 After `issue-to-docs` completes, the container has:
 - `docs/<slug>-spec.md` — verbatim issue body
 - `docs/<repo>-<N>/` — chunked markdown (container-level, not per-repo)
-- agentmemory project `issue-<repo>-<N>` with spec memories — each tagged
-  `dev-graph-run:$DIR_NAME`.
 
 ### 1c. Create worktrees for all N repos
 
@@ -119,11 +115,7 @@ The `to-prd` skill already writes to `./docs/PRD.md` relative to cwd — the
 orchestrator ensures cwd is the container dir for this step.
 
 The orchestrator does NOT pass `--prd` to an off-device issue tracker. `to-prd`
-writes only to local `./docs/PRD.md`. After writing, `to-prd` calls
-`memory_save` to store the PRD's module boundaries (type: `architecture`) in
-the agentmemory project `issue-<repo>-<N>`. Forward the tagging directive: each
-`memory_save` from `to-prd` is followed by `memory_facet_tag` with
-`dimension: "dev-graph-run"`, `value: "$DIR_NAME"`.
+writes only to local `./docs/PRD.md`.
 
 End of Session 1. Proceed immediately to Session 2 (the first breakpoint).
 
@@ -133,11 +125,6 @@ Run `/grill-with-docs` inline with cwd = `$CONTAINER`. The skill interviews the
 user about the PRD against the domain model, sharpens terminology, and updates
 `docs/CONTEXT.md` and `docs/adr/` inline as decisions crystallize. All docs
 written to the container `./docs/`.
-
-The grill skill calls `memory_save` as decisions crystallize (per its skill
-spec). Forward the tagging directive: every `memory_save` the grill issues is
-followed by `memory_facet_tag` with `dimension: "dev-graph-run"`,
-`value: "$DIR_NAME"`.
 
 **This is HITL breakpoint 1.** The grill skill is inherently interactive — it
 asks questions one at a time and waits for the user. The orchestrator does
@@ -153,14 +140,11 @@ orchestrator just invokes the skill and waits for it to return.
 
 The orchestrator reads `plan-format.md` in this skill directory and follows that
 format. It is a reference, not a skill and not a slash command. The plan input
-is: the PRD (`docs/PRD.md`), the ADRs (`docs/adr/`), the `CONTEXT.md`, and the
-agentmemory project `issue-<repo>-<N>` (recalled via
-`memory_recall "issue-<repo>-<N>"`). Emit a caveman-format plan report and write
+is: the PRD (`docs/PRD.md`), the ADRs (`docs/adr/`), and the `CONTEXT.md`. Emit a caveman-format plan report and write
 it to `docs/plans/<slug>.md` in the container (see Persist in `plan-format.md`).
 
 The plan uses TDD and the agent-swarm approach per the `test-driven-development`
-skill. The orchestrator instructs the plan to reference the code-intelligence
-tools (codebase-memory and agentmemory, per AGENTS.md) to ensure changes are cross-cutting and correctly implemented.
+skill.
 
 **The plan format writes a markdown file. It does NOT trigger native plan mode.
 No `xd://propose` write, no popup.**
@@ -193,20 +177,11 @@ The orchestrator applies changes inside the per-repo worktrees (e.g.
 `$CONTAINER/feat-${DIR_NAME}-app/`). Each worktree is its own git repo, so
 changes land on the `feat/${DIR_NAME}-<repo>` branch.
 
-> Before writing any code, consult codebase-memory for the code and agentmemory for prior decisions. Never grep for function definitions until those miss.
 
 **Contingency — TDD build fails to converge.** If a RED→GREEN cycle exhausts
 its ralph loop (MAX attempts), the orchestrator stops, reports the failing
 behavior, and asks the user (an ad-hoc breakpoint). The user can adjust the
 behavior spec or fix the issue, then resume.
-
-### 3c. Update agentmemory
-
-After the build, `memory_save` what was built to the `issue-<repo>-<N>`
-project: files touched, modules created/modified, key decisions made during
-implementation (type: `workflow`). Search first (`memory_smart_search`) to
-avoid dupes. Follow the tagging directive: each `memory_save` is followed by
-`memory_facet_tag` with `dimension: "dev-graph-run"`, `value: "$DIR_NAME"`.
 
 End of Session 3. Proceed to Sessions 4 + 5 (parallel).
 

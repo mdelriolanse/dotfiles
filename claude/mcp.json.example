@@ -4,18 +4,6 @@
       "type": "http",
       "url": "https://mcp.context7.com/mcp"
     },
-    "agentmemory": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@agentmemory/mcp@0.9.27"
-      ],
-      "env": {
-        "AGENTMEMORY_URL": "http://localhost:3111",
-        "AGENTMEMORY_TOOLS": "all"
-      }
-    },
     "fetch": {
       "type": "stdio",
       "command": "npx",
@@ -23,11 +11,6 @@
         "-y",
         "html-extractor-mcp"
       ]
-    },
-    "codebase-memory": {
-      "type": "stdio",
-      "command": "${HOME}/.local/bin/codebase-memory-mcp",
-      "args": []
     }
   }
 }

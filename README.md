@@ -95,9 +95,8 @@ directory exists next to the repo).
 Hermes at runtime, so they are not symlinked: `install.sh` materializes them from
 `config.yaml.example` / `.env.example` + `secrets.env` (via `envsubst`) **only if
 absent** — it never clobbers a live config. Secret values (`HERMES_MODEL_API_KEY`,
-`AGENTMEMORY_SECRET`, `TELEGRAM_*`) live in `secrets.env`; the tracked templates
-carry `${VAR}` placeholders / blanks. The `agentmemory` MCP entry uses
-`agentmemory-mcp` on `PATH`.
+`TELEGRAM_*`) live in `secrets.env`; the tracked templates
+carry `${VAR}` placeholders / blanks.
 
 Deliberately **excluded** (memory, state, caches, creds, binaries, the app
 checkout): `memories/`, `sessions/`, `state.db*`, `kanban*`, `cron/`, `auth.json`,
@@ -190,14 +189,7 @@ and are consumed two ways:
 
   ```bash
   uv tool install -p 3.13 serena-agent      # -> serena
-  npm i -g codebase-memory-mcp              # -> codebase-memory-mcp
-  npm i -g @agentmemory/mcp                 # -> agentmemory-mcp (the npx shim
-                                            #    re-execs this name from PATH)
   ```
-
-  `codebase-memory` is configured at `${HOME}/.local/bin/codebase-memory-mcp`,
-  so symlink it there if npm puts it elsewhere. `agentmemory` additionally
-  needs its server on `AGENTMEMORY_URL` (default `http://localhost:3111`).
 
   **`codegraph` has been removed.** It used to be registered in every
   `mcp.json` and documented as the primary code-discovery backend, but no

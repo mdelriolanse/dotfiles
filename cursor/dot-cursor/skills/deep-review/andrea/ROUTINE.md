@@ -301,7 +301,7 @@ paradigm that fires on the diff):
       "claim": "<what breaks, one line>",
       "severity": "BLOCKER|MAJOR|MINOR|NIT",
       "suggested_fix": "<patch shape>",
-      "backend_used": "<semble|serena|codebase-memory|graphify|agentmemory> + query",
+      "backend_used": "<semble|serena|graphify> + query",
       "anchor_verified": "yes|no|stale",
       "anchor_evidence": "<the byte-confirmed text at file:line>",
       "prd_contradiction": "true|false",
@@ -330,9 +330,7 @@ Name the backend and the query used.
 |---|---|---|---|
 | **Semble** (MCP) | Vague natural-language lookup | `semble_search "<desc>"` or `semble_find_related` | For worktree code, `semble_search repo=<worktree>` |
 | **Serena** (MCP) | Symbol confirm, references, rename | `find_symbol` (scope with `relative_path`), `find_referencing_symbols` | Unscoped `find_symbol` on a large tree may time out |
-| **codebase-memory** (MCP) | Multi-hop chains, cross-service HTTP, Cypher, complexity | `search_graph`, `trace_path` (calls/data_flow/**cross_service**), `query_graph` | Not every repo is indexed; check `list_projects`. `cross_service` is the only real cross-repo edge source |
 | **graphify** (CLI) | Communities, god nodes, broad map | `graphify query "<q>"` (merged) or `--graph ./<repo>/graphify-out/graph.json` | Union-only, no inferred cross-repo edges |
-| **agentmemory** (MCP) | Past-session decisions, deferral rationales | `memory_smart_search` (preferred), `memory_recall` | Search before re-deriving; canonical for CR-4 deferral checks |
 
 **Re-grounding order (CR-1):** `semble_search` → Serena `find_symbol` (scoped) → `read`.
 

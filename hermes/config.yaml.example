@@ -184,15 +184,6 @@ image_gen:
 known_plugin_toolsets:
   cli:
     - spotify
-mcp_servers:
-  agentmemory:
-    # Resolved from PATH (install agentmemory-mcp locally; do not hardcode a host path).
-    command: agentmemory-mcp
-    env:
-      AGENTMEMORY_URL: http://localhost:3111
-      AGENTMEMORY_TOOLS: all
-      AGENTMEMORY_SECRET: '${AGENTMEMORY_SECRET}'
-
 # ── Security ──────────────────────────────────────────────────────────
 # Secret redaction is ON by default — strings that look like API keys,
 # tokens, and passwords are masked in tool output, logs, and chat
